@@ -240,6 +240,12 @@ const en: MessageTree = {
     language: "Language",
     engine: "Engine",
     share: "Share a view link",
+    lanWifi: "Phone on same WiFi",
+    lanWifiHint:
+      "While Cinekive runs on your computer, open this URL on your phone or tablet on the same network. Nothing leaves your LAN.",
+    copyLanUrl: "Copy WiFi URL",
+    lanWifiUnavailable:
+      "LAN URL not detected yet. Start the engine and connect to WiFi — or use Share → Copy phone URL in the desktop app.",
     archiveLocation: "Visual archive location",
     howToRun: "How to run",
     creator: "Creator & support",

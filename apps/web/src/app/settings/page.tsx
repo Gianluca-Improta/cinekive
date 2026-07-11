@@ -14,7 +14,7 @@ import {
   Terminal,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { VlmSettingsPanel } from "@/components/settings/VlmSettingsPanel";
 import { api } from "@/lib/api-client";
@@ -23,10 +23,43 @@ import { CREATOR_LINKS } from "@/lib/creator-links";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
+function discoverLanWebUrl(): Promise<string | null> {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  const host = window.location.hostname;
+  if (host !== "localhost" && host !== "127.0.0.1") {
+    return Promise.resolve(window.location.origin);
+  }
+  return new Promise((resolve) => {
+    const pc = new RTCPeerConnection({ iceServers: [] });
+    pc.createDataChannel("");
+    pc
+      .createOffer()
+      .then((offer) => pc.setLocalDescription(offer))
+      .catch(() => resolve(null));
+    pc.onicecandidate = (event) => {
+      if (!event.candidate?.candidate) return;
+      const match = /([0-9]{1,3}(?:\.[0-9]{1,3}){3})/.exec(event.candidate.candidate);
+      if (match && !match[1].startsWith("127.")) {
+        resolve(`http://${match[1]}:3000`);
+        pc.close();
+      }
+    };
+    setTimeout(() => {
+      pc.close();
+      resolve(null);
+    }, 2500);
+  });
+}
+
 export default function SettingsPage() {
   const { theme, setTheme } = useAppearance();
   const { t } = useI18n();
   const [copied, setCopied] = useState<string | null>(null);
+  const [lanUrl, setLanUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    discoverLanWebUrl().then(setLanUrl);
+  }, []);
 
   const themes: { id: AppearanceTheme; label: string; hint: string }[] = [
     { id: "dark", label: t("topbar.themeDark"), hint: t("settings.themeDarkHint") },
@@ -66,6 +99,8 @@ export default function SettingsPage() {
   const tunnelCmd =
     data?.share?.options?.find((o) => o.id === "tunnel")?.commands?.[0] ||
     "cloudflared tunnel --url http://localhost:3000";
+  const phoneUrl = health.data?.lan_web_url || lanUrl;
+  const phoneApiUrl = phoneUrl?.replace(":3000", ":8000") ?? null;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
@@ -169,6 +204,47 @@ export default function SettingsPage() {
             <Share2 className="h-4 w-4 text-cinema-cyan" />
             <h2 className="text-sm font-medium text-white">{t("settings.share")}</h2>
           </div>
+          <div className="rounded-xl border border-cinema-border/70 bg-cinema-surface/40 p-5">
+            <div className="flex items-center gap-2 text-sm text-white">
+              <MonitorSmartphone className="h-4 w-4 text-cinema-cyan" />
+              {t("settings.lanWifi")}
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-cinema-muted">
+              {t("settings.lanWifiHint")}
+            </p>
+            {phoneUrl ? (
+              <div className="mt-4 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => copy(phoneUrl, "lan")}
+                    className="inline-flex items-center gap-1.5 rounded border border-cinema-cyan/40 bg-cinema-cyan/10 px-3 py-2 text-xs text-cinema-cyan hover:bg-cinema-cyan/20"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    {copied === "lan" ? "Copied" : t("settings.copyLanUrl")}
+                  </button>
+                  <a
+                    href={phoneUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] text-cinema-muted hover:text-white"
+                  >
+                    Open on this device <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <code className="block break-all rounded border border-cinema-border bg-cinema-black/50 px-2 py-1.5 font-mono text-[10px] text-cinema-cyan">
+                  {phoneUrl}
+                </code>
+                {phoneApiUrl && (
+                  <p className="text-[10px] text-cinema-muted">
+                    API (same WiFi): <code className="text-cinema-cyan/80">{phoneApiUrl}</code>
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="mt-3 text-[11px] text-cinema-muted">{t("settings.lanWifiUnavailable")}</p>
+            )}
+          </div>
           <div className="rounded-xl border border-cinema-cyan/30 bg-cinema-cyan/5 p-5">
             <p className="text-sm text-white">Locally host a live browse link</p>
             <p className="mt-1 text-xs leading-relaxed text-cinema-muted">
@@ -254,7 +330,8 @@ export default function SettingsPage() {
             <div className="rounded-xl border border-cinema-border/70 bg-cinema-surface/40 px-4 py-3">
               <div className="text-sm text-white">Desktop (Windows / Mac / Linux)</div>
               <p className="mt-1 text-[11px] text-cinema-muted">
-                Installer or portable — wizard, window, Share menu. Needs Docker Desktop.
+                Installer or portable — wizard, window, Share menu. Docker optional on Windows and
+                Mac (native engine downloads automatically).
               </p>
               <code className="mt-2 block font-mono text-[10px] text-cinema-cyan">
                 .\scripts\desktop.ps1 -Dist
@@ -266,8 +343,9 @@ export default function SettingsPage() {
             <div className="rounded-xl border border-cinema-border/70 bg-cinema-surface/40 px-4 py-3">
               <div className="text-sm text-white">Web app</div>
               <p className="mt-1 text-[11px] text-cinema-muted">
-                Browser at localhost:3000 after Docker compose / desktop start. Optional PWA install
-                (neutral chrome — no cyan banner).
+                Browser at localhost:3000 after Docker compose / desktop start. On the same WiFi,
+                open the LAN URL on your phone. Optional PWA install (neutral chrome — no cyan
+                banner).
               </p>
             </div>
             <div className="rounded-xl border border-cinema-border/70 bg-cinema-surface/40 px-4 py-3">

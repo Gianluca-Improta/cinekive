@@ -14,6 +14,7 @@ const path = require("path");
 const fs = require("fs");
 const http = require("http");
 const { readConfig, defaultDataDir, ensureDataDirs } = require("./paths");
+const { buildCorsOrigins, getBindHost, getLanUrls, getPrimaryLanIp } = require("./network");
 
 const WEB_URL = process.env.CINEKIVE_WEB_URL || "http://localhost:3000";
 const API_HEALTH = process.env.CINEKIVE_API_URL || "http://localhost:8000/health";
@@ -94,7 +95,7 @@ async function checkNative() {
       ok: false,
       reason: "not_installed",
       message:
-        "Native engine not installed yet.\n\nCinekive will download it on first start (Windows, no Docker), or install Docker Desktop.",
+        "Native engine not installed yet.\n\nCinekive will download it on first start (Windows or Mac, no Docker), or install Docker Desktop.",
     };
   }
   return { ok: true };
@@ -149,7 +150,7 @@ function killTree(child) {
   }
 }
 
-function buildPythonEnv(root, dataDir, libraryPath) {
+function buildPythonEnv(root, dataDir, libraryPath, { lanAccess = true, vlmEnabled = false } = {}) {
   const isWin = process.platform === "win32";
   const pyRoot = path.join(root, "python");
   const pyBinDir = isWin ? path.join(pyRoot, "Scripts") : path.join(pyRoot, "bin");
@@ -171,6 +172,9 @@ function buildPythonEnv(root, dataDir, libraryPath) {
   const dbFile = path.join(dataDir, "db", "cinearchive.db");
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
 
+  const lanIp = lanAccess ? getPrimaryLanIp() : null;
+  const lan = getLanUrls(lanAccess);
+
   return {
     ...process.env,
     PATH: pathParts.join(path.delimiter),
@@ -184,8 +188,11 @@ function buildPythonEnv(root, dataDir, libraryPath) {
     MODELS_DIR: path.join(dataDir, "models"),
     LIBRARY_DIR: libraryPath,
     HF_HOME: path.join(dataDir, "models", "huggingface"),
-    CORS_ORIGINS: "http://localhost:3000",
-    VLM_ENABLED: process.env.VLM_ENABLED || "false",
+    CORS_ORIGINS: buildCorsOrigins(lanIp, lanAccess),
+    OLLAMA_URL: process.env.OLLAMA_URL || "http://127.0.0.1:11434",
+    OLLAMA_MODEL: process.env.OLLAMA_MODEL || "qwen3-vl:8b",
+    VLM_ENABLED: vlmEnabled ? "true" : "false",
+    CINEKIVE_LAN_WEB_URL: lan.webUrl || "",
     DEVICE: process.env.DEVICE || "cpu",
     SEEK_ENABLED: "true",
     LOG_LEVEL: process.env.LOG_LEVEL || "INFO",
@@ -208,11 +215,27 @@ async function startStack({ onStatus } = {}) {
   ensureDataDirs(dataDir, libraryPath);
   fs.mkdirSync(path.join(dataDir, "qdrant"), { recursive: true });
   const root = engineRoot();
+  const qBin = qdrantBin(root);
   const python = pythonBin(root);
   const webServer = webServerPath(root);
-  let nodeBin = path.join(root, "node", process.platform === "win32" ? "node.exe" : "bin/node");
+  let nodeBin = path.join(root, "node", process.platform === "win32" ? "node.exe" : "node");
+  if (!fs.existsSync(nodeBin)) {
+    nodeBin = path.join(root, "node", "bin", "node");
+  }
   if (!fs.existsSync(nodeBin)) {
     nodeBin = process.env.CINEKIVE_NODE || "node";
+  }
+
+  const lanAccess = cfg.lanAccess !== false;
+  const bindHost = getBindHost(lanAccess);
+  const lan = getLanUrls(lanAccess);
+
+  onStatus?.("Checking local AI (Ollama)…");
+  const ollamaOk = await ping("http://127.0.0.1:11434/api/tags", 2500);
+  if (ollamaOk) {
+    onStatus?.("Ollama found — VLM enrichment enabled");
+  } else {
+    onStatus?.("Ollama not running — search still works; install Ollama for craft AI tags");
   }
 
   onStatus?.("Starting Qdrant…");
@@ -235,10 +258,10 @@ async function startStack({ onStatus } = {}) {
   }
 
   onStatus?.("Starting API…");
-  const pyEnv = buildPythonEnv(root, dataDir, libraryPath);
+  const pyEnv = buildPythonEnv(root, dataDir, libraryPath, { lanAccess, vlmEnabled: ollamaOk });
   spawnTracked(
     python,
-    ["-m", "uvicorn", "cinearchive.main:app", "--host", "127.0.0.1", "--port", "8000"],
+    ["-m", "uvicorn", "cinearchive.main:app", "--host", bindHost, "--port", "8000"],
     {
       cwd: path.join(root, "python"),
       env: pyEnv,
@@ -260,7 +283,7 @@ async function startStack({ onStatus } = {}) {
       env: {
         ...process.env,
         PORT: "3000",
-        HOSTNAME: "127.0.0.1",
+        HOSTNAME: bindHost,
         NEXT_PUBLIC_API_URL: "http://localhost:8000",
       },
     },
@@ -273,7 +296,10 @@ async function startStack({ onStatus } = {}) {
   }
 
   onStatus?.("Ready");
-  return { webUrl: WEB_URL, mode: "native" };
+  if (lan.webUrl) {
+    onStatus?.(`Phone on WiFi: ${lan.webUrl}`);
+  }
+  return { webUrl: WEB_URL, mode: "native", lan };
 }
 
 async function stopStack() {

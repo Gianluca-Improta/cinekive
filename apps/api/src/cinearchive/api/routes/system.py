@@ -18,7 +18,7 @@ async def system_info(settings: Settings = Depends(get_settings)) -> dict:
     lib = library_root(settings)
     return {
         "app": "Cinekive",
-        "version": "0.3.0",
+        "version": "0.4.1",
         "library_dir": str(lib.resolve()),
         "videos_dir": str(Path(settings.videos_dir).resolve()),
         "artifacts_dir": str(Path(settings.artifacts_dir).resolve()),
@@ -50,6 +50,11 @@ async def system_info(settings: Settings = Depends(get_settings)) -> dict:
         },
         "share": {
             "options": [
+                {
+                    "id": "lan",
+                    "label": "Phone on same WiFi",
+                    "summary": "Open the LAN URL on your phone while Cinekive runs on your computer. Same WiFi only — nothing leaves your network.",
+                },
                 {
                     "id": "export-zip",
                     "label": "Export ZIP",

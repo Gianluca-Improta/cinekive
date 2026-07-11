@@ -104,14 +104,14 @@
   <body>
     <div class="wrap">
       <h1 class="brand">Cinekive</h1>
-      <p class="sub">Local cinematic archive. One-time setup — Docker optional on Windows.</p>
+      <p class="sub">Local cinematic archive. One-time setup — Docker optional on Windows and Mac.</p>
 
       <div class="card">
         <h2>1. Engine</h2>
         <p>How Cinekive runs search and ingest on your machine.</p>
-        <label class="engine"><input type="radio" name="engine" value="auto" checked /> Auto (recommended — Docker if available, else native on Windows)</label>
+        <label class="engine"><input type="radio" name="engine" value="auto" checked /> Auto (recommended — Docker if available, else native on Windows / Mac)</label>
         <label class="engine"><input type="radio" name="engine" value="docker" /> Docker Desktop (fast if already installed)</label>
-        <label class="engine" id="nativeOpt"><input type="radio" name="engine" value="native" /> Native engine — no Docker (Windows, ~2 GB one-time download)</label>
+        <label class="engine" id="nativeOpt"><input type="radio" name="engine" value="native" /> Native engine — no Docker (Windows / Mac, ~2 GB one-time download)</label>
         <div class="status">
           <span class="dot wait" id="engineDot"></span>
           <span id="engineLabel">Checking…</span>

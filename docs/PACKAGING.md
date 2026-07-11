@@ -7,16 +7,16 @@ Cinekive is **local-first**. You can run it as a desktop app, in the browser, or
 | Platform | Artifact | Engine |
 |----------|----------|--------|
 | **Windows** | `Cinekive-*-win-x64.exe` · `*-portable.exe` | **Docker optional** — auto downloads `engine-win-x64.zip` if Docker missing |
-| **macOS** | `Cinekive-*-mac-*.dmg` | Docker Desktop required (native pack coming) |
+| **macOS** | `Cinekive-*-mac-*.dmg` | **Docker optional** — auto downloads `engine-mac-arm64.zip` or `engine-mac-x64.zip` |
 | **Linux** | AppImage / `.deb` | Docker Desktop required (native pack coming) |
 
-Also on each release: **`engine-win-x64.zip`** — native sidecars (Qdrant, Python API, Next.js, ffmpeg, Node).
+Also on each release: **`engine-win-x64.zip`**, **`engine-mac-arm64.zip`**, **`engine-mac-x64.zip`** — native sidecars (Qdrant, Python API, Next.js, ffmpeg, Node).
 
 ## Engine modes (desktop)
 
 | Mode | Behavior |
 |------|----------|
-| **auto** (default) | Docker if available; else native on Windows |
+| **auto** (default) | Docker if available; else native on Windows / Mac |
 | **docker** | Requires Docker Desktop; pulls `ghcr.io/gianluca-improta/cinekive-*` when possible |
 | **native** | Spawns Qdrant + API + web locally; no Docker |
 
@@ -37,11 +37,17 @@ Logs: `%APPDATA%\Cinekive\data\engine\logs\` or **Cinekive menu → Open engine 
   version.txt
 ```
 
-Build locally (Windows):
+Build locally:
 
 ```powershell
 .\scripts\build-engine-pack.ps1
 # → dist/engine-win-x64.zip
+```
+
+```bash
+chmod +x ./scripts/build-engine-pack-mac.sh
+./scripts/build-engine-pack-mac.sh arm64   # or x64
+# → dist/engine-mac-arm64.zip
 ```
 
 Dev setup (all platforms):
@@ -80,10 +86,14 @@ cd apps/desktop && npm run dist:mac
 cd apps/desktop && npm run dist:linux
 ```
 
+## Phone on same WiFi
+
+When `lanAccess` is enabled (default), the native engine and Docker stack bind to `0.0.0.0`. Open **Settings → Share** for the LAN URL, or **Share → Copy phone URL** in the desktop menu. The web UI routes API calls to port 8000 on the same host automatically.
+
 ## Roadmap
 
-1. **Now** — Windows native engine pack + GHCR + auto engine mode  
-2. **Next** — Mac/Linux engine packs, signed builds, auto-update  
+1. **Now** — Windows + Mac native engine packs, GHCR, LAN phone access  
+2. **Next** — Linux engine pack, signed builds, auto-update  
 3. **Later** — Single offline installer, ONNX embedding (smaller download)
 
 Track progress in [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) and [ROADMAP.md](ROADMAP.md).

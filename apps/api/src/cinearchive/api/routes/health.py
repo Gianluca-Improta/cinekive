@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -66,5 +68,6 @@ async def health(
         "vlm_reachable": vlm_ok,
         "enrich": enrich_info,
         "watcher_enabled": settings.watcher_enabled,
-        "version": "0.3.0",
+        "version": "0.4.1",
+        "lan_web_url": os.environ.get("CINEKIVE_LAN_WEB_URL") or None,
     }

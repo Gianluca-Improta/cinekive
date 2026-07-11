@@ -20,8 +20,17 @@ jobs:
           body: |
             ## Cinekive ${{ github.ref_name }}
 
-            Local-first cinematic archive — see the [README](https://github.com/Gianluca-Improta/cinekive#readme) for install.
+            **Download for your OS** (pick one installer below — not "Source code"):
 
-            **Join in:** [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) · [Sponsors](https://github.com/sponsors/Gianluca-Improta)
+            | Platform | File |
+            |----------|------|
+            | Windows | `Cinekive-*-win-x64.exe` or `*-portable.exe` |
+            | macOS Apple Silicon | `Cinekive-*-mac-arm64.dmg` |
+            | macOS Intel | `Cinekive-*-mac-x64.dmg` |
+            | Linux | `Cinekive-*.AppImage` or `.deb` |
 
-            Desktop installers (when attached): Windows `.exe` · macOS · Linux AppImage/deb
+            Desktop installers attach automatically via CI (may take ~15 min after this release is created).
+
+            **No Docker on Windows / Mac:** the app downloads a native engine pack on first start (`engine-*.zip` on this release).
+
+            [README](https://github.com/Gianluca-Improta/cinekive#readme) · [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) · [Sponsors](https://github.com/sponsors/Gianluca-Improta)

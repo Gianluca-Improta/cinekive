@@ -1,4 +1,4 @@
-﻿import type { MessageTree } from "../types";
+import type { MessageTree } from "../types";
 
 /** Partial pack — missing keys fall back to English. */
 const ja: MessageTree = {

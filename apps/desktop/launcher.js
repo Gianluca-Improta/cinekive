@@ -16,6 +16,7 @@ const {
   ensureDataDirs,
   ensureRuntimeSynced,
 } = require("./paths");
+const { buildCorsOrigins, getPrimaryLanIp, getLanUrls } = require("./network");
 
 const WEB_URL = process.env.CINEKIVE_WEB_URL || "http://localhost:3000";
 const API_HEALTH = process.env.CINEKIVE_API_URL || "http://localhost:8000/health";
@@ -89,7 +90,7 @@ async function checkDocker() {
         ok: false,
         reason: "missing",
         message:
-          "Docker Desktop is not installed.\n\nOn Windows, Cinekive can download a native engine instead — no Docker required.",
+          "Docker Desktop is not installed.\n\nOn Windows or Mac, Cinekive can download a native engine instead — no Docker required.",
       };
     }
     return {
@@ -105,6 +106,10 @@ function toPosix(p) {
   return String(p).replace(/\\/g, "/");
 }
 
+function nativePackPlatform() {
+  return process.platform === "win32" || process.platform === "darwin";
+}
+
 function writeEnvFile({ dataDir, libraryPath }) {
   const root = stackRoot();
   const example = path.join(root, ".env.example");
@@ -115,6 +120,12 @@ function writeEnvFile({ dataDir, libraryPath }) {
   } else if (fs.existsSync(example)) {
     base = fs.readFileSync(example, "utf8");
   }
+
+  const cfg = readConfig();
+  const lanAccess = cfg.lanAccess !== false;
+  const lanIp = getPrimaryLanIp();
+  const cors = buildCorsOrigins(lanIp, lanAccess);
+  const lan = getLanUrls(lanAccess);
 
   const setLine = (text, key, value) => {
     const line = `${key}=${value}`;
@@ -128,8 +139,10 @@ function writeEnvFile({ dataDir, libraryPath }) {
   text = setLine(text, "CINEKIVE_DATA_DIR", toPosix(dataDir));
   text = setLine(text, "LIBRARY_HOST_PATH", toPosix(libraryPath));
   text = setLine(text, "LIBRARY_DIR", "/data/library");
-  text = setLine(text, "VLM_ENABLED", "false");
-  text = setLine(text, "CORS_ORIGINS", "http://localhost:3000");
+  text = setLine(text, "VLM_ENABLED", "true");
+  text = setLine(text, "OLLAMA_URL", "http://host.docker.internal:11434");
+  text = setLine(text, "CORS_ORIGINS", cors);
+  text = setLine(text, "CINEKIVE_LAN_WEB_URL", lan.webUrl || "");
   text = setLine(text, "CINEKIVE_IMAGE_TAG", "latest");
   if (/^SHOTDECK_LIBRARY_HOST=.*/m.test(text)) {
     text = text.replace(/^SHOTDECK_LIBRARY_HOST=.*/m, "SHOTDECK_LIBRARY_HOST=");
@@ -197,16 +210,16 @@ async function resolveEngineMode() {
   if (mode === "docker") {
     const docker = await checkDocker();
     if (docker.ok) return "docker";
-    if (process.platform === "win32") return "native";
+    if (nativePackPlatform()) return "native";
     throw new Error(docker.message);
   }
 
   // auto
   const docker = await checkDocker();
   if (docker.ok) return "docker";
-  if (process.platform === "win32") return "native";
+  if (nativePackPlatform()) return "native";
   throw new Error(
-    `${docker.message}\n\nNative engine packs are Windows-only for now. Install Docker Desktop on macOS/Linux.`
+    `${docker.message}\n\nNative engine packs are available on Windows and Mac. Install Docker Desktop on Linux.`
   );
 }
 
@@ -352,4 +365,6 @@ module.exports = {
   ensureDataDirs,
   ensureRuntimeSynced,
   resolveEngineMode,
+  nativePackPlatform,
+  getLanUrls,
 };

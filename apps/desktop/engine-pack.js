@@ -21,7 +21,7 @@ function packAssetName() {
 }
 
 function packSupported() {
-  return process.platform === "win32";
+  return process.platform === "win32" || process.platform === "darwin";
 }
 
 function installedVersion() {
@@ -87,17 +87,25 @@ function downloadFile(url, dest, { onProgress } = {}) {
   });
 }
 
-async function extractZip(zipPath, destDir) {
+async function extractArchive(archivePath, destDir) {
   fs.mkdirSync(destDir, { recursive: true });
   if (process.platform === "win32") {
     await run("powershell", [
       "-NoProfile",
       "-Command",
-      `Expand-Archive -Path '${zipPath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force`,
+      `Expand-Archive -Path '${archivePath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force`,
     ]);
-  } else {
-    await run("unzip", ["-o", zipPath, "-d", destDir]);
+    return;
   }
+  if (archivePath.endsWith(".zip")) {
+    await run("unzip", ["-o", archivePath, "-d", destDir]);
+    return;
+  }
+  await run("tar", ["-xzf", archivePath, "-C", destDir]);
+}
+
+async function extractZip(zipPath, destDir) {
+  return extractArchive(zipPath, destDir);
 }
 
 function flattenEngineRoot(destDir) {
@@ -126,7 +134,7 @@ async function ensureEnginePack({ version, onStatus, onProgress } = {}) {
 
   if (!packSupported()) {
     throw new Error(
-      "Native engine pack is not available for this platform yet.\n\nInstall Docker Desktop, or use the browser bootstrap on macOS/Linux."
+      "Native engine pack is not available for this platform yet.\n\nInstall Docker Desktop, or use the browser bootstrap."
     );
   }
 

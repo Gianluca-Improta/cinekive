@@ -27,6 +27,7 @@ const {
   resolveEngineMode,
   WEB_URL,
   API_HEALTH,
+  getLanUrls,
 } = require("./launcher");
 const {
   stackRoot,
@@ -317,6 +318,31 @@ function buildMenu() {
     {
       label: "Share",
       submenu: [
+        {
+          label: "Copy phone URL (WiFi)…",
+          click: () => {
+            const cfg = readConfig();
+            const lan = getLanUrls(cfg.lanAccess !== false);
+            if (!lan.webUrl) {
+              dialog.showMessageBox({
+                type: "info",
+                title: "WiFi access",
+                message: "LAN URL not available",
+                detail:
+                  "Could not detect your WiFi IP. Make sure you are on a network and LAN access is enabled in settings.",
+              });
+              return;
+            }
+            clipboard.writeText(lan.webUrl);
+            dialog.showMessageBox({
+              type: "info",
+              title: "Phone on WiFi",
+              message: "URL copied",
+              detail: `On your phone (same WiFi), open:\n\n${lan.webUrl}\n\nAPI: ${lan.apiUrl}`,
+            });
+          },
+        },
+        { type: "separator" },
         { label: "Create view link…", click: () => startShareTunnel() },
         { label: "Stop view link", click: () => stopShareTunnel() },
       ],

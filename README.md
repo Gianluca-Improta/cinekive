@@ -65,15 +65,17 @@ If this saves you time, a [GitHub star](https://github.com/Gianluca-Improta/cine
 
 1. Download the app for your OS from the [release page](https://github.com/Gianluca-Improta/cinekive/releases/latest)  
 2. Open Cinekive → pick your library folder → **Start**  
-3. **Windows without Docker:** the app downloads a native engine pack once (~2 GB). **With Docker:** install [Docker Desktop](https://www.docker.com/products/docker-desktop/) first for faster setup.
+3. **Without Docker (Windows / Mac):** the app downloads a native engine pack once (~2 GB). **With Docker:** install [Docker Desktop](https://www.docker.com/products/docker-desktop/) first for faster setup.
 
 That’s it. No terminal required for normal use.
 
-> **macOS / Linux:** Docker Desktop is still required today. Native engine packs for these platforms are planned.  
-> **macOS:** first open may need right-click → Open (unsigned build).  
+> **Linux:** Docker Desktop is still required today. Native engine packs for Linux are planned.  
+> **macOS:** first open may need right-click → Open (unsigned build). Native engine works on Apple Silicon and Intel.  
 > **Linux AppImage:** `chmod +x Cinekive-*.AppImage && ./Cinekive-*.AppImage`
 
-**Windows:** Docker is **optional**. Auto mode uses Docker if installed, otherwise downloads the native engine.
+**Windows / Mac:** Docker is **optional**. Auto mode uses Docker if installed, otherwise downloads the native engine.
+
+**Phone on WiFi:** Settings shows a LAN URL — open it on your phone while Cinekive runs on your computer (same network).
 
 A fully bundled installer (no separate engine download) is on the [roadmap](docs/ROADMAP.md).
 
@@ -137,9 +139,11 @@ Then open http://localhost:3000
 
 ---
 
-## What you get (v0.4)
+## What you get (v0.4.1)
 
-- **No Docker on Windows (optional)** — native engine pack downloads on first start; Docker still supported
+- **No Docker on Windows / Mac (optional)** — native engine pack downloads on first start; Docker still supported
+- **Phone on same WiFi** — browse your library from a phone browser on your LAN
+- **Local AI** — SigLIP + yt-dlp bundled in the engine; Ollama auto-detected for craft tags (optional install)
 - **GHCR pre-built images** — Docker users pull images instead of building locally when possible
 
 - **Narrative / Commercial / Social** — ingest your own footage (drop files or any yt-dlp URL)
@@ -238,7 +242,7 @@ Ideas on the table — **comment, upvote, and PR**. Nothing here is locked.
 
 ### Likely v2
 
-- [ ] **Mac/Linux native engine packs**
+- [ ] **Linux native engine pack**
 - [ ] Pre-built GHCR images (shipped v0.4 — faster first Docker launch)
 - [ ] Richer canvas: resize frames, video preview loops on the board, PDF/ref cards
 - [ ] Brief → board: pitch text → ranked shots auto-laid on a moodboard

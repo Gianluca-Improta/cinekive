@@ -5,7 +5,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { checkDocker, ping, API_HEALTH, WEB_URL } = require("./launcher");
+const { checkDocker, ping, API_HEALTH, WEB_URL, getLanUrls } = require("./launcher");
 const { readConfig, defaultDataDir, defaultLibraryDir, userDataRoot } = require("./paths");
 
 function diskFreeGb(dir) {
@@ -38,6 +38,7 @@ async function getHealthStatus() {
 
   const docker = await checkDocker();
   const [apiUp, webUp] = await Promise.all([ping(API_HEALTH), ping(WEB_URL)]);
+  const lan = getLanUrls(cfg.lanAccess !== false);
 
   return {
     version: require("electron").app?.getVersion?.() || (() => {
@@ -64,6 +65,8 @@ async function getHealthStatus() {
     diskFreeGb: diskFreeGb(dataDir),
     platform: process.platform,
     arch: process.arch,
+    lanAccess: cfg.lanAccess !== false,
+    lan,
   };
 }
 

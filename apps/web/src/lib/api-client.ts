@@ -12,14 +12,25 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+/** Resolve API base URL at runtime (LAN phone access uses same host, port 8000). */
+export function getApiUrl(): string {
+  const fallback = API_URL;
+  if (typeof window === "undefined") return fallback;
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") return fallback;
+  const proto = window.location.protocol === "https:" ? "https:" : "http:";
+  return `${proto}//${host}:8000`;
+}
+
 export function artifactUrl(path: string | null | undefined): string {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  const base = getApiUrl();
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${getApiUrl()}${path}`, {
     ...init,
     headers: {
       ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
@@ -49,6 +60,7 @@ export const api = {
       embedding_model_loaded?: boolean;
       vlm_enabled?: boolean;
       vlm_reachable?: boolean;
+      lan_web_url?: string | null;
       enrich?: {
         tier?: string;
         model?: string;
@@ -697,7 +709,7 @@ export const api = {
     }),
 
   exportShotClip: async (shotId: string, handlesSec = 0) => {
-    const res = await fetch(`${API_URL}/shots/${shotId}/clip`, {
+    const res = await fetch(`${getApiUrl()}/shots/${shotId}/clip`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ handles_sec: handlesSec, copy_streams: false }),
@@ -716,7 +728,7 @@ export const api = {
     shotIds: string[],
     format: "zip" | "json" | "framechain" | "edl" = "zip"
   ) => {
-    const res = await fetch(`${API_URL}/export`, {
+    const res = await fetch(`${getApiUrl()}/export`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ shot_ids: shotIds, format, include_previews: false }),

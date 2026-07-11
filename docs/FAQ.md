@@ -31,11 +31,15 @@ See also [COMPARE.md](COMPARE.md).
 
 ## Do I need Docker?
 
-**Windows:** No — **Auto** mode (default) downloads a native engine if Docker is not installed (~2 GB once). Docker is still supported and often faster if you already use it.
+**Windows / macOS:** No — **Auto** mode (default) downloads a native engine if Docker is not installed (~2 GB once). Docker is still supported and often faster if you already use it.
 
-**macOS / Linux:** Yes today. Native packs for these platforms are planned.
+**Linux:** Yes today. Native packs for Linux are planned.
 
-Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) if you prefer the Docker path or are not on Windows.
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) if you prefer the Docker path or are on Linux.
+
+## Phone on the same WiFi?
+
+Yes. While Cinekive runs on your computer, open **Settings → Share** (or desktop **Share → Copy phone URL**) and paste the LAN URL on your phone. Same network only — nothing leaves your LAN. The web UI picks the API host automatically from your phone's browser address.
 
 ## Windows / Mac / Linux?
 

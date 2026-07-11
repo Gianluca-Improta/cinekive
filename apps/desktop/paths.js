@@ -79,6 +79,8 @@ function readConfigDefaults() {
     stopStackOnQuit: false,
     /** "auto" | "docker" | "native" */
     engineMode: "auto",
+    /** Allow phone/tablet on same WiFi to open http://{lan-ip}:3000 */
+    lanAccess: true,
   };
 }
 

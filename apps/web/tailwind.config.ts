@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
-const config: Config = {
-  darkMode: ["class", '[data-theme="dark"]', '[data-theme="slate"]'],
+const config = {
+  darkMode: ["selector", '[data-theme="dark"], [data-theme="slate"]'] as Config["darkMode"],
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
@@ -26,6 +26,6 @@ const config: Config = {
     },
   },
   plugins: [],
-};
+} satisfies Config;
 
 export default config;

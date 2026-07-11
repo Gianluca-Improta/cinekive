@@ -54,6 +54,7 @@ services:
       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3-vl:8b}
       - VLM_ENABLED=${VLM_ENABLED:-true}
+      - CINEKIVE_LAN_WEB_URL=${CINEKIVE_LAN_WEB_URL:-}
       - ENRICH_TIER=${ENRICH_TIER:-auto}
       - ENRICH_VRAM_GB=${ENRICH_VRAM_GB:-16}
       - ENRICH_CONTINUOUS=${ENRICH_CONTINUOUS:-true}

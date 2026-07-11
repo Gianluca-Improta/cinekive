@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to attach builds to (e.g. v0.4.0)"
+        description: "Release tag to attach builds to (e.g. v0.4.1)"
         required: true
-        default: "v0.4.0"
+        default: "v0.4.1"
 
 permissions:
   contents: write
@@ -19,6 +19,7 @@ env:
 jobs:
   engine-pack-windows:
     runs-on: windows-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,6 +35,44 @@ jobs:
         with:
           name: cinekive-engine-win
           path: dist/engine-win-x64.zip
+          if-no-files-found: error
+
+  engine-pack-mac-arm64:
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build macOS arm64 native engine pack
+        run: chmod +x ./scripts/build-engine-pack-mac.sh && ./scripts/build-engine-pack-mac.sh arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinekive-engine-mac-arm64
+          path: dist/engine-mac-arm64.zip
+          if-no-files-found: error
+
+  engine-pack-mac-x64:
+    runs-on: macos-15-intel
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build macOS x64 native engine pack
+        run: chmod +x ./scripts/build-engine-pack-mac.sh && ./scripts/build-engine-pack-mac.sh x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinekive-engine-mac-x64
+          path: dist/engine-mac-x64.zip
           if-no-files-found: error
 
   windows:
@@ -108,15 +147,24 @@ jobs:
             apps/desktop/release/*.blockmap
           if-no-files-found: error
 
-  publish:
-    needs: [engine-pack-windows, windows, mac, linux]
+  publish-installers:
+    needs: [windows, mac, linux]
     runs-on: ubuntu-latest
     steps:
-      - name: Download all artifacts
+      - name: Download installer artifacts
         uses: actions/download-artifact@v4
         with:
+          name: cinekive-windows
           path: dist
-      - name: List files
+      - uses: actions/download-artifact@v4
+        with:
+          name: cinekive-mac
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: cinekive-linux
+          path: dist
+      - name: List installer files
         run: find dist -type f | sort
       - name: Resolve release tag
         id: tag
@@ -126,7 +174,7 @@ jobs:
           else
             echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
           fi
-      - name: Upload to GitHub Release
+      - name: Upload installers to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
@@ -134,9 +182,41 @@ jobs:
             dist/**/*.exe
             dist/**/*.dmg
             dist/**/Cinekive-*.zip
-            dist/**/engine-win-x64.zip
             dist/**/*.AppImage
             dist/**/*.deb
           fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-engine-packs:
+    needs: [engine-pack-windows, engine-pack-mac-arm64, engine-pack-mac-x64]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download engine pack artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: cinekive-engine-*
+          merge-multiple: true
+      - name: List engine pack files
+        run: find dist -type f 2>/dev/null | sort || true
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload engine packs to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            dist/**/engine-win-x64.zip
+            dist/**/engine-mac-arm64.zip
+            dist/**/engine-mac-x64.zip
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
