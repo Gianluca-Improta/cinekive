@@ -241,7 +241,6 @@ export function ShotDetailSheet({
           />
           {" · "}scene {active.scene_index}
           {active.shot_type ? ` · ${active.shot_type}` : ""}
-          {active.is_hero ? " · hero" : ""}
           {active.frame_role ? ` · ${active.frame_role}` : ""}
         </div>
       </div>

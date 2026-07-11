@@ -5,6 +5,7 @@ import { RotateCcw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { VirtualMasonryGrid } from "@/components/grid/VirtualMasonryGrid";
 import { api, artifactUrl } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { Shot } from "@/lib/types";
 
 function daysLeft(deletedAt: string | null): number {
@@ -16,6 +17,7 @@ function daysLeft(deletedAt: string | null): number {
 
 export default function BinPage() {
   const qc = useQueryClient();
+  const { t } = useI18n();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const binQuery = useQuery({
@@ -50,10 +52,9 @@ export default function BinPage() {
       <header className="space-y-2 border-b border-cinema-border px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-white">Bin</h1>
+            <h1 className="text-lg font-semibold text-white">{t("bin.title")}</h1>
             <p className="text-xs text-cinema-muted">
-              Soft-deleted shots · auto-purge after 30 days · {total} item
-              {total === 1 ? "" : "s"}
+              {t(total === 1 ? "bin.subtitleOne" : "bin.subtitle", { n: total })}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -64,20 +65,21 @@ export default function BinPage() {
               className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-3 py-1.5 text-xs text-cinema-muted hover:text-cinema-cyan disabled:opacity-40"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Restore{selected.length ? ` (${selected.length})` : ""}
+              {t("bin.restore")}
+              {selected.length ? ` (${selected.length})` : ""}
             </button>
             <button
               type="button"
               disabled={!selected.length || purgeMutation.isPending}
               onClick={() => {
-                if (confirm(`Permanently delete ${selected.length} shots? This cannot be undone.`)) {
+                if (confirm(t("bin.purgeConfirm", { n: selected.length }))) {
                   purgeMutation.mutate(selected);
                 }
               }}
               className="inline-flex items-center gap-1.5 rounded border border-cinema-magenta/40 px-3 py-1.5 text-xs text-cinema-magenta hover:bg-cinema-magenta/10 disabled:opacity-40"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Delete forever
+              {t("bin.deleteForever")}
             </button>
           </div>
         </div>
@@ -86,7 +88,7 @@ export default function BinPage() {
       <div className="flex-1 px-6 py-4">
         {!shots.length && !binQuery.isLoading ? (
           <div className="flex h-48 items-center justify-center text-sm text-cinema-muted">
-            Bin is empty. Hit X on any shot to send it here.
+            {t("bin.empty")}
           </div>
         ) : (
           <div className="space-y-3">
@@ -124,7 +126,7 @@ export default function BinPage() {
                         {shot.source_title || shot.source_filename || "Shot"}
                       </div>
                       <div className="font-mono text-[9px] text-cinema-muted">
-                        {left}d left
+                        {t("bin.daysLeft", { n: left })}
                       </div>
                     </div>
                   </button>

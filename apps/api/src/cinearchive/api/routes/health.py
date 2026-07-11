@@ -30,8 +30,11 @@ async def health(
         db_ok = False
 
     qdrant_ok = vector_repo.health()
+    from cinearchive.services import vlm_config as vc
+
+    vlm_enabled = vc.effective_enabled(settings)
     vlm_ok = False
-    if settings.vlm_enabled:
+    if vlm_enabled:
         vlm_ok = await VLMEnricher(settings).health()
 
     enrich_info: dict = {}
@@ -43,8 +46,9 @@ async def health(
         enrich_info = {
             "tier": tier,
             "model": model,
+            "provider": vc.effective_provider(settings),
             "vram_gb": round(vram, 1) if vram is not None else None,
-            "continuous": settings.enrich_continuous and settings.vlm_enabled,
+            "continuous": vc.effective_continuous(settings),
             "last_pass_at": last_enrich_pass_at() or None,
             "gpu": "RTX 5060 Ti 16GB → balanced (qwen3-vl:8b)"
             if vram and 14 <= vram <= 18
@@ -58,7 +62,7 @@ async def health(
         "sqlite": db_ok,
         "qdrant": qdrant_ok,
         "embedding_model_loaded": embedder.is_ready,
-        "vlm_enabled": settings.vlm_enabled,
+        "vlm_enabled": vlm_enabled,
         "vlm_reachable": vlm_ok,
         "enrich": enrich_info,
         "watcher_enabled": settings.watcher_enabled,

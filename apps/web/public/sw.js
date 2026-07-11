@@ -1,6 +1,6 @@
-/* Minimal installable shell — API/ML still run on the host. */
-const CACHE = "cinekive-shell-v1";
-const PRECACHE = ["/", "/manifest.webmanifest", "/icons/icon.svg"];
+/* Network-first shell — updates show without reinstalling the PWA. */
+const CACHE = "cinekive-shell-v2";
+const PRECACHE = ["/manifest.webmanifest", "/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -16,14 +16,43 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
+
   // Never cache API / artifacts
   if (url.pathname.startsWith("/api") || url.port === "8000") return;
   if (url.pathname.startsWith("/artifacts")) return;
 
+  // Navigations + JS/CSS: network first so deploys refresh without PWA reinstall
+  const isNav = request.mode === "navigate";
+  const isAsset =
+    url.origin === self.location.origin &&
+    /\.(js|css|html|json|webmanifest)$/i.test(url.pathname);
+
+  if (isNav || isAsset) {
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res.ok && url.origin === self.location.origin) {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(request).then((c) => c || caches.match("/")))
+    );
+    return;
+  }
+
+  // Images / icons: cache-first
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)

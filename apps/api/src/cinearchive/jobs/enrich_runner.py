@@ -34,30 +34,42 @@ async def resolve_enrich_model(
     tier: EnrichTier | None = None,
     model_override: str | None = None,
 ) -> tuple[str, EnrichTier, float | None]:
-    """Pick Ollama vision model from tier / override / VRAM."""
+    """Pick vision model from runtime config / tier / override / VRAM."""
     from cinearchive.pipelines.vlm_tiers import auto_tier_for_vram
+    from cinearchive.services import vlm_config as vc
 
     vram = detect_vram_gb()
     if vram is None and settings.enrich_vram_gb is not None:
         vram = float(settings.enrich_vram_gb)
 
-    if model_override and model_override.strip():
-        t: EnrichTier = tier or settings.enrich_tier  # type: ignore[assignment]
-        resolved_override: EnrichTier = (
-            auto_tier_for_vram(vram) if t == "auto" else t  # type: ignore[assignment]
-        )
-        return model_override.strip(), resolved_override, vram
+    want_tier: EnrichTier = (tier or vc.effective_tier(settings))  # type: ignore[assignment]
+    resolved_tier: EnrichTier = (
+        auto_tier_for_vram(vram) if want_tier == "auto" else want_tier  # type: ignore[assignment]
+    )
 
-    want: EnrichTier = tier or settings.enrich_tier  # type: ignore[assignment]
-    installed = await list_ollama_models(settings.ollama_url)
+    if model_override and model_override.strip():
+        return model_override.strip(), resolved_tier, vram
+
+    # Explicit model from Settings UI / runtime JSON wins
+    rt = vc.load_runtime(settings)
+    if vc.effective_provider(settings) == "openai_compatible":
+        model = (rt.openai_model or vc.effective_model(settings) or "").strip()
+        if model:
+            return model, resolved_tier, vram
+        return vc.effective_model(settings) or "gpt-4o-mini", resolved_tier, vram
+
+    if rt.ollama_model and rt.ollama_model.strip():
+        return rt.ollama_model.strip(), resolved_tier, vram
+
+    ollama_url = vc.effective_ollama_url(settings)
+    installed = await list_ollama_models(ollama_url)
     model, _info = pick_model(
-        tier=want,
+        tier=want_tier,
         installed=installed,
         vram_gb=vram,
-        configured_default=settings.ollama_model,
+        configured_default=vc.effective_model(settings) or settings.ollama_model,
     )
-    resolved: EnrichTier = auto_tier_for_vram(vram) if want == "auto" else want
-    return model, resolved, vram
+    return model, resolved_tier, vram
 
 
 def _apply_result(shot: Any, result: Any) -> dict[str, Any]:

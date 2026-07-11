@@ -4,48 +4,40 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, Clapperboard, Search, Upload, X, LayoutTemplate } from "lucide-react";
 import { openIngestPanel } from "@/components/ingest/IngestPanel";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 const ONBOARD_KEY = "cinekive.onboarding.v1";
 const TOUR_EVENT = "cinekive:start-tour";
 
-const STEPS = [
-  {
-    id: "welcome",
-    title: "Welcome to Cinekive",
-    body: "Your cinematic archive — local, searchable, yours. Nothing leaves your machine unless you share it.",
-    icon: Search,
-  },
-  {
-    id: "shelves",
-    title: "Shelves for different work",
-    body: "Narrative, Commercials, and Social are for footage you ingest. Archives are still libraries (FilmGrab, EyeCandy, ShotDeck…). Keep them separate.",
-    icon: Clapperboard,
-  },
+const STEP_META = [
+  { id: "welcome", icon: Search, titleKey: "tour.welcomeTitle", bodyKey: "tour.welcomeBody" },
+  { id: "shelves", icon: Clapperboard, titleKey: "tour.shelvesTitle", bodyKey: "tour.shelvesBody" },
   {
     id: "ingest",
-    title: "Drop media or paste a URL",
-    body: "Use Ingest to add videos, stills, or any yt-dlp URL into a project. Progress shows in Activity.",
     icon: Upload,
-    action: "ingest",
+    titleKey: "tour.ingestTitle",
+    bodyKey: "tour.ingestBody",
+    action: "ingest" as const,
   },
   {
     id: "archives",
-    title: "Build an archive",
-    body: "Mirrors pull public or login-gated still sites. Discover lists more sources you can save into a custom archive.",
     icon: Archive,
+    titleKey: "tour.archivesTitle",
+    bodyKey: "tour.archivesBody",
     href: "/archives",
   },
   {
     id: "boards",
-    title: "Moodboards live on a project",
-    body: "Open a project → Moodboard. Select shots in the grid → Send to board. Boards stay with that project.",
     icon: LayoutTemplate,
+    titleKey: "tour.boardsTitle",
+    bodyKey: "tour.boardsBody",
   },
 ];
 
 export function OnboardingTour() {
   const router = useRouter();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -75,7 +67,7 @@ export function OnboardingTour() {
     setOpen(false);
   };
 
-  const current = STEPS[step];
+  const current = STEP_META[step];
   if (!open || !current) return null;
   const Icon = current.icon;
 
@@ -84,13 +76,13 @@ export function OnboardingTour() {
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-cinema-border bg-cinema-surface shadow-2xl">
         <div className="flex items-center justify-between border-b border-cinema-border px-5 py-3">
           <div className="text-[10px] uppercase tracking-[0.2em] text-cinema-muted">
-            Tour · {step + 1}/{STEPS.length}
+            {t("tour.label")} · {step + 1}/{STEP_META.length}
           </div>
           <button
             type="button"
             onClick={finish}
             className="rounded p-1 text-cinema-muted hover:text-white"
-            title="Skip"
+            title={t("tour.skip")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -99,10 +91,10 @@ export function OnboardingTour() {
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cinema-cyan/15 text-cinema-cyan">
             <Icon className="h-5 w-5" />
           </div>
-          <h2 className="text-lg font-semibold text-white">{current.title}</h2>
-          <p className="text-sm leading-relaxed text-cinema-muted">{current.body}</p>
+          <h2 className="text-lg font-semibold text-white">{t(current.titleKey)}</h2>
+          <p className="text-sm leading-relaxed text-cinema-muted">{t(current.bodyKey)}</p>
           <div className="flex gap-1.5 pt-1">
-            {STEPS.map((s, i) => (
+            {STEP_META.map((s, i) => (
               <div
                 key={s.id}
                 className={cn(
@@ -119,7 +111,7 @@ export function OnboardingTour() {
             onClick={finish}
             className="text-xs text-cinema-muted hover:text-white"
           >
-            Skip
+            {t("tour.skip")}
           </button>
           <div className="flex gap-2">
             {step > 0 && (
@@ -128,10 +120,10 @@ export function OnboardingTour() {
                 onClick={() => setStep((s) => s - 1)}
                 className="rounded border border-cinema-border px-3 py-1.5 text-xs text-cinema-muted hover:text-white"
               >
-                Back
+                {t("tour.back")}
               </button>
             )}
-            {step < STEPS.length - 1 ? (
+            {step < STEP_META.length - 1 ? (
               <button
                 type="button"
                 onClick={() => {
@@ -141,7 +133,7 @@ export function OnboardingTour() {
                 }}
                 className="rounded bg-cinema-cyan/20 px-3 py-1.5 text-xs text-cinema-cyan hover:bg-cinema-cyan/30"
               >
-                Next
+                {t("tour.next")}
               </button>
             ) : (
               <button
@@ -149,7 +141,7 @@ export function OnboardingTour() {
                 onClick={finish}
                 className="rounded bg-cinema-cyan px-3 py-1.5 text-xs font-medium text-black hover:opacity-90"
               >
-                Start exploring
+                {t("tour.finish")}
               </button>
             )}
           </div>

@@ -167,8 +167,8 @@ async def lifespan(app: FastAPI):
 
     if settings.dedupe_global:
         start_dedupe_scheduler(settings)
-    if settings.enrich_continuous and settings.vlm_enabled:
-        start_enrich_scheduler(settings)
+    # Always start — loop checks runtime config so Settings UI can enable VLM live
+    start_enrich_scheduler(settings)
 
     # Purge soft-deleted shots past retention on startup
     try:

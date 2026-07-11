@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to attach builds to (e.g. v0.3.1)"
+        description: "Release tag to attach builds to (e.g. v0.3.2)"
         required: true
-        default: "v0.3.1"
+        default: "v0.3.2"
 
 permissions:
   contents: write
@@ -117,6 +117,6 @@ jobs:
             dist/**/*.zip
             dist/**/*.AppImage
             dist/**/*.deb
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

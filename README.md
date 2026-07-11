@@ -8,6 +8,8 @@ without scrubbing a timeline or renting someone else's library.
 
 Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 
+**中文说明 → [README.zh-CN.md](README.zh-CN.md)**
+
 <p align="center">
   <img src="docs/showcase/frame-6.jpg" width="32%" alt="Cinematic still" />
   <img src="docs/showcase/frame-3.jpg" width="32%" alt="Archive still" />
@@ -28,7 +30,8 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
   <a href="#tour">Tour</a> ·
   <a href="#roadmap--v2">Roadmap / v2</a> ·
   <a href="#join-in">Join in</a> ·
-  <a href="#creator--support">Creator & support</a>
+  <a href="#creator--support">Creator & support</a> ·
+  <a href="README.zh-CN.md">中文</a>
 </p>
 
 ---

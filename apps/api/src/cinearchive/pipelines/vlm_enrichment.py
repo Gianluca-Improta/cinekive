@@ -365,13 +365,49 @@ class VLMEnricher:
         model: str | None = None,
     ) -> None:
         self.settings = settings or get_settings()
-        self.model = model or self.settings.ollama_model
+        from cinearchive.services import vlm_config as vc
+
+        self.model = model or vc.effective_model(self.settings)
+        self._provider = vc.effective_provider(self.settings)
 
     async def health(self) -> bool:
+        from cinearchive.services import vlm_config as vc
+
+        if not vc.effective_enabled(self.settings):
+            return False
+        if self._provider == "openai_compatible":
+            return await self._health_openai()
+        return await self._health_ollama()
+
+    async def _health_ollama(self) -> bool:
+        from cinearchive.services import vlm_config as vc
+
+        url = vc.effective_ollama_url(self.settings)
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                r = await client.get(f"{self.settings.ollama_url}/api/tags")
+                r = await client.get(f"{url}/api/tags")
                 return r.status_code == 200
+        except Exception:
+            return False
+
+    async def _health_openai(self) -> bool:
+        from cinearchive.services import vlm_config as vc
+
+        cfg = vc.effective_openai(self.settings)
+        base = cfg["base_url"]
+        if not base:
+            return False
+        headers: dict[str, str] = {}
+        if cfg["api_key"]:
+            headers["Authorization"] = f"Bearer {cfg['api_key']}"
+        if cfg.get("site_url"):
+            headers["HTTP-Referer"] = str(cfg["site_url"])
+        if cfg.get("app_name"):
+            headers["X-Title"] = str(cfg["app_name"])
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                r = await client.get(f"{base}/models", headers=headers)
+                return r.status_code in (200, 401, 403)
         except Exception:
             return False
 
@@ -383,10 +419,15 @@ class VLMEnricher:
         model: str | None = None,
     ) -> EnrichmentResult:
         last_err: Exception | None = None
+        use_model = model or self.model
         for attempt in range(self.settings.vlm_max_retries + 1):
             try:
+                if self._provider == "openai_compatible":
+                    return await self._call_openai(
+                        image_path, context=context or {}, model=use_model
+                    )
                 return await self._call_ollama(
-                    image_path, context=context or {}, model=model or self.model
+                    image_path, context=context or {}, model=use_model
                 )
             except Exception as exc:
                 last_err = exc
@@ -397,14 +438,7 @@ class VLMEnricher:
             tags=["unenriched"],
         ).normalized()
 
-    async def _call_ollama(
-        self,
-        image_path: Path,
-        *,
-        context: dict[str, Any],
-        model: str | None = None,
-    ) -> EnrichmentResult:
-        b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
+    def _build_user_prompt(self, context: dict[str, Any]) -> str:
         examples = "\n".join(json.dumps(ex) for ex in FEW_SHOT_EXAMPLES)
         ctx_bits = []
         if context.get("source_title"):
@@ -417,7 +451,9 @@ class VLMEnricher:
                 "(describe what is unique about this moment in the shot)"
             )
         if context.get("is_moving"):
-            ctx_bits.append("This frame is part of a moving camera sequence — include movement techniques.")
+            ctx_bits.append(
+                "This frame is part of a moving camera sequence — include movement techniques."
+            )
         if context.get("content_hint"):
             ctx_bits.append(f"Likely format hint: {context['content_hint']}")
         if context.get("project_name"):
@@ -431,24 +467,12 @@ class VLMEnricher:
             refs = str(context["project_references"])[:400]
             ctx_bits.append(f"Visual references: {refs}")
         ctx_block = ("\n".join(ctx_bits) + "\n\n") if ctx_bits else ""
-        user_prompt = (
+        return (
             f"{ctx_block}Examples of good outputs:\n{examples}\n\n"
             "Now analyze this frame and return JSON only. Fill techniques richly."
         )
-        payload = {
-            "model": model or self.model,
-            "prompt": user_prompt,
-            "system": SYSTEM_PROMPT,
-            "images": [b64],
-            "stream": False,
-            "format": "json",
-            "options": {"temperature": 0.25},
-        }
-        async with httpx.AsyncClient(timeout=self.settings.vlm_timeout_sec) as client:
-            r = await client.post(f"{self.settings.ollama_url}/api/generate", json=payload)
-            r.raise_for_status()
-            data = r.json()
-        raw = data.get("response") or data.get("message", {}).get("content") or ""
+
+    def _parse_result(self, raw: str) -> EnrichmentResult:
         parsed = _extract_json(raw)
         try:
             return EnrichmentResult.model_validate(parsed).normalized()
@@ -475,6 +499,108 @@ class VLMEnricher:
                 techniques=list(parsed.get("techniques") or []),
                 tags=list(parsed.get("tags") or [])[:20],
             ).normalized()
+
+    async def _call_ollama(
+        self,
+        image_path: Path,
+        *,
+        context: dict[str, Any],
+        model: str | None = None,
+    ) -> EnrichmentResult:
+        from cinearchive.services import vlm_config as vc
+
+        b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
+        user_prompt = self._build_user_prompt(context)
+        payload = {
+            "model": model or self.model,
+            "prompt": user_prompt,
+            "system": SYSTEM_PROMPT,
+            "images": [b64],
+            "stream": False,
+            "format": "json",
+            "options": {"temperature": 0.25},
+        }
+        url = vc.effective_ollama_url(self.settings)
+        timeout = vc.effective_timeout(self.settings)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            r = await client.post(f"{url}/api/generate", json=payload)
+            r.raise_for_status()
+            data = r.json()
+        raw = data.get("response") or data.get("message", {}).get("content") or ""
+        return self._parse_result(raw)
+
+    async def _call_openai(
+        self,
+        image_path: Path,
+        *,
+        context: dict[str, Any],
+        model: str | None = None,
+    ) -> EnrichmentResult:
+        """OpenAI-compatible chat/completions with vision (OpenRouter, Kimi, LM Studio…)."""
+        from cinearchive.services import vlm_config as vc
+
+        cfg = vc.effective_openai(self.settings)
+        base = cfg["base_url"]
+        if not base:
+            raise RuntimeError("openai_base_url is not set")
+        use_model = (model or cfg["model"] or self.model or "").strip()
+        if not use_model:
+            raise RuntimeError("openai_model is not set")
+
+        mime = "image/jpeg"
+        suffix = image_path.suffix.lower()
+        if suffix == ".png":
+            mime = "image/png"
+        elif suffix == ".webp":
+            mime = "image/webp"
+        b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
+        data_url = f"data:{mime};base64,{b64}"
+        user_prompt = self._build_user_prompt(context)
+
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+        if cfg["api_key"]:
+            headers["Authorization"] = f"Bearer {cfg['api_key']}"
+        if cfg.get("site_url"):
+            headers["HTTP-Referer"] = str(cfg["site_url"])
+        if cfg.get("app_name"):
+            headers["X-Title"] = str(cfg["app_name"])
+
+        payload: dict[str, Any] = {
+            "model": use_model,
+            "temperature": 0.25,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT + "\nReturn JSON only."},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ],
+                },
+            ],
+        }
+        payload_with_json = {**payload, "response_format": {"type": "json_object"}}
+
+        timeout = vc.effective_timeout(self.settings)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            r = await client.post(
+                f"{base}/chat/completions", headers=headers, json=payload_with_json
+            )
+            if r.status_code >= 400:
+                r = await client.post(
+                    f"{base}/chat/completions", headers=headers, json=payload
+                )
+            r.raise_for_status()
+            data = r.json()
+
+        choice = (data.get("choices") or [{}])[0]
+        msg = choice.get("message") or {}
+        raw = msg.get("content") or ""
+        if isinstance(raw, list):
+            raw = " ".join(
+                str(part.get("text") or "") for part in raw if isinstance(part, dict)
+            )
+        return self._parse_result(str(raw))
 
 
 def source_title_from_path(path: str | Path) -> str:

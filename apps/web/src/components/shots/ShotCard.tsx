@@ -46,12 +46,11 @@ export function ShotCard({
   const [playing, setPlaying] = useState(false);
   const [fav, setFav] = useState(shot.is_favorite);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const cardRef = useRef<HTMLButtonElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const thumb = artifactUrl(shot.thumb_md_url || shot.thumb_url);
   const preview = shot.preview_url ? artifactUrl(shot.preview_url) : null;
   const videoPreview = Boolean(preview && isVideoUrl(preview));
   const showLoop = Boolean(preview && (playing || hover));
-  const highScore = (shot.hero_score || 0) >= 0.78;
 
   useEffect(() => {
     setFav(shot.is_favorite);
@@ -85,19 +84,26 @@ export function ShotCard({
   };
 
   return (
-    <button
+    <div
       ref={cardRef}
-      type="button"
+      role="button"
+      tabIndex={0}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick(e as unknown as MouseEvent);
+        }
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => {
         setHover(false);
         if (!playing && videoRef.current) videoRef.current.pause();
       }}
-      className={`group relative w-full overflow-hidden rounded-md border bg-cinema-panel text-left transition hover:border-cinema-cyan/40 hover:shadow-glow ${
+      className={`group relative w-full cursor-pointer overflow-hidden rounded-md border bg-cinema-panel text-left transition hover:border-cinema-cyan/40 hover:shadow-glow ${
         selected ? "border-cinema-cyan shadow-glow" : "border-cinema-border"
-      } ${highScore ? "ring-1 ring-cinema-cyan/30" : ""}`}
+      }`}
       style={{ aspectRatio: `${shot.width || 3} / ${shot.height || 2}` }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -134,16 +140,6 @@ export function ShotCard({
       )}
       {fav && (
         <Star className="absolute left-2 top-2 h-3.5 w-3.5 fill-cinema-cyan text-cinema-cyan" />
-      )}
-      {shot.is_hero && !fav && (
-        <span className="absolute left-2 top-2 rounded bg-black/70 px-1 py-0.5 font-mono text-[9px] uppercase tracking-wide text-cinema-cyan">
-          hero
-        </span>
-      )}
-      {highScore && (
-        <span className="absolute bottom-2 left-2 rounded bg-cinema-cyan/20 px-1 py-0.5 font-mono text-[9px] text-cinema-cyan opacity-0 transition group-hover:opacity-100">
-          {shot.hero_score.toFixed(2)}
-        </span>
       )}
 
       <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
@@ -253,6 +249,6 @@ export function ShotCard({
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }

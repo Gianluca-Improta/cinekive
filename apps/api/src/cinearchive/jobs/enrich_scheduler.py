@@ -82,13 +82,16 @@ async def run_enrich_pass(settings: Settings) -> dict:
     global _last_pass_at, _busy
     if _busy:
         return {"skipped": True, "reason": "busy"}
-    if not settings.vlm_enabled:
+    from cinearchive.services import vlm_config as vc
+
+    if not vc.effective_enabled(settings):
         return {"skipped": True, "reason": "vlm_disabled"}
 
     _busy = True
     try:
         model_name, tier, vram = await resolve_enrich_model(settings)
-        batch = await _pick_candidates(settings, settings.enrich_batch_size)
+        batch_size = vc.load_runtime(settings).enrich_batch_size or settings.enrich_batch_size
+        batch = await _pick_candidates(settings, int(batch_size))
         if not batch:
             _last_pass_at = time.time()
             return {
@@ -146,23 +149,28 @@ async def run_enrich_pass(settings: Settings) -> dict:
 
 
 async def enrich_scheduler_loop(settings: Settings) -> None:
+    from cinearchive.services import vlm_config as vc
+
     logger.info(
-        "Enrich scheduler started (interval=%ss, batch=%s, continuous=%s)",
+        "Enrich scheduler started (interval=%ss, batch=%s)",
         settings.enrich_interval_sec,
         settings.enrich_batch_size,
-        settings.enrich_continuous,
     )
     # Small delay so API finishes boot / Ollama is reachable
     await asyncio.sleep(15)
     while True:
+        interval = float(settings.enrich_interval_sec)
         try:
-            if settings.enrich_continuous and settings.vlm_enabled:
+            rt = vc.load_runtime(settings)
+            if rt.enrich_interval_sec is not None:
+                interval = float(rt.enrich_interval_sec)
+            if vc.effective_continuous(settings):
                 await run_enrich_pass(settings)
         except asyncio.CancelledError:
             raise
         except Exception as exc:
             logger.warning("Enrich scheduler pass failed: %s", exc)
-        await asyncio.sleep(max(30.0, float(settings.enrich_interval_sec)))
+        await asyncio.sleep(max(30.0, interval))
 
 
 def start_enrich_scheduler(settings: Settings) -> asyncio.Task:

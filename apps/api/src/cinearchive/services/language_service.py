@@ -5,8 +5,9 @@ Order of backends:
 2. MyMemory free API as a soft fallback (network; not for offline)
 3. Identity (return source) so the UI never hard-fails
 
-UI strings are handled client-side via locale packs; this module is for
-freeform content (mood, notes, dialogue, creative intent).
+UI strings are handled client-side via locale packs + an optional DOM
+overlay (UiTranslateLayer). This module translates freeform content and
+batched UI chrome strings for that overlay.
 """
 
 from __future__ import annotations
@@ -206,5 +207,5 @@ def languages_payload() -> dict[str, Any]:
     return {
         "core": "en",
         "languages": [{"code": c, "name": n} for c, n in SUPPORTED.items()],
-        "note": "UI packs are English-core with locale overlays; /translate handles freeform content.",
+        "note": "UI packs + optional DOM overlay; /translate and /translate/batch handle freeform + chrome.",
     }

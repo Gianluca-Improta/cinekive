@@ -11,18 +11,13 @@ import {
   type MessageTree,
 } from "./types";
 
-const catalogs: Partial<Record<LocaleCode, MessageTree>> = {
+const catalogs: Record<LocaleCode, MessageTree> = {
   en,
   zh,
   es,
   fr,
   de,
   ja,
-  // Remaining codes fall back entirely to English until packs are filled in
-  pt: {},
-  ko: {},
-  it: {},
-  ru: {},
 };
 
 function lookup(tree: MessageTree | undefined, path: string[]): string | undefined {

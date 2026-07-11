@@ -134,14 +134,15 @@ export function Sidebar() {
           >
             <span className="block truncate">{p.name}</span>
             <span className="text-[10px] text-cinema-muted">
-              {p.shot_count} shots{sub ? ` · ${sub}` : ""}
+              {t(p.shot_count === 1 ? "nav.shotCountOne" : "nav.shotCount", { n: p.shot_count })}
+              {sub ? ` · ${sub}` : ""}
             </span>
           </Link>
           <button
             type="button"
-            title="Delete"
+            title={t("common.delete")}
             onClick={() => {
-              if (confirm(`Delete “${p.name}”?`)) deleteMutation.mutate(p.id);
+              if (confirm(t("nav.deleteConfirm", { name: p.name }))) deleteMutation.mutate(p.id);
             }}
             className="mr-2 hidden rounded p-1 text-cinema-muted hover:text-cinema-magenta group-hover:block"
           >
@@ -163,10 +164,10 @@ export function Sidebar() {
         }}
         placeholder={
           kind === "social"
-            ? "Campaign / channel name"
+            ? t("nav.placeholderSocial")
             : kind === "narrative"
-              ? "Title name"
-              : "Job / brand name"
+              ? t("nav.placeholderTitle")
+              : t("nav.placeholderJob")
         }
         className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-sm text-white outline-none focus:border-cinema-cyan"
       />
@@ -177,17 +178,17 @@ export function Sidebar() {
             onChange={(e) => setFormFactor(e.target.value as typeof formFactor)}
             className="flex-1 rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-cinema-muted outline-none"
           >
-            <option value="">Form…</option>
-            <option value="short_form">Short form</option>
-            <option value="long_form">Long form</option>
-            <option value="mixed">Mixed</option>
+            <option value="">{t("nav.formLabel")}</option>
+            <option value="short_form">{t("nav.shortForm")}</option>
+            <option value="long_form">{t("nav.longForm")}</option>
+            <option value="mixed">{t("nav.mixed")}</option>
           </select>
           <select
             value={aspect}
             onChange={(e) => setAspect(e.target.value)}
             className="flex-1 rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-cinema-muted outline-none"
           >
-            <option value="">Aspect…</option>
+            <option value="">{t("nav.aspectLabel")}</option>
             <option value="9:16">9:16</option>
             <option value="1:1">1:1</option>
             <option value="4:5">4:5</option>
@@ -203,14 +204,14 @@ export function Sidebar() {
           disabled={createMutation.isPending}
           className="flex-1 rounded bg-cinema-cyan/20 px-2 py-1 text-xs text-cinema-cyan hover:bg-cinema-cyan/30"
         >
-          Create
+          {t("common.create")}
         </button>
         <button
           type="button"
           onClick={() => setCreatingKind(null)}
           className="rounded px-2 py-1 text-xs text-cinema-muted hover:text-white"
         >
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
     </div>
@@ -243,7 +244,7 @@ export function Sidebar() {
             type="button"
             onClick={() => setCreatingKind("narrative")}
             className="rounded border border-cinema-border p-1 text-cinema-cyan hover:bg-cinema-panel"
-            title="New narrative title"
+            title={t("nav.newNarrative")}
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
@@ -272,7 +273,7 @@ export function Sidebar() {
             type="button"
             onClick={() => setCreatingKind("commercial")}
             className="rounded border border-cinema-border p-1 text-cinema-cyan hover:bg-cinema-panel"
-            title="New commercial library"
+            title={t("nav.newCommercial")}
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
@@ -301,7 +302,7 @@ export function Sidebar() {
             type="button"
             onClick={() => setCreatingKind("social")}
             className="rounded border border-cinema-border p-1 text-cinema-cyan hover:bg-cinema-panel"
-            title="New social library"
+            title={t("nav.newSocial")}
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
@@ -330,15 +331,20 @@ export function Sidebar() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{p.name}</span>
                     <span className="text-[10px] text-cinema-muted">
-                      {p.shot_count} shots{sub ? ` · ${sub}` : ""}
+                      {t(p.shot_count === 1 ? "nav.shotCountOne" : "nav.shotCount", {
+                        n: p.shot_count,
+                      })}
+                      {sub ? ` · ${sub}` : ""}
                     </span>
                   </span>
                 </Link>
                 <button
                   type="button"
-                  title="Delete"
+                  title={t("common.delete")}
                   onClick={() => {
-                    if (confirm(`Delete “${p.name}”?`)) deleteMutation.mutate(p.id);
+                    if (confirm(t("nav.deleteConfirm", { name: p.name }))) {
+                      deleteMutation.mutate(p.id);
+                    }
                   }}
                   className="mr-2 hidden rounded p-1 text-cinema-muted hover:text-cinema-magenta group-hover:block"
                 >
@@ -349,8 +355,7 @@ export function Sidebar() {
           })}
           {socials.length === 0 && creatingKind !== "social" && (
             <p className="px-3 py-2 text-[11px] leading-relaxed text-cinema-muted">
-              Intention shelf. Tag short/long and aspect when useful — shots keep their own ratio
-              in metadata.
+              {t("nav.socialHintBody")}
             </p>
           )}
         </nav>
@@ -405,7 +410,11 @@ export function Sidebar() {
                 <Archive className="h-3.5 w-3.5 shrink-0 opacity-70" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{p.name}</span>
-                  <span className="text-[10px] text-cinema-muted">{p.shot_count} shots</span>
+                  <span className="text-[10px] text-cinema-muted">
+                    {t(p.shot_count === 1 ? "nav.shotCountOne" : "nav.shotCount", {
+                      n: p.shot_count,
+                    })}
+                  </span>
                 </span>
               </Link>
             );
@@ -463,7 +472,7 @@ export function Sidebar() {
             )}
           >
             <Settings className="h-3.5 w-3.5 shrink-0" />
-            Settings
+            {t("nav.settings")}
           </Link>
           <div className="mt-3 space-y-1 border-t border-cinema-border/60 pt-3">
             <a

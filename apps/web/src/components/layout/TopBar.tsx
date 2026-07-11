@@ -6,6 +6,7 @@ import { Upload, Palette, RefreshCw, HelpCircle } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { openIngestPanel } from "@/components/ingest/IngestPanel";
 import { useAppearance, type AppearanceTheme } from "@/lib/appearance";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -13,12 +14,6 @@ function projectIdFromPath(pathname: string): string | undefined {
   const m = pathname.match(/\/projects\/([^/]+)/);
   return m?.[1];
 }
-
-const THEMES: { id: AppearanceTheme; label: string }[] = [
-  { id: "dark", label: "Dark" },
-  { id: "light", label: "Light" },
-  { id: "slate", label: "Slate" },
-];
 
 const TOUR_EVENT = "cinekive:start-tour";
 
@@ -32,7 +27,14 @@ export function TopBar() {
   const pathname = usePathname();
   const qc = useQueryClient();
   const { theme, setTheme } = useAppearance();
+  const { t } = useI18n();
   const [refreshing, setRefreshing] = useState(false);
+
+  const themes: { id: AppearanceTheme; label: string }[] = [
+    { id: "dark", label: t("topbar.themeDark") },
+    { id: "light", label: t("topbar.themeLight") },
+    { id: "slate", label: t("topbar.themeSlate") },
+  ];
 
   const refresh = async () => {
     setRefreshing(true);
@@ -53,28 +55,28 @@ export function TopBar() {
         type="button"
         onClick={() => openIngestPanel(projectIdFromPath(pathname))}
         className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
-        title="Ingest files or URL"
+        title={t("topbar.ingestTitle")}
       >
         <Upload className="h-3.5 w-3.5" />
-        Ingest
+        {t("topbar.ingest")}
       </button>
       <button
         type="button"
         onClick={refresh}
         className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
-        title="Refresh library"
+        title={t("topbar.refreshTitle")}
       >
         <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
-        Refresh
+        {t("topbar.refresh")}
       </button>
       <button
         type="button"
         onClick={startTour}
         className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
-        title="Take a quick tour"
+        title={t("topbar.tourTitle")}
       >
         <HelpCircle className="h-3.5 w-3.5" />
-        Tour
+        {t("topbar.tour")}
       </button>
       <label className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2 py-1 text-xs text-cinema-muted">
         <Palette className="h-3.5 w-3.5" />
@@ -82,11 +84,11 @@ export function TopBar() {
           value={theme}
           onChange={(e) => setTheme(e.target.value as AppearanceTheme)}
           className="bg-transparent outline-none"
-          title="Appearance"
+          title={t("topbar.appearance")}
         >
-          {THEMES.map((t) => (
-            <option key={t.id} value={t.id} className="bg-cinema-surface text-cinema-body">
-              {t.label}
+          {themes.map((item) => (
+            <option key={item.id} value={item.id} className="bg-cinema-surface text-cinema-body">
+              {item.label}
             </option>
           ))}
         </select>

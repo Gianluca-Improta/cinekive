@@ -13,8 +13,16 @@ type Props = {
 };
 
 export function LanguageSwitcher({ compact, className, placement = "top" }: Props) {
-  const { locale, setLocale, locales, t, autoTranslateContent, setAutoTranslateContent } =
-    useI18n();
+  const {
+    locale,
+    setLocale,
+    locales,
+    t,
+    autoTranslateContent,
+    setAutoTranslateContent,
+    autoTranslateUi,
+    setAutoTranslateUi,
+  } = useI18n();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -50,8 +58,9 @@ export function LanguageSwitcher({ compact, className, placement = "top" }: Prop
             onClick={() => setOpen(false)}
           />
           <div
+            data-no-translate
             className={cn(
-              "absolute z-50 w-56 overflow-hidden rounded border border-cinema-border bg-cinema-surface shadow-xl",
+              "absolute z-50 w-64 overflow-hidden rounded border border-cinema-border bg-cinema-surface shadow-xl",
               placement === "bottom"
                 ? "right-0 top-full mt-1"
                 : "bottom-full left-0 mb-1"
@@ -78,11 +87,28 @@ export function LanguageSwitcher({ compact, className, placement = "top" }: Prop
                     )}
                   >
                     <span>{m.nativeLabel}</span>
-                    <span className="text-[10px] opacity-60">{m.code}</span>
+                    <span className="text-[10px] opacity-60">
+                      {m.code}
+                      {m.coverage === "partial" ? " · …" : ""}
+                    </span>
                   </button>
                 </li>
               ))}
             </ul>
+            <label className="flex cursor-pointer items-start gap-2 border-t border-cinema-border px-3 py-2 text-[11px] text-cinema-muted hover:bg-cinema-panel">
+              <input
+                type="checkbox"
+                checked={autoTranslateUi}
+                onChange={(e) => setAutoTranslateUi(e.target.checked)}
+                className="mt-0.5 accent-cinema-cyan"
+              />
+              <span>
+                <span className="block text-white/90">{t("language.autoTranslateUi")}</span>
+                <span className="text-[10px] text-cinema-muted">
+                  {t("language.autoTranslateUiHint")}
+                </span>
+              </span>
+            </label>
             <label className="flex cursor-pointer items-start gap-2 border-t border-cinema-border px-3 py-2 text-[11px] text-cinema-muted hover:bg-cinema-panel">
               <input
                 type="checkbox"

@@ -88,11 +88,14 @@ export const api = {
       active_tier: string;
       active_model: string;
       recommended_tier: string;
+      provider?: string;
+      vlm_enabled?: boolean;
       continuous: {
         enabled: boolean;
         interval_sec: number;
         batch_size: number;
         quality_min: number;
+        last_pass_at?: number | null;
       };
       tiers: {
         key: string;
@@ -102,7 +105,51 @@ export const api = {
         available: boolean;
         recommended: boolean;
       }[];
+      config?: Record<string, unknown>;
     }>("/enrich/tiers"),
+
+  enrichConfig: () =>
+    request<{
+      enabled: boolean;
+      provider: "ollama" | "openai_compatible";
+      ollama_url: string;
+      ollama_model: string;
+      openai_base_url: string;
+      openai_api_key_set: boolean;
+      openai_api_key_masked: string;
+      openai_model: string;
+      openai_site_url?: string | null;
+      openai_app_name?: string;
+      enrich_tier: string;
+      enrich_continuous: boolean;
+      enrich_interval_sec: number;
+      enrich_batch_size: number;
+      vlm_timeout_sec: number;
+      active_model: string;
+      presets: {
+        id: string;
+        label: string;
+        provider: string;
+        hint?: string;
+        ollama_url?: string;
+        openai_base_url?: string;
+        openai_model?: string;
+      }[];
+    }>("/enrich/config"),
+
+  updateEnrichConfig: (body: Record<string, unknown>) =>
+    request<{ ok: boolean; config: Record<string, unknown> }>("/enrich/config", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+
+  enrichModels: () =>
+    request<{
+      provider: string;
+      models: string[];
+      active_model: string;
+      error?: string | null;
+    }>("/enrich/models"),
 
   enrichTick: () =>
     request<{ queued: boolean; message: string }>("/enrich/tick", { method: "POST" }),
@@ -367,6 +414,20 @@ export const api = {
       target_lang: string;
       provider: string;
     }>("/translate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  translateBatch: (body: {
+    texts: string[];
+    source_lang?: string;
+    target_lang: string;
+  }) =>
+    request<{
+      items: { text: string; translated_text: string; provider: string }[];
+      source_lang: string;
+      target_lang: string;
+    }>("/translate/batch", {
       method: "POST",
       body: JSON.stringify(body),
     }),

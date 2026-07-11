@@ -15,20 +15,24 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { VlmSettingsPanel } from "@/components/settings/VlmSettingsPanel";
 import { api } from "@/lib/api-client";
 import { useAppearance, type AppearanceTheme } from "@/lib/appearance";
 import { CREATOR_LINKS } from "@/lib/creator-links";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
-
-const THEMES: { id: AppearanceTheme; label: string; hint: string }[] = [
-  { id: "dark", label: "Dark", hint: "Cinema black" },
-  { id: "light", label: "Light", hint: "Paper white UI" },
-  { id: "slate", label: "Slate", hint: "Cool grey stone" },
-];
 
 export default function SettingsPage() {
   const { theme, setTheme } = useAppearance();
+  const { t } = useI18n();
   const [copied, setCopied] = useState<string | null>(null);
+
+  const themes: { id: AppearanceTheme; label: string; hint: string }[] = [
+    { id: "dark", label: t("topbar.themeDark"), hint: t("settings.themeDarkHint") },
+    { id: "light", label: t("topbar.themeLight"), hint: t("settings.themeLightHint") },
+    { id: "slate", label: t("topbar.themeSlate"), hint: t("settings.themeSlateHint") },
+  ];
 
   const info = useQuery({
     queryKey: ["system"],
@@ -66,32 +70,39 @@ export default function SettingsPage() {
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       <header className="border-b border-cinema-border px-6 py-5">
-        <h1 className="text-xl font-semibold tracking-tight text-white">Settings</h1>
-        <p className="mt-1 text-sm text-cinema-muted">
-          Appearance, engine, archive location, share, and how you run Cinekive.
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight text-white">{t("settings.title")}</h1>
+        <p className="mt-1 text-sm text-cinema-muted">{t("settings.subtitle")}</p>
       </header>
 
       <div className="mx-auto w-full max-w-3xl space-y-8 px-6 py-6">
         <section className="space-y-3">
-          <h2 className="text-sm font-medium text-white">Appearance</h2>
+          <h2 className="text-sm font-medium text-white">{t("settings.appearance")}</h2>
           <div className="grid gap-2 sm:grid-cols-3">
-            {THEMES.map((t) => (
+            {themes.map((item) => (
               <button
-                key={t.id}
+                key={item.id}
                 type="button"
-                onClick={() => setTheme(t.id)}
+                onClick={() => setTheme(item.id)}
                 className={cn(
                   "rounded-xl border px-4 py-3 text-left transition",
-                  theme === t.id
+                  theme === item.id
                     ? "border-cinema-cyan/50 bg-cinema-cyan/10"
                     : "border-cinema-border bg-cinema-surface/40 hover:border-cinema-cyan/30"
                 )}
               >
-                <div className="text-sm text-white">{t.label}</div>
-                <div className="text-[11px] text-cinema-muted">{t.hint}</div>
+                <div className="text-sm text-white">{item.label}</div>
+                <div className="text-[11px] text-cinema-muted">{item.hint}</div>
               </button>
             ))}
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium text-white">{t("settings.language")}</h2>
+          <p className="text-xs text-cinema-muted">{t("language.sectionHint")}</p>
+          <div className="flex items-center gap-3 rounded-xl border border-cinema-border bg-cinema-surface/40 px-4 py-3">
+            <LanguageSwitcher placement="bottom" />
+            <span className="text-xs text-cinema-muted">{t("language.core")}</span>
           </div>
         </section>
 
@@ -122,7 +133,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-medium text-white">Engine</h2>
+          <h2 className="text-sm font-medium text-white">{t("settings.engine")}</h2>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="rounded-xl border border-cinema-border/70 bg-cinema-surface/40 px-4 py-3">
               <div className="text-sm text-white">API / search</div>
@@ -138,8 +149,8 @@ export default function SettingsPage() {
                 {health.data?.vlm_enabled
                   ? health.data.vlm_reachable
                     ? `On · ${health.data.enrich?.model || "model"}`
-                    : "On but Ollama unreachable"
-                  : "Off — set VLM_ENABLED=true + Ollama for craft tags"}
+                    : "On but provider unreachable"
+                  : "Off — configure below"}
               </p>
             </div>
           </div>
@@ -151,10 +162,12 @@ export default function SettingsPage() {
           </p>
         </section>
 
+        <VlmSettingsPanel />
+
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <Share2 className="h-4 w-4 text-cinema-cyan" />
-            <h2 className="text-sm font-medium text-white">Share a view link</h2>
+            <h2 className="text-sm font-medium text-white">{t("settings.share")}</h2>
           </div>
           <div className="rounded-xl border border-cinema-cyan/30 bg-cinema-cyan/5 p-5">
             <p className="text-sm text-white">Locally host a live browse link</p>
@@ -209,7 +222,7 @@ export default function SettingsPage() {
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <HardDrive className="h-4 w-4 text-cinema-cyan" />
-            <h2 className="text-sm font-medium text-white">Visual archive location</h2>
+            <h2 className="text-sm font-medium text-white">{t("settings.archiveLocation")}</h2>
           </div>
           <div className="rounded-xl border border-cinema-border bg-cinema-surface/50 p-4">
             <div className="text-[10px] uppercase tracking-widest text-cinema-muted">
@@ -230,7 +243,7 @@ export default function SettingsPage() {
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <MonitorSmartphone className="h-4 w-4 text-cinema-cyan" />
-            <h2 className="text-sm font-medium text-white">How to run</h2>
+            <h2 className="text-sm font-medium text-white">{t("settings.howToRun")}</h2>
           </div>
           <p className="text-xs text-cinema-muted">
             Same product three ways — pick what fits.{" "}
@@ -275,7 +288,7 @@ export default function SettingsPage() {
         </p>
 
         <section className="space-y-3 pb-10">
-          <h2 className="text-sm font-medium text-white">Creator & support</h2>
+          <h2 className="text-sm font-medium text-white">{t("settings.creator")}</h2>
           <p className="text-xs text-cinema-muted">
             Built by Gianluca Improta. Need AI video gen, a portfolio look, or a production crew?
             Or just want to keep this project alive — donations are welcome.

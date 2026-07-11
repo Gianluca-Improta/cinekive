@@ -1,39 +1,61 @@
-﻿import type { MessageTree } from "../types";
+import type { MessageTree } from "../types";
 
-/** Partial packs â€” missing keys fall back to English. */
+/** Partial packs — missing keys fall back to English. */
 const fr: MessageTree = {
-  brand: { tagline: "Archive cinÃ©matographique locale" },
+  brand: { tagline: "Archive cinématographique locale" },
   nav: {
     narrative: "Narratif",
-    commercial: "PublicitÃ©s",
-    social: "RÃ©seaux sociaux",
+    commercial: "Publicités",
+    social: "Réseaux sociaux",
     archives: "Archives",
-    discovery: "DÃ©couvrir",
+    discovery: "Découvrir",
     favorites: "Favoris",
     bin: "Corbeille",
+    settings: "Réglages",
+  },
+  topbar: {
+    ingest: "Importer",
+    refresh: "Actualiser",
+    tour: "Visite",
+    appearance: "Apparence",
+    themeDark: "Sombre",
+    themeLight: "Clair",
+    themeSlate: "Ardoise",
   },
   discovery: {
-    title: "DÃ©couvrir",
-    searchPlaceholder: "Chercher un film, une technique, une ambianceâ€¦ (âŒ˜K)",
-    loading: "Chargementâ€¦",
+    title: "Découvrir",
+    searchPlaceholder: "Chercher un film, une technique, une ambiance… (⌘K)",
+    loading: "Chargement…",
   },
-  favorites: { title: "Favoris", empty: "Pas encore de favoris", loading: "Chargementâ€¦" },
+  favorites: { title: "Favoris", empty: "Pas encore de favoris", loading: "Chargement…" },
   detail: {
-    title: "DÃ©tail du plan",
+    title: "Détail du plan",
     connections: "Connexions",
     translate: "Traduire",
-    showOriginal: "Voir lâ€™original",
-    translating: "Traductionâ€¦",
+    showOriginal: "Voir l’original",
+    translating: "Traduction…",
     save: "Enregistrer",
   },
   language: {
     label: "Langue",
-    core: "Noyau : anglais",
+    core: "Les clés manquantes reviennent à l’anglais",
     autoTranslate: "Traduire le contenu",
+    sectionHint: "Langue de l’interface. Le texte des plans se traduit à part.",
   },
-  common: { create: "CrÃ©er", cancel: "Annuler", delete: "Supprimer", close: "Fermer" },
+  common: {
+    create: "Créer",
+    cancel: "Annuler",
+    delete: "Supprimer",
+    close: "Fermer",
+    next: "Suivant",
+    back: "Retour",
+    skip: "Passer",
+  },
   filters: { dialIn: "Filtres", composition: "Composition", favoritesOnly: "Favoris seulement" },
   archives: { title: "Archives", newArchive: "Nouvelle archive" },
+  bin: { title: "Corbeille", restore: "Restaurer", deleteForever: "Supprimer définitivement" },
+  settings: { title: "Réglages", appearance: "Apparence", language: "Langue" },
+  tour: { label: "Visite", skip: "Passer", next: "Suivant", finish: "Commencer" },
 };
 
 export default fr;
