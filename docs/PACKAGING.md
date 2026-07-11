@@ -4,74 +4,86 @@ Cinekive is **local-first**. You can run it as a desktop app, in the browser, or
 
 ## Downloads (Windows / Mac / Linux)
 
-| Platform | Artifact | Notes |
+| Platform | Artifact | Engine |
 |----------|----------|--------|
-| **Windows** | `Cinekive-*-win-x64.exe` (installer) · `Cinekive-*-portable.exe` | [Releases](https://github.com/Gianluca-Improta/cinekive/releases) |
-| **macOS** | `Cinekive-*-mac-*.dmg` | Build on a Mac: `cd apps/desktop && npm run dist:mac` |
-| **Linux** | AppImage / `.deb` | `cd apps/desktop && npm run dist:linux` |
+| **Windows** | `Cinekive-*-win-x64.exe` · `*-portable.exe` | **Docker optional** — auto downloads `engine-win-x64.zip` if Docker missing |
+| **macOS** | `Cinekive-*-mac-*.dmg` | Docker Desktop required (native pack coming) |
+| **Linux** | AppImage / `.deb` | Docker Desktop required (native pack coming) |
 
-**Today’s desktop builds still need [Docker Desktop](https://www.docker.com/products/docker-desktop/)** for the search engine (API + Qdrant + web). The `.exe` / DMG / AppImage is the real app window + tray — Docker runs quietly in the background.
+Also on each release: **`engine-win-x64.zip`** — native sidecars (Qdrant, Python API, Next.js, ffmpeg, Node).
 
-### No-Docker native engine (experimental)
+## Engine modes (desktop)
 
-We are building a path where the app spawns **Qdrant + Python API + Next.js** as host processes — no Docker.
+| Mode | Behavior |
+|------|----------|
+| **auto** (default) | Docker if available; else native on Windows |
+| **docker** | Requires Docker Desktop; pulls `ghcr.io/gianluca-improta/cinekive-*` when possible |
+| **native** | Spawns Qdrant + API + web locally; no Docker |
 
-| Piece | Status |
-|-------|--------|
-| `apps/desktop/engine-native.js` | Scaffold — start/stop native processes |
-| `scripts/native-setup.ps1` | Downloads Qdrant, venv, builds Next standalone |
-| Config `engineMode: "native"` | Wired in `launcher.js` when setup is complete |
+Config: `%APPDATA%\Cinekive\config.json` → `"engineMode": "auto" | "docker" | "native"`
 
-```powershell
-# Experimental — large download (PyTorch). Docker remains the supported path.
-.\scripts\native-setup.ps1
-# Then set engineMode to "native" in %APPDATA%\Cinekive\config.json
+Logs: `%APPDATA%\Cinekive\data\engine\logs\` or **Cinekive menu → Open engine logs**
+
+## Native engine layout
+
+```
+{dataDir}/engine/
+  qdrant/qdrant.exe
+  python/          # venv with cinearchive + torch CPU
+  web/server.js
+  node/node.exe
+  ffmpeg/bin/ffmpeg.exe
+  logs/
+  version.txt
 ```
 
-Track progress / vote in [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) and [docs/ROADMAP.md](ROADMAP.md).
+Build locally (Windows):
+
+```powershell
+.\scripts\build-engine-pack.ps1
+# → dist/engine-win-x64.zip
+```
+
+Dev setup (all platforms):
+
+```powershell
+.\scripts\native-setup.ps1   # Windows
+./scripts/native-setup.sh      # macOS / Linux
+```
 
 ## Ways to run it
 
 | Mode | Who | What you get |
 |------|-----|----------------|
-| **Desktop app** | Everyone | Installer / portable — wizard, window, tray, Share menu |
-| **Bootstrap (browser)** | Devs / power users | `.\scripts\bootstrap.ps1` or `./scripts/bootstrap.sh` |
-| **PWA** | Quick UI install | Browser → Install Cinekive (engine still local) |
+| **Desktop app** | Everyone | Installer — wizard, engine auto-select, tray |
+| **Bootstrap (browser)** | Devs | `.\scripts\bootstrap.ps1` |
 | **Docker / compose** | Servers | `docker compose up` |
-| **Native engine** | Early adopters | Experimental — no Docker (see above) |
+| **GHCR images** | Docker users | Pre-built API + web (no local build) |
 
-## Desktop app (end users)
+## GHCR images
 
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it  
-2. Download the installer from [Releases](https://github.com/Gianluca-Improta/cinekive/releases)  
-3. Open **Cinekive** → wizard → pick archive folder → **Start**  
+On each release tag, CI publishes:
 
-Details: [DESKTOP.md](DESKTOP.md).
+- `ghcr.io/gianluca-improta/cinekive-api:latest`
+- `ghcr.io/gianluca-improta/cinekive-web:latest`
 
-### Build the installer (developers)
+Desktop compose pulls these before falling back to `docker compose build`.
+
+## Build the desktop installer (developers)
 
 ```powershell
 .\scripts\desktop.ps1 -Dist
-# → apps/desktop/release/
 ```
 
 ```bash
-cd apps/desktop && npm run dist:mac     # on macOS
-cd apps/desktop && npm run dist:linux   # on Linux
+cd apps/desktop && npm run dist:mac
+cd apps/desktop && npm run dist:linux
 ```
-
-## Easier first launch
-
-```powershell
-.\scripts\bootstrap.ps1    # Windows
-./scripts/bootstrap.sh     # macOS / Linux
-```
-
-Creates `.env`, data folders, starts compose, prints http://localhost:3000.
 
 ## Roadmap
 
-1. **Now** — Electron installers + Docker engine + bootstrap scripts  
-2. **Next** — Pre-built images from GHCR (faster first launch, no local `--build`)  
-3. **Then** — Stable native sidecars (no Docker for end users)  
-4. **Later** — Signed builds, auto-update, static gallery export  
+1. **Now** — Windows native engine pack + GHCR + auto engine mode  
+2. **Next** — Mac/Linux engine packs, signed builds, auto-update  
+3. **Later** — Single offline installer, ONNX embedding (smaller download)
+
+Track progress in [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) and [ROADMAP.md](ROADMAP.md).

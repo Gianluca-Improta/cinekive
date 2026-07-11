@@ -2,8 +2,11 @@
 
 Living document. Prefer [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) for debate; open an Issue when something is actionable.
 
-## v0.3 (current)
+## v0.4 (current)
 
+- **Windows: Docker optional** — native engine pack on first start
+- GHCR pre-built Docker images (faster Docker launches)
+- First-run wizard: engine mode (auto / docker / native), health panel, engine logs
 - Local ingest (files + yt-dlp URLs)
 - Archives mirrors + Discover catalog
 - SigLIP search + craft / director / color filters

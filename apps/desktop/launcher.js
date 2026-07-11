@@ -1,5 +1,5 @@
 /**
- * Start / wait / stop the local Cinekive Docker stack.
+ * Start / wait / stop the local Cinekive engine (Docker or native).
  */
 
 const { spawn } = require("child_process");
@@ -12,12 +12,16 @@ const {
   defaultDataDir,
   defaultLibraryDir,
   readConfig,
+  writeConfig,
   ensureDataDirs,
   ensureRuntimeSynced,
 } = require("./paths");
 
 const WEB_URL = process.env.CINEKIVE_WEB_URL || "http://localhost:3000";
 const API_HEALTH = process.env.CINEKIVE_API_URL || "http://localhost:8000/health";
+
+const GHCR_API = "ghcr.io/gianluca-improta/cinekive-api";
+const GHCR_WEB = "ghcr.io/gianluca-improta/cinekive-web";
 
 function composeFile(root) {
   const desktop = path.join(root, "docker-compose.desktop.yml");
@@ -85,14 +89,14 @@ async function checkDocker() {
         ok: false,
         reason: "missing",
         message:
-          "Docker Desktop is not installed (or not on PATH).\n\nInstall from https://www.docker.com/products/docker-desktop/ then start it and open Cinekive again.",
+          "Docker Desktop is not installed.\n\nOn Windows, Cinekive can download a native engine instead — no Docker required.",
       };
     }
     return {
       ok: false,
       reason: "not_running",
       message:
-        "Docker is installed but not running.\n\nStart Docker Desktop, wait until it says Running, then open Cinekive again.",
+        "Docker is installed but not running.\n\nStart Docker Desktop, or switch to native engine in the wizard.",
     };
   }
 }
@@ -126,7 +130,7 @@ function writeEnvFile({ dataDir, libraryPath }) {
   text = setLine(text, "LIBRARY_DIR", "/data/library");
   text = setLine(text, "VLM_ENABLED", "false");
   text = setLine(text, "CORS_ORIGINS", "http://localhost:3000");
-  // Avoid broken default ShotDeck mount from repo .env.example if present
+  text = setLine(text, "CINEKIVE_IMAGE_TAG", "latest");
   if (/^SHOTDECK_LIBRARY_HOST=.*/m.test(text)) {
     text = text.replace(/^SHOTDECK_LIBRARY_HOST=.*/m, "SHOTDECK_LIBRARY_HOST=");
   }
@@ -142,7 +146,18 @@ function setLibraryHostPath(hostPath) {
   return dirs;
 }
 
+async function dockerImageExists(name) {
+  try {
+    const { out } = await run("docker", ["images", "-q", name]);
+    return Boolean(out.trim());
+  } catch {
+    return false;
+  }
+}
+
 async function imagesReady(root) {
+  const hasGhcr = (await dockerImageExists(GHCR_API)) && (await dockerImageExists(GHCR_WEB));
+  if (hasGhcr) return true;
   try {
     const { out } = await run("docker", ["images", "-q", "cinearchive-api:latest"], { cwd: root });
     const { out: out2 } = await run("docker", ["images", "-q", "cinearchive-web:latest"], {
@@ -154,18 +169,70 @@ async function imagesReady(root) {
   }
 }
 
-async function ensureStack({ onStatus, forceBuild = false } = {}) {
+async function tryPullImages(root, onStatus) {
+  const compose = composeFile(root);
+  onStatus?.("Pulling pre-built images (GHCR)…");
+  try {
+    await run("docker", ["compose", "-f", compose, "pull"], {
+      cwd: root,
+      onOut: (chunk) => {
+        const line = chunk.trim().split("\n").pop();
+        if (line && line.length < 100) onStatus?.(line);
+      },
+    });
+    return await imagesReady(root);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve engine: auto | docker | native
+ */
+async function resolveEngineMode() {
   const cfg = readConfig();
-  if (cfg.engineMode === "native") {
-    const native = require("./engine-native");
-    const check = await native.checkNative();
-    if (!check.ok) throw new Error(check.message);
-    onStatus?.("Starting native engine (no Docker)…");
-    const result = await native.startStack({ onStatus });
-    return { root: native.engineRoot(), web: result.webUrl, alreadyRunning: false, mode: "native" };
+  const mode = cfg.engineMode || "auto";
+
+  if (mode === "native") return "native";
+  if (mode === "docker") {
+    const docker = await checkDocker();
+    if (docker.ok) return "docker";
+    if (process.platform === "win32") return "native";
+    throw new Error(docker.message);
   }
 
+  // auto
+  const docker = await checkDocker();
+  if (docker.ok) return "docker";
+  if (process.platform === "win32") return "native";
+  throw new Error(
+    `${docker.message}\n\nNative engine packs are Windows-only for now. Install Docker Desktop on macOS/Linux.`
+  );
+}
+
+async function ensureNativeStack({ onStatus, onProgress } = {}) {
+  const native = require("./engine-native");
+  const pack = require("./engine-pack");
+
+  if (!native.nativeReady()) {
+    onStatus?.("Installing native engine (one-time download)…");
+    await pack.ensureEnginePack({ onStatus, onProgress });
+  }
+
+  writeConfig({ engineMode: "native" });
+  onStatus?.("Starting native engine (no Docker)…");
+  const result = await native.startStack({ onStatus });
+  return {
+    root: native.engineRoot(),
+    web: result.webUrl,
+    alreadyRunning: false,
+    mode: "native",
+  };
+}
+
+async function ensureDockerStack({ onStatus, forceBuild = false } = {}) {
   const root = ensureRuntimeSynced();
+  const cfg = readConfig();
   const dataDir = cfg.dataDir || defaultDataDir();
   const libraryPath = cfg.libraryPath || defaultLibraryDir();
   const dirs = ensureDataDirs(dataDir, libraryPath);
@@ -185,7 +252,12 @@ async function ensureStack({ onStatus, forceBuild = false } = {}) {
     throw new Error(`Missing compose file at ${compose}`);
   }
 
-  const built = !forceBuild && (await imagesReady(root));
+  let built = !forceBuild && (await imagesReady(root));
+  if (!built) {
+    const pulled = await tryPullImages(root, onStatus);
+    built = pulled || (await imagesReady(root));
+  }
+
   if (!built) {
     onStatus?.("Building Cinekive (first launch — can take 10–20 min)…");
   } else {
@@ -218,7 +290,7 @@ async function ensureStack({ onStatus, forceBuild = false } = {}) {
     tries: 120,
     onTick: (n, t) => onStatus?.(`Waiting for API… (${n}/${t})`),
   });
-  if (!apiOk) throw new Error("API did not become healthy. Open Docker Desktop and check cinearchive-api logs.");
+  if (!apiOk) throw new Error("API did not become healthy. Check cinearchive-api in Docker Desktop.");
 
   onStatus?.("Waiting for web UI…");
   const webOk = await waitFor(WEB_URL, {
@@ -228,7 +300,16 @@ async function ensureStack({ onStatus, forceBuild = false } = {}) {
   if (!webOk) throw new Error("Web UI did not start. Check cinearchive-web in Docker Desktop.");
 
   onStatus?.("Ready.");
-  return { root, web: WEB_URL, alreadyRunning: false };
+  writeConfig({ engineMode: "docker" });
+  return { root, web: WEB_URL, alreadyRunning: false, mode: "docker" };
+}
+
+async function ensureStack({ onStatus, onProgress, forceBuild = false } = {}) {
+  const mode = await resolveEngineMode();
+  if (mode === "native") {
+    return ensureNativeStack({ onStatus, onProgress });
+  }
+  return ensureDockerStack({ onStatus, forceBuild });
 }
 
 async function stopStack({ onStatus } = {}) {
@@ -252,26 +333,9 @@ async function stopStack({ onStatus } = {}) {
   }
 }
 
-async function restartStack({ onStatus } = {}) {
-  const cfg = readConfig();
-  if (cfg.engineMode === "native") {
-    await stopStack({ onStatus });
-    await ensureStack({ onStatus });
-    return;
-  }
-  const root = ensureRuntimeSynced();
-  const compose = composeFile(root);
-  onStatus?.("Restarting stack…");
-  await run("docker", ["compose", "-f", compose, "up", "-d"], { cwd: root });
-  await waitFor(API_HEALTH, {
-    tries: 60,
-    onTick: (n, t) => onStatus?.(`Waiting for API… (${n}/${t})`),
-  });
-  await waitFor(WEB_URL, {
-    tries: 45,
-    onTick: (n, t) => onStatus?.(`Waiting for web… (${n}/${t})`),
-  });
-  onStatus?.("Ready.");
+async function restartStack({ onStatus, onProgress } = {}) {
+  await stopStack({ onStatus });
+  return ensureStack({ onStatus, onProgress });
 }
 
 module.exports = {
@@ -287,4 +351,5 @@ module.exports = {
   writeEnvFile,
   ensureDataDirs,
   ensureRuntimeSynced,
+  resolveEngineMode,
 };

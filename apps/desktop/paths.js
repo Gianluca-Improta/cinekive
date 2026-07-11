@@ -77,8 +77,8 @@ function readConfigDefaults() {
     libraryPath: null,
     dataDir: null,
     stopStackOnQuit: false,
-    /** "docker" (supported) | "native" (experimental) */
-    engineMode: "docker",
+    /** "auto" | "docker" | "native" */
+    engineMode: "auto",
   };
 }
 

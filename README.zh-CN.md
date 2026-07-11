@@ -45,9 +45,9 @@
 
 ## 三步安装
 
-1. 安装并启动 **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**（搜索引擎依赖，装一次即可）
-2. 从 [Releases](https://github.com/Gianluca-Improta/cinekive/releases/latest) 下载对应系统的安装包
-3. 打开 Cinekive → 选择片库文件夹 → **Start / 启动**
+1. 从 [Releases](https://github.com/Gianluca-Improta/cinekive/releases/latest) 下载对应系统的安装包  
+2. 打开 Cinekive → 选择片库文件夹 → **Start / 启动**  
+3. **Windows 无 Docker：** 首次启动自动下载原生引擎（约 2 GB）。**有 Docker：** 可先安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 日常使用不需要敲命令行。
 
@@ -106,7 +106,10 @@
 
 ---
 
-## 功能概览（v0.3）
+## 功能概览（v0.4）
+
+- **Windows 可无 Docker** — 自动模式在无 Docker 时下载原生引擎包
+- **GHCR 预构建镜像** — Docker 用户优先拉取镜像，减少本地构建
 
 - **叙事 / 广告 / 社媒** — 导入自有素材（拖文件或任意 yt-dlp 链接）
 - **档案库** — FilmGrab、EyeCandy、ShotDeck、MovieStillsDB、StillsLab 镜像 + 发现更多来源

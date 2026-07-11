@@ -13,6 +13,7 @@
         --muted: #8a8a8a;
         --cyan: #00e5ff;
         --danger: #ff5c5c;
+        --ok: #3ddc97;
       }
       * { box-sizing: border-box; }
       html, body {
@@ -23,47 +24,25 @@
         font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
       }
       .wrap {
-        max-width: 560px;
+        max-width: 580px;
         margin: 0 auto;
-        padding: 40px 28px 28px;
+        padding: 36px 28px 24px;
         min-height: 100%;
         display: flex;
         flex-direction: column;
       }
-      .brand {
-        font-size: 28px;
-        font-weight: 650;
-        letter-spacing: 0.02em;
-        margin: 0 0 6px;
-      }
-      .sub {
-        color: var(--muted);
-        margin: 0 0 28px;
-        font-size: 13px;
-      }
+      .brand { font-size: 28px; font-weight: 650; margin: 0 0 6px; }
+      .sub { color: var(--muted); margin: 0 0 22px; font-size: 13px; }
       .card {
         background: color-mix(in srgb, var(--panel) 92%, transparent);
         border: 1px solid var(--border);
         border-radius: 14px;
-        padding: 18px 18px 16px;
-        margin-bottom: 14px;
+        padding: 16px 18px;
+        margin-bottom: 12px;
       }
-      .card h2 {
-        margin: 0 0 8px;
-        font-size: 14px;
-        font-weight: 600;
-      }
-      .card p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 12.5px;
-      }
-      .row {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        margin-top: 12px;
-      }
+      .card h2 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+      .card p { margin: 0; color: var(--muted); font-size: 12.5px; }
+      .row { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
       .path {
         flex: 1;
         min-width: 0;
@@ -97,65 +76,48 @@
         padding: 11px 16px;
         font-size: 13px;
       }
-      button.primary:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-      }
-      button.ghost {
-        background: transparent;
-        border-color: var(--border);
-        color: var(--muted);
-      }
-      .status {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        margin-top: 10px;
-      }
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--muted);
-      }
-      .dot.ok { background: #3ddc97; }
+      button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+      button.ghost { background: transparent; border-color: var(--border); color: var(--muted); }
+      .status { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-top: 10px; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+      .dot.ok { background: var(--ok); }
       .dot.bad { background: var(--danger); }
       .dot.wait { background: #f5c542; }
       .foot {
         margin-top: auto;
-        padding-top: 18px;
+        padding-top: 16px;
         display: flex;
         gap: 10px;
         justify-content: flex-end;
         align-items: center;
       }
-      .err {
-        color: var(--danger);
-        font-size: 12px;
-        margin-top: 10px;
-        white-space: pre-wrap;
-      }
-      a { color: var(--cyan); }
+      .err { color: var(--danger); font-size: 12px; margin-top: 10px; white-space: pre-wrap; }
       .hint { font-size: 11px; color: var(--muted); margin-top: 8px; }
+      label.engine { display: block; margin-top: 10px; font-size: 12px; cursor: pointer; }
+      label.engine input { margin-right: 8px; accent-color: var(--cyan); }
+      .progress { margin-top: 10px; height: 4px; background: #1a1a1a; border-radius: 2px; overflow: hidden; display: none; }
+      .progress i { display: block; height: 100%; width: 0%; background: var(--cyan); transition: width 0.2s; }
+      .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 10px; font-size: 11px; }
+      .health-grid span:last-child { color: var(--muted); text-align: right; }
     </style>
   </head>
   <body>
     <div class="wrap">
       <h1 class="brand">Cinekive</h1>
-      <p class="sub">Your cinematic archive — local, searchable, yours. One-time setup.</p>
+      <p class="sub">Local cinematic archive. One-time setup — Docker optional on Windows.</p>
 
       <div class="card">
-        <h2>1. Docker Desktop</h2>
-        <p>Required to run search, ingest, and the library engine on your machine.</p>
+        <h2>1. Engine</h2>
+        <p>How Cinekive runs search and ingest on your machine.</p>
+        <label class="engine"><input type="radio" name="engine" value="auto" checked /> Auto (recommended — Docker if available, else native on Windows)</label>
+        <label class="engine"><input type="radio" name="engine" value="docker" /> Docker Desktop (fast if already installed)</label>
+        <label class="engine" id="nativeOpt"><input type="radio" name="engine" value="native" /> Native engine — no Docker (Windows, ~2 GB one-time download)</label>
         <div class="status">
-          <span class="dot" id="dockerDot"></span>
-          <span id="dockerLabel">Checking…</span>
+          <span class="dot wait" id="engineDot"></span>
+          <span id="engineLabel">Checking…</span>
         </div>
-        <div class="row">
-          <button type="button" class="ghost" id="btnRecheck">Recheck</button>
-          <button type="button" class="ghost" id="btnDocker">Open Docker download</button>
-        </div>
+        <div class="progress" id="dlProgress"><i id="dlBar"></i></div>
+        <p class="hint" id="engineHint"></p>
       </div>
 
       <div class="card">
@@ -165,62 +127,110 @@
           <div class="path" id="libPath">—</div>
           <button type="button" id="btnPick">Choose…</button>
         </div>
-        <p class="hint">You can change this later from the Cinekive menu.</p>
       </div>
 
       <div class="card">
-        <h2>3. Launch</h2>
-        <p>First start builds containers and may download the embedding model (~800&nbsp;MB). Keep Docker running.</p>
+        <h2>3. Health</h2>
+        <div class="health-grid" id="healthGrid"></div>
         <p class="err" id="err" hidden></p>
       </div>
 
       <div class="foot">
+        <button type="button" class="ghost" id="btnLogs">Open logs</button>
         <button type="button" class="ghost" id="btnQuit">Quit</button>
         <button type="button" class="primary" id="btnStart" disabled>Start Cinekive</button>
       </div>
     </div>
     <script>
-      const dockerDot = document.getElementById("dockerDot");
-      const dockerLabel = document.getElementById("dockerLabel");
+      const engineDot = document.getElementById("engineDot");
+      const engineLabel = document.getElementById("engineLabel");
+      const engineHint = document.getElementById("engineHint");
       const libPath = document.getElementById("libPath");
       const btnStart = document.getElementById("btnStart");
       const err = document.getElementById("err");
-      let dockerOk = false;
+      const healthGrid = document.getElementById("healthGrid");
+      const dlProgress = document.getElementById("dlProgress");
+      const dlBar = document.getElementById("dlBar");
       let libraryPath = "";
+      let health = null;
 
-      function syncStart() {
-        btnStart.disabled = !(dockerOk && libraryPath);
+      function selectedEngine() {
+        return document.querySelector('input[name="engine"]:checked')?.value || "auto";
       }
 
-      async function refreshDocker() {
-        dockerDot.className = "dot wait";
-        dockerLabel.textContent = "Checking Docker…";
-        const r = await window.cinekive.checkDocker();
-        dockerOk = !!r.ok;
-        dockerDot.className = "dot " + (dockerOk ? "ok" : "bad");
-        dockerLabel.textContent = dockerOk
-          ? "Docker is ready"
-          : (r.reason === "missing" ? "Docker not installed" : "Docker not running");
-        if (!dockerOk && r.message) {
-          err.hidden = false;
-          err.textContent = r.message;
+      function canStart() {
+        if (!libraryPath) return false;
+        const mode = selectedEngine();
+        if (mode === "docker" && health && !health.docker?.ok) return false;
+        return true;
+      }
+
+      function syncStart() {
+        btnStart.disabled = !canStart();
+      }
+
+      function fmtHealth(h) {
+        healthGrid.innerHTML = [
+          ["Platform", `${h.platform} ${h.arch}`],
+          ["Docker", h.docker?.ok ? "Ready" : h.docker?.reason || "No"],
+          ["Native pack", h.nativeReady ? `Installed (${h.packVersion || "?"})` : h.packSupported ? "Will download" : "N/A"],
+          ["Free disk", h.diskFreeGb != null ? `${h.diskFreeGb} GB` : "—"],
+        ].map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join("");
+      }
+
+      async function refreshHealth() {
+        health = await window.cinekive.getHealthStatus();
+        fmtHealth(health);
+        const mode = selectedEngine();
+        if (mode === "docker") {
+          engineDot.className = "dot " + (health.docker?.ok ? "ok" : "bad");
+          engineLabel.textContent = health.docker?.ok ? "Docker ready" : "Docker not available";
+          engineHint.textContent = health.docker?.ok
+            ? "Will pull pre-built images when possible."
+            : "Install Docker or switch to Auto / Native.";
+        } else if (mode === "native") {
+          engineDot.className = "dot " + (health.nativeReady ? "ok" : "wait");
+          engineLabel.textContent = health.nativeReady ? "Native engine installed" : "Native engine will download on start";
+          engineHint.textContent = "No Docker required. First download is large (~2 GB).";
         } else {
-          err.hidden = true;
+          const useNative = !health.docker?.ok && health.packSupported;
+          engineDot.className = "dot " + (health.docker?.ok || useNative ? "ok" : "bad");
+          engineLabel.textContent = health.docker?.ok
+            ? "Will use Docker"
+            : useNative
+              ? "Will use native engine (no Docker)"
+              : "Need Docker on this platform";
+          engineHint.textContent = health.docker?.ok
+            ? "Docker detected — fastest path."
+            : useNative
+              ? "Docker not found — Cinekive downloads its own engine."
+              : "Install Docker Desktop.";
         }
         syncStart();
       }
+
+      document.querySelectorAll('input[name="engine"]').forEach((el) => {
+        el.addEventListener("change", refreshHealth);
+      });
+
+      window.cinekive.onDownloadProgress?.((done, total) => {
+        if (!total) return;
+        dlProgress.style.display = "block";
+        dlBar.style.width = `${Math.round((done / total) * 100)}%`;
+        engineLabel.textContent = `Downloading engine… ${Math.round((done / total) * 100)}%`;
+      });
 
       async function init() {
         const info = await window.cinekive.getSetupInfo();
         libraryPath = info.libraryPath || info.defaultLibraryPath;
         libPath.textContent = libraryPath;
-        await refreshDocker();
+        if (!info.packSupported) {
+          document.getElementById("nativeOpt").style.opacity = "0.45";
+        }
+        await refreshHealth();
+        syncStart();
       }
 
-      document.getElementById("btnRecheck").onclick = refreshDocker;
-      document.getElementById("btnDocker").onclick = () =>
-        window.cinekive.openExternal("https://www.docker.com/products/docker-desktop/");
-      document.getElementById("btnQuit").onclick = () => window.cinekive.quit();
       document.getElementById("btnPick").onclick = async () => {
         const p = await window.cinekive.pickLibraryFolder();
         if (p) {
@@ -229,17 +239,23 @@
           syncStart();
         }
       };
+      document.getElementById("btnQuit").onclick = () => window.cinekive.quit();
+      document.getElementById("btnLogs").onclick = () => window.cinekive.openEngineLogs();
       document.getElementById("btnStart").onclick = async () => {
         btnStart.disabled = true;
         btnStart.textContent = "Starting…";
         err.hidden = true;
         try {
-          await window.cinekive.completeFirstRun(libraryPath);
+          await window.cinekive.completeFirstRun({
+            libraryPath,
+            engineMode: selectedEngine(),
+          });
         } catch (e) {
           err.hidden = false;
           err.textContent = String(e?.message || e);
           btnStart.disabled = false;
           btnStart.textContent = "Start Cinekive";
+          dlProgress.style.display = "none";
         }
       };
 

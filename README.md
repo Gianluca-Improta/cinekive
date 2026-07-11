@@ -63,16 +63,19 @@ If this saves you time, a [GitHub star](https://github.com/Gianluca-Improta/cine
 
 ### Install in 3 steps
 
-1. Install **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** and start it (needed for the search engine — one-time)  
-2. Download the app for your OS from the release page  
-3. Open Cinekive → pick your library folder → **Start**
+1. Download the app for your OS from the [release page](https://github.com/Gianluca-Improta/cinekive/releases/latest)  
+2. Open Cinekive → pick your library folder → **Start**  
+3. **Windows without Docker:** the app downloads a native engine pack once (~2 GB). **With Docker:** install [Docker Desktop](https://www.docker.com/products/docker-desktop/) first for faster setup.
 
 That’s it. No terminal required for normal use.
 
+> **macOS / Linux:** Docker Desktop is still required today. Native engine packs for these platforms are planned.  
 > **macOS:** first open may need right-click → Open (unsigned build).  
 > **Linux AppImage:** `chmod +x Cinekive-*.AppImage && ./Cinekive-*.AppImage`
 
-A fully Docker-free engine is in progress ([PACKAGING.md](docs/PACKAGING.md)). Until then Docker Desktop is the only extra dependency.
+**Windows:** Docker is **optional**. Auto mode uses Docker if installed, otherwise downloads the native engine.
+
+A fully bundled installer (no separate engine download) is on the [roadmap](docs/ROADMAP.md).
 
 ### Prefer the browser?
 
@@ -134,7 +137,10 @@ Then open http://localhost:3000
 
 ---
 
-## What you get (v0.3)
+## What you get (v0.4)
+
+- **No Docker on Windows (optional)** — native engine pack downloads on first start; Docker still supported
+- **GHCR pre-built images** — Docker users pull images instead of building locally when possible
 
 - **Narrative / Commercial / Social** — ingest your own footage (drop files or any yt-dlp URL)
 - **Archives** — FilmGrab, EyeCandy, ShotDeck, MovieStillsDB, StillsLab mirrors + Discover list
@@ -232,8 +238,8 @@ Ideas on the table — **comment, upvote, and PR**. Nothing here is locked.
 
 ### Likely v2
 
-- [ ] **No-Docker desktop** — bundled Qdrant + Python API + Next (see `engine-native.js`)
-- [ ] Pre-built GHCR images (faster first Docker launch)
+- [ ] **Mac/Linux native engine packs**
+- [ ] Pre-built GHCR images (shipped v0.4 — faster first Docker launch)
 - [ ] Richer canvas: resize frames, video preview loops on the board, PDF/ref cards
 - [ ] Brief → board: pitch text → ranked shots auto-laid on a moodboard
 - [ ] Better archive sync UX (resume, progress, selective film ingest)

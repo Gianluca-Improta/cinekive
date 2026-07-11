@@ -24,6 +24,7 @@ const {
   setLibraryHostPath,
   checkDocker,
   ping,
+  resolveEngineMode,
   WEB_URL,
   API_HEALTH,
 } = require("./launcher");
@@ -242,6 +243,45 @@ function buildMenu() {
             shell.openPath(cfg.libraryPath || defaultLibraryDir());
           },
         },
+        {
+          label: "Engine mode…",
+          click: async () => {
+            const health = await require("./health").getHealthStatus();
+            const modes = ["auto", "docker", "native"];
+            const current = readConfig().engineMode || "auto";
+            const idx = modes.indexOf(current);
+            const pick = await dialog.showMessageBox({
+              type: "question",
+              buttons: ["Auto (recommended)", "Docker", "Native (no Docker)", "Cancel"],
+              defaultId: idx >= 0 ? idx : 0,
+              cancelId: 3,
+              title: "Engine mode",
+              detail: `Current: ${current}\nDocker: ${health.docker?.ok ? "ready" : "not available"}\nNative pack: ${health.nativeReady ? "installed" : "not installed"}`,
+            });
+            if (pick.response === 3) return;
+            writeConfig({ engineMode: modes[pick.response] });
+            const go = await dialog.showMessageBox({
+              type: "info",
+              buttons: ["Restart now", "Later"],
+              defaultId: 0,
+              message: "Engine mode saved",
+              detail: "Restart the engine for the change to take effect.",
+            });
+            if (go.response === 0) {
+              createSplash();
+              await restartStack({ onStatus: setSplashStatus });
+              splashWindow?.close();
+              mainWindow?.reload();
+            }
+          },
+        },
+        {
+          label: "Open engine logs",
+          click: () => {
+            const dir = require("./engine-native").openLogsDir?.() || require("./engine-native").logsDir();
+            shell.openPath(dir);
+          },
+        },
         { type: "separator" },
         {
           label: "Open in browser",
@@ -385,7 +425,13 @@ function stopShareTunnel() {
 async function bootStackAndMain() {
   createSplash();
   try {
-    await ensureStack({ onStatus: setSplashStatus });
+    await ensureStack({
+      onStatus: setSplashStatus,
+      onProgress: (done, total) => {
+        splashWindow?.webContents.send("download-progress", done, total);
+        setSplashStatus(`Downloading engine… ${total ? Math.round((done / total) * 100) : 0}%`);
+      },
+    });
     createMain();
     createTray();
   } catch (e) {
@@ -415,15 +461,36 @@ ipcMain.handle("get-info", async () => ({
   root: stackRoot(),
   apiUp: await ping(API_HEALTH),
   version: app.getVersion(),
+  engineMode: readConfig().engineMode || "auto",
+  resolvedEngine: await resolveEngineMode().catch(() => "unknown"),
 }));
+
+ipcMain.handle("get-health-status", async () => require("./health").getHealthStatus());
+
+ipcMain.handle("set-engine-mode", async (_e, mode) => {
+  if (!["auto", "docker", "native"].includes(mode)) throw new Error("Invalid engine mode");
+  writeConfig({ engineMode: mode });
+  return readConfig();
+});
+
+ipcMain.handle("open-engine-logs", async () => {
+  const native = require("./engine-native");
+  const dir = native.logsDir();
+  await shell.openPath(dir);
+  return dir;
+});
 
 ipcMain.handle("get-setup-info", async () => {
   const cfg = readConfig();
+  const pack = require("./engine-pack");
   return {
     libraryPath: cfg.libraryPath,
     defaultLibraryPath: defaultLibraryDir(),
     dataDir: cfg.dataDir || defaultDataDir(),
     userData: userDataRoot(),
+    engineMode: cfg.engineMode || "auto",
+    packSupported: pack.packSupported(),
+    nativeReady: require("./engine-native").nativeReady(),
   };
 });
 
@@ -440,17 +507,20 @@ ipcMain.handle("pick-library-folder", async () => {
   return res.filePaths[0];
 });
 
-ipcMain.handle("complete-first-run", async (_e, libraryPath) => {
-  const lib = libraryPath || defaultLibraryDir();
+ipcMain.handle("complete-first-run", async (_e, opts) => {
+  const libraryPath = (typeof opts === "string" ? opts : opts?.libraryPath) || defaultLibraryDir();
+  const engineMode = (typeof opts === "object" && opts?.engineMode) || "auto";
   const dataDir = defaultDataDir();
-  ensureDataDirs(dataDir, lib);
-  setLibraryHostPath(lib);
+  ensureDataDirs(dataDir, libraryPath);
+  setLibraryHostPath(libraryPath);
   writeConfig({
     firstRunComplete: true,
-    libraryPath: lib,
+    libraryPath,
     dataDir,
+    engineMode,
   });
   if (wizardWindow) {
+    wizardWindow.webContents.send("download-progress", 0, 0);
     wizardWindow.hide();
   }
   await bootStackAndMain();

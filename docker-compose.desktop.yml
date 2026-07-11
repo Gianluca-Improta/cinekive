@@ -19,10 +19,10 @@ services:
       start_period: 10s
 
   api:
+    image: ghcr.io/gianluca-improta/cinekive-api:${CINEKIVE_IMAGE_TAG:-latest}
     build:
       context: ./apps/api
       dockerfile: Dockerfile
-    image: cinearchive-api:latest
     container_name: cinearchive-api
     ports:
       - "8000:8000"
@@ -75,12 +75,12 @@ services:
       start_period: 90s
 
   web:
+    image: ghcr.io/gianluca-improta/cinekive-web:${CINEKIVE_IMAGE_TAG:-latest}
     build:
       context: ./apps/web
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    image: cinearchive-web:latest
     container_name: cinearchive-web
     ports:
       - "3000:3000"

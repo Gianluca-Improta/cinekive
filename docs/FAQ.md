@@ -31,7 +31,11 @@ See also [COMPARE.md](COMPARE.md).
 
 ## Do I need Docker?
 
-**Yes today** for the search engine (API + Qdrant). Install [Docker Desktop](https://www.docker.com/products/docker-desktop/), start it, then open the desktop app or run bootstrap. A no-Docker path is on the [roadmap](ROADMAP.md).
+**Windows:** No — **Auto** mode (default) downloads a native engine if Docker is not installed (~2 GB once). Docker is still supported and often faster if you already use it.
+
+**macOS / Linux:** Yes today. Native packs for these platforms are planned.
+
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) if you prefer the Docker path or are not on Windows.
 
 ## Windows / Mac / Linux?
 

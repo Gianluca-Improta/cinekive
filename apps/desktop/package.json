@@ -1,6 +1,6 @@
 {
   "name": "cinekive-desktop",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "private": true,
   "description": "Cinekive — local cinematic archive desktop app",
   "homepage": "https://github.com/Gianluca-Improta/cinekive",
@@ -35,6 +35,8 @@
       "preload.js",
       "launcher.js",
       "engine-native.js",
+      "engine-pack.js",
+      "health.js",
       "paths.js",
       "wizard.html",
       "assets/**/*"
