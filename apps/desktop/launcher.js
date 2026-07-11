@@ -155,8 +155,17 @@ async function imagesReady(root) {
 }
 
 async function ensureStack({ onStatus, forceBuild = false } = {}) {
-  const root = ensureRuntimeSynced();
   const cfg = readConfig();
+  if (cfg.engineMode === "native") {
+    const native = require("./engine-native");
+    const check = await native.checkNative();
+    if (!check.ok) throw new Error(check.message);
+    onStatus?.("Starting native engine (no Docker)…");
+    const result = await native.startStack({ onStatus });
+    return { root: native.engineRoot(), web: result.webUrl, alreadyRunning: false, mode: "native" };
+  }
+
+  const root = ensureRuntimeSynced();
   const dataDir = cfg.dataDir || defaultDataDir();
   const libraryPath = cfg.libraryPath || defaultLibraryDir();
   const dirs = ensureDataDirs(dataDir, libraryPath);
@@ -165,7 +174,7 @@ async function ensureStack({ onStatus, forceBuild = false } = {}) {
   onStatus?.("Checking if Cinekive is already running…");
   if ((await ping(WEB_URL)) && (await ping(API_HEALTH))) {
     onStatus?.("Stack is up.");
-    return { root, web: WEB_URL, alreadyRunning: true };
+    return { root, web: WEB_URL, alreadyRunning: true, mode: "docker" };
   }
 
   const docker = await checkDocker();
@@ -223,6 +232,16 @@ async function ensureStack({ onStatus, forceBuild = false } = {}) {
 }
 
 async function stopStack({ onStatus } = {}) {
+  const cfg = readConfig();
+  if (cfg.engineMode === "native") {
+    onStatus?.("Stopping native engine…");
+    try {
+      require("./engine-native").stopStack();
+    } catch (e) {
+      onStatus?.(String(e.message || e));
+    }
+    return;
+  }
   const root = ensureRuntimeSynced();
   const compose = composeFile(root);
   onStatus?.("Stopping Cinekive stack…");
@@ -234,6 +253,12 @@ async function stopStack({ onStatus } = {}) {
 }
 
 async function restartStack({ onStatus } = {}) {
+  const cfg = readConfig();
+  if (cfg.engineMode === "native") {
+    await stopStack({ onStatus });
+    await ensureStack({ onStatus });
+    return;
+  }
   const root = ensureRuntimeSynced();
   const compose = composeFile(root);
   onStatus?.("Restarting stack…");

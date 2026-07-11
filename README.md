@@ -23,6 +23,7 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 </p>
 
 <p align="center">
+  <a href="#downloads">Downloads</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#tour">Tour</a> ·
   <a href="#roadmap--v2">Roadmap / v2</a> ·
@@ -32,32 +33,62 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 
 ---
 
+## Downloads
+
+Get installers from **[Releases](https://github.com/Gianluca-Improta/cinekive/releases)**:
+
+| | |
+|--|--|
+| **Windows** | `Cinekive-*-win-x64.exe` installer · portable `.exe` |
+| **macOS** | DMG (build on a Mac — see [PACKAGING.md](docs/PACKAGING.md)) |
+| **Linux** | AppImage / deb |
+
+Desktop apps still use **Docker Desktop** under the hood for the AI/search engine (first launch downloads models). A **no-Docker native engine** is in progress — experimental setup: `.\scripts\native-setup.ps1` · details in [docs/PACKAGING.md](docs/PACKAGING.md).
+
+Just want the browser UI?
+
+```powershell
+.\scripts\bootstrap.ps1
+# → http://localhost:3000
+```
+
+```bash
+./scripts/bootstrap.sh
+```
+
+---
+
 ## Screenshots
 
 <p align="center">
-  <img src="docs/showcase/ui-discovery.png" width="90%" alt="Discovery search UI" />
+  <img src="docs/showcase/ui-library.png" width="90%" alt="FilmGrab archive grid" />
 </p>
-<p align="center"><em>Discovery — search by look, craft, director, color</em></p>
+<p align="center"><em>Browse your archive — heroes, craft filters, FilmGrab / ShotDeck / your own ingest</em></p>
 
 <p align="center">
-  <img src="docs/showcase/ui-project.png" width="90%" alt="Project grid UI" />
+  <img src="docs/showcase/ui-discovery.png" width="90%" alt="Discovery grid" />
 </p>
-<p align="center"><em>Project grid — heroes, filters, inspector</em></p>
+<p align="center"><em>Discovery — find frames by look, technique, mood</em></p>
 
 <p align="center">
-  <img src="docs/showcase/ui-moodboard.png" width="90%" alt="Moodboard canvas UI" />
+  <img src="docs/showcase/ui-moodboard.png" width="90%" alt="Moodboard canvas" />
 </p>
-<p align="center"><em>Moodboard — drag clips from the project rail, text, stickies, concepts, stacks</em></p>
+<p align="center"><em>Moodboard — drag project clips, stickies, text, stacks, named concepts</em></p>
+
+<p align="center">
+  <img src="docs/showcase/ui-commercials.png" width="90%" alt="Commercials project" />
+</p>
+<p align="center"><em>Own footage — commercials / narrative / social shelves</em></p>
 
 <p align="center">
   <img src="docs/showcase/ui-archives.png" width="90%" alt="Archives UI" />
 </p>
-<p align="center"><em>Archives — your still dumps, mirrors &amp; logins, more sources</em></p>
+<p align="center"><em>Archives — mirrors, logins, more sources</em></p>
 
 <p align="center">
   <img src="docs/showcase/library-reel.gif" width="80%" alt="Sample archive frames reel" />
 </p>
-<p align="center"><em>Sample frames from a local FilmGrab-style archive (your library stays private — nothing under <code>data/</code> is in git)</em></p>
+<p align="center"><em>Sample frames (your library stays private — nothing under <code>data/</code> is in git)</em></p>
 
 ---
 
@@ -88,40 +119,41 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 
 ## Quick start
 
-### Desktop (recommended)
-
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it  
-2. Build or run the app:
+### Easiest: bootstrap (browser)
 
 ```powershell
-.\scripts\desktop.ps1              # run from source
-.\scripts\desktop.ps1 -Dist        # Windows installer → apps/desktop/release/
+git clone https://github.com/Gianluca-Improta/cinekive.git
+cd cinekive
+.\scripts\bootstrap.ps1
 ```
-
-```bash
-cd apps/desktop && npm run dist:mac     # macOS (build on a Mac)
-cd apps/desktop && npm run dist:linux   # Linux AppImage / deb
-```
-
-First launch: wizard → pick archive folder → Start. Guide: [docs/DESKTOP.md](docs/DESKTOP.md).
-
-### Browser / Docker
 
 ```bash
 git clone https://github.com/Gianluca-Improta/cinekive.git
 cd cinekive
-cp .env.example .env
-# Windows:
-.\scripts\start.ps1
-# macOS / Linux:
-./scripts/start.sh
+./scripts/bootstrap.sh
 ```
 
-Open **http://localhost:3000** — first boot may download SigLIP (~800 MB) once.
+Open **http://localhost:3000** — needs Docker Desktop running. First search may download SigLIP (~800 MB).
+
+### Desktop app
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it  
+2. Download from [Releases](https://github.com/Gianluca-Improta/cinekive/releases) **or** build:
+
+```powershell
+.\scripts\desktop.ps1 -Dist        # → apps/desktop/release/
+```
+
+```bash
+cd apps/desktop && npm run dist:mac     # macOS
+cd apps/desktop && npm run dist:linux   # Linux
+```
+
+First launch: wizard → pick archive folder → Start. Guide: [docs/DESKTOP.md](docs/DESKTOP.md).
 
 > Your media is never in the repo. `data/` is gitignored. Point `LIBRARY_HOST_PATH` at any drive.
 
-Packaging notes: [docs/PACKAGING.md](docs/PACKAGING.md) · Full guide: [docs/GUIDE.md](docs/GUIDE.md) · Agent API: [docs/AGENT_API.md](docs/AGENT_API.md)
+Packaging / no-Docker plans: [docs/PACKAGING.md](docs/PACKAGING.md) · Full guide: [docs/GUIDE.md](docs/GUIDE.md) · Agent API: [docs/AGENT_API.md](docs/AGENT_API.md)
 
 ---
 

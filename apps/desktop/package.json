@@ -29,6 +29,7 @@
       "main.js",
       "preload.js",
       "launcher.js",
+      "engine-native.js",
       "paths.js",
       "wizard.html",
       "assets/**/*"
