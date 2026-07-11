@@ -4,9 +4,17 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach builds to (e.g. v0.3.1)"
+        required: true
+        default: "v0.3.1"
 
 permissions:
   contents: write
+
+env:
+  CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
 jobs:
   windows:
@@ -16,30 +24,99 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Build Windows installers
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - name: Build Windows
         working-directory: apps/desktop
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: |
           npm ci
           npm run dist:win
-      - name: Upload artifacts
-        uses: softprops/action-gh-release@v2
-        if: github.event_name == 'release'
-        with:
-          files: |
-            apps/desktop/release/Cinekive-*-win-*.exe
-            apps/desktop/release/Cinekive-*-portable.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: cinekive-windows
           path: |
-            apps/desktop/release/*.exe
+            apps/desktop/release/Cinekive-*.exe
             apps/desktop/release/*.blockmap
+          if-no-files-found: error
 
-  # Mac/Linux need runners on those OSes — enable when you have macOS minutes
-  # mac:
-  #   runs-on: macos-latest
-  #   ...
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - name: Build macOS
+        working-directory: apps/desktop
+        run: |
+          npm ci
+          npm run dist:mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinekive-mac
+          path: |
+            apps/desktop/release/Cinekive-*.dmg
+            apps/desktop/release/Cinekive-*.zip
+            apps/desktop/release/*.blockmap
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm fakeroot
+      - name: Build Linux
+        working-directory: apps/desktop
+        run: |
+          npm ci
+          npm run dist:linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinekive-linux
+          path: |
+            apps/desktop/release/Cinekive-*.AppImage
+            apps/desktop/release/Cinekive-*.deb
+            apps/desktop/release/*.blockmap
+          if-no-files-found: error
+
+  publish:
+    needs: [windows, mac, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: List files
+        run: find dist -type f | sort
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            dist/**/*.exe
+            dist/**/*.dmg
+            dist/**/*.zip
+            dist/**/*.AppImage
+            dist/**/*.deb
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

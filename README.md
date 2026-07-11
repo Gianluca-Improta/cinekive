@@ -35,26 +35,38 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 
 ## Downloads
 
-Get installers from **[Releases](https://github.com/Gianluca-Improta/cinekive/releases)**:
+**[→ Get Cinekive for Windows, Mac, or Linux](https://github.com/Gianluca-Improta/cinekive/releases/latest)**
 
-| | |
-|--|--|
-| **Windows** | `Cinekive-*-win-x64.exe` installer · portable `.exe` |
-| **macOS** | DMG (build on a Mac — see [PACKAGING.md](docs/PACKAGING.md)) |
-| **Linux** | AppImage / deb |
+| Platform | What to download |
+|----------|------------------|
+| **Windows** | `Cinekive-*-win-x64.exe` (installer) or `*-portable.exe` |
+| **macOS** | `Cinekive-*-mac-*.dmg` (Apple Silicon + Intel builds when available) |
+| **Linux** | `Cinekive-*.AppImage` (run directly) or `.deb` |
 
-Desktop apps still use **Docker Desktop** under the hood for the AI/search engine (first launch downloads models). A **no-Docker native engine** is in progress — experimental setup: `.\scripts\native-setup.ps1` · details in [docs/PACKAGING.md](docs/PACKAGING.md).
+### Install in 3 steps
 
-Just want the browser UI?
+1. Install **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** and start it (needed for the search engine — one-time)  
+2. Download the app for your OS from the release page  
+3. Open Cinekive → pick your library folder → **Start**
+
+That’s it. No terminal required for normal use.
+
+> **macOS:** first open may need right-click → Open (unsigned build).  
+> **Linux AppImage:** `chmod +x Cinekive-*.AppImage && ./Cinekive-*.AppImage`
+
+A fully Docker-free engine is in progress ([PACKAGING.md](docs/PACKAGING.md)). Until then Docker Desktop is the only extra dependency.
+
+### Prefer the browser?
 
 ```powershell
-.\scripts\bootstrap.ps1
-# → http://localhost:3000
+.\scripts\bootstrap.ps1   # Windows
 ```
 
 ```bash
-./scripts/bootstrap.sh
+./scripts/bootstrap.sh    # macOS / Linux
 ```
+
+Then open http://localhost:3000
 
 ---
 
@@ -199,6 +211,8 @@ Ideas on the table — **comment, upvote, and PR**. Nothing here is locked.
 
 ### Likely v2
 
+- [ ] **No-Docker desktop** — bundled Qdrant + Python API + Next (see `engine-native.js`)
+- [ ] Pre-built GHCR images (faster first Docker launch)
 - [ ] Richer canvas: resize frames, video preview loops on the board, PDF/ref cards
 - [ ] Brief → board: pitch text → ranked shots auto-laid on a moodboard
 - [ ] Better archive sync UX (resume, progress, selective film ingest)
