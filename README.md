@@ -40,7 +40,7 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 | Platform | What to download |
 |----------|------------------|
 | **Windows** | `Cinekive-*-win-x64.exe` (installer) or `*-portable.exe` |
-| **macOS** | `Cinekive-*-mac-*.dmg` (Apple Silicon + Intel builds when available) |
+| **macOS** | `Cinekive-*-mac-arm64.dmg` (Apple Silicon) or `*-mac-x64.dmg` (Intel) |
 | **Linux** | `Cinekive-*.AppImage` (run directly) or `.deb` |
 
 ### Install in 3 steps
