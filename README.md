@@ -6,7 +6,7 @@ Drop a film, a stills folder, or a URL. Cinekive finds the heroes, tags the craf
 and lets you pull the frame you meant — by look, director, technique, or mood —
 without scrubbing a timeline or renting someone else's library.
 
-Inspired by FilmGrab, EyeCandy, and Flim. Built to live on **your** machine.
+Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 
 <p align="center">
   <img src="docs/showcase/frame-6.jpg" width="32%" alt="Cinematic still" />
