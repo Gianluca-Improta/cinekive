@@ -1,4 +1,4 @@
-import type { MessageTree } from "../types";
+﻿import type { MessageTree } from "../types";
 
 /** Partial pack — missing keys fall back to English. */
 const ja: MessageTree = {
@@ -62,10 +62,67 @@ const ja: MessageTree = {
     back: "戻る",
     skip: "スキップ",
   },
+  search: {
+    placeholder: "ショットを検索… (⌘K)",
+    projectPlaceholder: "作品名・技法・ムードを検索…",
+  },
   filters: {
     dialIn: "フィルター",
     composition: "構図",
     favoritesOnly: "お気に入りのみ",
+    allShotTypes: "すべてのショットタイプ",
+    allCompositions: "すべての構図",
+    allFormats: "すべてのフォーマット",
+    allEmotions: "すべての感情",
+    techniquesEllipsis: "技法…",
+    techniqueLabeled: "技法：{name}",
+    clearTechnique: "技法をクリア",
+    moodFilterPlaceholder: "ムードフィルター…",
+    heroes: "ヒーロー",
+    movingGif: "動画 / GIF",
+    hasPreview: "プレビューあり",
+    randomize: "ランダム",
+    searchTechniques: "技法を検索（dolly、dutch-angle、silhouette…）",
+    techniquesCount: "{n} 技法 · EyeCandy スタイル",
+    noTechniquesMatch: "一致する技法がありません。",
+  },
+  view: {
+    grid: "グリッド",
+    compact: "コンパクト",
+    list: "リスト",
+    inspector: "インスペクター",
+    inspectorOnHint:
+      "インスペクター ON — ショットをクリックでサイドパネル。グリッドは最大3列に縮小し、フレームを見やすく保ちます。画像クリックまたはダブルクリックでフルパネル。",
+    inspectorOffHint:
+      "インスペクター OFF — ショットをクリックでフルパネル。外側をクリックでグリッドに戻る。",
+    cols: "{n} 列",
+  },
+  ingest: {
+    pasteUrl: "動画 URL を貼り付け…",
+    dropHint: "ファイルをドロップまたは URL を貼り付け",
+  },
+  craft: {
+    type: "タイプ",
+    composition: "構図",
+    movement: "動き",
+    angle: "アングル",
+    lighting: "照明",
+    lens: "レンズ",
+    grade: "グレード",
+    emotion: "感情",
+    format: "フォーマット",
+    techniquesComma: "技法（カンマ区切り）",
+    intent: "意図",
+    subject: "被写体",
+  },
+  project: {
+    grid: "グリッド",
+    moodboard: "ムードボード",
+    enrich: "エンリッチ",
+    filterShots: "フィルター…",
+  },
+  activity: {
+    title: "アクティビティ",
   },
   archives: { title: "アーカイブ", newArchive: "新規アーカイブ" },
   settings: {

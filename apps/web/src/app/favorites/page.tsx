@@ -94,6 +94,7 @@ export default function FavoritesPage() {
             selectedIds={selectedIds}
             columns={columns}
             viewMode={viewMode}
+            inspectorOpen={Boolean(selected) && detailMode === "inspector"}
             onSelect={(shot, ev) => {
               if (ev?.metaKey || ev?.ctrlKey || ev?.shiftKey) {
                 setSelectedIds((prev) => {

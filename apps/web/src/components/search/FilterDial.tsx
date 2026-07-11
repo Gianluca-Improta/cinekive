@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SlidersHorizontal, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { taxonomyLabel, taxonomyMatches } from "@/lib/i18n/taxonomy-labels";
 
 export type DialFilters = {
   shotType: string;
@@ -31,10 +32,6 @@ type Props = {
 
 const QUICK_KEY = "cinearchive.quickFilters";
 
-function labelize(slug: string) {
-  return slug.replace(/-/g, " ");
-}
-
 function loadQuick(): string[] {
   if (typeof window === "undefined") return [];
   try {
@@ -52,7 +49,7 @@ function bumpQuick(key: string) {
 }
 
 export function FilterDial({ value, onChange, onOpenChange }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [quick, setQuick] = useState<string[]>([]);
@@ -86,7 +83,7 @@ export function FilterDial({ value, onChange, onOpenChange }: Props) {
     if (!taxonomy) return [] as { title: string; key: keyof DialFilters; items: string[] }[];
     const needle = q.trim().toLowerCase();
     const filt = (items: string[]) =>
-      needle ? items.filter((i) => i.includes(needle) || labelize(i).includes(needle)) : items;
+      needle ? items.filter((i) => taxonomyMatches(i, needle, locale)) : items;
     return [
       { title: t("filters.shotType"), key: "shotType" as const, items: filt(taxonomy.shot_types || []) },
       {
@@ -117,7 +114,7 @@ export function FilterDial({ value, onChange, onOpenChange }: Props) {
         items: filt(taxonomy.content_formats || []),
       },
     ].filter((s) => s.items.length > 0);
-  }, [taxonomy, q, t]);
+  }, [taxonomy, q, t, locale]);
 
   const setOpenSafe = (v: boolean) => {
     setOpen(v);
@@ -165,7 +162,7 @@ export function FilterDial({ value, onChange, onOpenChange }: Props) {
               onClick={() => applyQuick(token)}
               className="rounded border border-cinema-border px-2 py-1 text-[11px] text-cinema-muted hover:border-cinema-cyan/40 hover:text-white"
             >
-              {labelize(label)}
+              {taxonomyLabel(label, locale)}
             </button>
           );
         })}
@@ -256,7 +253,7 @@ export function FilterDial({ value, onChange, onOpenChange }: Props) {
                             : "border-cinema-border text-cinema-muted hover:border-cinema-cyan/40 hover:text-white"
                         }`}
                       >
-                        {labelize(item)}
+                        {taxonomyLabel(item, locale)}
                       </button>
                     );
                   })}

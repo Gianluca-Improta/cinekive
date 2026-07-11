@@ -21,6 +21,7 @@ import { SendToBoardMenu } from "@/components/shots/SendToBoardMenu";
 import { ShotConnections } from "@/components/shots/ShotConnections";
 import { TranslatedText } from "@/components/i18n/TranslatedText";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { taxonomyLabel } from "@/lib/i18n/taxonomy-labels";
 
 export type DetailMode = "popup" | "inspector";
 
@@ -86,21 +87,36 @@ export function ShotDetailSheet({
   defaultExpanded = false,
 }: Props) {
   const qc = useQueryClient();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [notes, setNotes] = useState("");
   const [tagsInput, setTagsInput] = useState("");
-  const [craft, setCraft] = useState<CraftDraft | null>(null);
   const [editing, setEditing] = useState(false);
   const [mode, setMode] = useState<DetailMode>(
     modeProp || (defaultExpanded ? "popup" : "inspector")
   );
   const [playing, setPlaying] = useState(true);
   const [active, setActive] = useState<Shot | null>(shot);
+  const [craft, setCraft] = useState<CraftDraft | null>(() =>
+    shot ? draftFromShot(shot) : null
+  );
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => {
+  // Sync shot → panel state during render so the inspector opens on the first paint
+  // (useEffect-only sync caused a blank/"choked" flash).
+  const [syncedId, setSyncedId] = useState<string | null>(shot?.id ?? null);
+  if ((shot?.id ?? null) !== syncedId) {
+    setSyncedId(shot?.id ?? null);
     setActive(shot);
-  }, [shot]);
+    if (shot) {
+      setNotes(shot.notes || "");
+      setTagsInput((shot.tags || []).join(", "));
+      setCraft(draftFromShot(shot));
+      setEditing(false);
+      setPlaying(true);
+    } else {
+      setCraft(null);
+    }
+  }
 
   useEffect(() => {
     if (modeProp) setMode(modeProp);
@@ -111,14 +127,13 @@ export function ShotDetailSheet({
     onModeChange?.(next);
   };
 
+  // notes/tags/craft already synced above when shot id changes
   useEffect(() => {
-    if (!active) return;
-    setNotes(active.notes || "");
-    setTagsInput((active.tags || []).join(", "));
-    setCraft(draftFromShot(active));
-    setEditing(false);
-    setPlaying(true);
-  }, [active]);
+    /* keep active in sync if parent mutates same-id shot object */
+    if (shot && active && shot.id === active.id && shot !== active) {
+      setActive(shot);
+    }
+  }, [shot, active]);
 
   const taxonomy = useQuery({
     queryKey: ["taxonomy"],
@@ -240,7 +255,7 @@ export function ShotDetailSheet({
             className="inline"
           />
           {" · "}scene {active.scene_index}
-          {active.shot_type ? ` · ${active.shot_type}` : ""}
+          {active.shot_type ? ` · ${taxonomyLabel(active.shot_type, locale)}` : ""}
           {active.frame_role ? ` · ${active.frame_role}` : ""}
         </div>
       </div>
@@ -265,7 +280,7 @@ export function ShotDetailSheet({
             className="inline-flex items-center gap-1 rounded border border-cinema-border px-2 py-1.5 text-[11px] text-cinema-muted hover:border-cinema-cyan/50 hover:text-cinema-cyan"
           >
             <PanelRight className="h-3.5 w-3.5" />
-            Inspector
+            {t("view.inspector")}
           </button>
         ) : (
           <button
@@ -492,18 +507,18 @@ export function ShotDetailSheet({
               {editing ? (
                 <div className="space-y-2">
                   <Field
-                    label="Subject"
+                    label={t("craft.subject")}
                     value={craft.subject}
                     onChange={(v) => setCraft({ ...craft, subject: v })}
                   />
                   <Field
-                    label="Mood"
+                    label={t("filters.mood")}
                     value={craft.mood_vibe}
                     onChange={(v) => setCraft({ ...craft, mood_vibe: v })}
                   />
                   <label className="block space-y-1">
                     <span className="text-[10px] uppercase tracking-widest text-cinema-muted">
-                      Intent
+                      {t("craft.intent")}
                     </span>
                     <textarea
                       value={craft.creative_intent}
@@ -514,57 +529,61 @@ export function ShotDetailSheet({
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <SelectField
-                      label="Type"
+                      label={t("craft.type")}
                       value={craft.shot_type}
                       options={shotTypes}
                       onChange={(v) => setCraft({ ...craft, shot_type: v })}
+                      locale={locale}
                     />
                     <SelectField
-                      label="Composition"
+                      label={t("craft.composition")}
                       value={craft.composition}
                       options={compositions}
                       onChange={(v) => setCraft({ ...craft, composition: v })}
+                      locale={locale}
                     />
                     <Field
-                      label="Movement"
+                      label={t("craft.movement")}
                       value={craft.camera_movement}
                       onChange={(v) => setCraft({ ...craft, camera_movement: v })}
                     />
                     <Field
-                      label="Angle"
+                      label={t("craft.angle")}
                       value={craft.camera_angle}
                       onChange={(v) => setCraft({ ...craft, camera_angle: v })}
                     />
                     <Field
-                      label="Lighting"
+                      label={t("craft.lighting")}
                       value={craft.lighting_style}
                       onChange={(v) => setCraft({ ...craft, lighting_style: v })}
                     />
                     <Field
-                      label="Lens"
+                      label={t("craft.lens")}
                       value={craft.lens_look}
                       onChange={(v) => setCraft({ ...craft, lens_look: v })}
                     />
                     <Field
-                      label="Grade"
+                      label={t("craft.grade")}
                       value={craft.color_grade}
                       onChange={(v) => setCraft({ ...craft, color_grade: v })}
                     />
                     <SelectField
-                      label="Emotion"
+                      label={t("craft.emotion")}
                       value={craft.emotion}
                       options={emotions}
                       onChange={(v) => setCraft({ ...craft, emotion: v })}
+                      locale={locale}
                     />
                     <SelectField
-                      label="Format"
+                      label={t("craft.format")}
                       value={craft.content_format}
                       options={formats}
                       onChange={(v) => setCraft({ ...craft, content_format: v })}
+                      locale={locale}
                     />
                   </div>
                   <Field
-                    label="Techniques (comma)"
+                    label={t("craft.techniquesComma")}
                     value={craft.techniques}
                     onChange={(v) => setCraft({ ...craft, techniques: v })}
                   />
@@ -584,10 +603,36 @@ export function ShotDetailSheet({
                     />
                   )}
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <Meta label="Type" value={active.shot_type || "—"} />
-                    <Meta label="Movement" value={active.camera_movement || "—"} />
-                    <Meta label="Angle" value={active.camera_angle || "—"} />
-                    <Meta label="Lighting" value={active.lighting_style || "—"} />
+                    <Meta
+                      label={t("craft.type")}
+                      value={
+                        active.shot_type ? taxonomyLabel(active.shot_type, locale) : "—"
+                      }
+                    />
+                    <Meta
+                      label={t("craft.movement")}
+                      value={
+                        active.camera_movement
+                          ? taxonomyLabel(active.camera_movement, locale)
+                          : "—"
+                      }
+                    />
+                    <Meta
+                      label={t("craft.angle")}
+                      value={
+                        active.camera_angle
+                          ? taxonomyLabel(active.camera_angle, locale)
+                          : "—"
+                      }
+                    />
+                    <Meta
+                      label={t("craft.lighting")}
+                      value={
+                        active.lighting_style
+                          ? taxonomyLabel(active.lighting_style, locale)
+                          : "—"
+                      }
+                    />
                     {active.composition ? (
                       <button
                         type="button"
@@ -595,23 +640,47 @@ export function ShotDetailSheet({
                         className="rounded border border-cinema-border bg-cinema-panel px-3 py-2 text-left hover:border-cinema-cyan/40"
                       >
                         <div className="text-[10px] uppercase tracking-widest text-cinema-muted">
-                          Composition
+                          {t("craft.composition")}
                         </div>
                         <div className="mt-0.5 font-mono text-xs text-cinema-cyan">
-                          {active.composition.replace(/-/g, " ")}
+                          {taxonomyLabel(active.composition, locale)}
                         </div>
                       </button>
                     ) : (
-                      <Meta label="Composition" value="—" />
+                      <Meta label={t("craft.composition")} value="—" />
                     )}
-                    <Meta label="Lens" value={active.lens_look || "—"} />
-                    <Meta label="Grade" value={active.color_grade || "—"} />
-                    <Meta label="Format" value={active.content_format || "—"} />
-                    <Meta label="Era" value={active.era || "—"} />
-                    <Meta label="Origin" value={active.origin || "—"} />
-                    <Meta label="Ism" value={active.ism || "—"} />
                     <Meta
-                      label="Director"
+                      label={t("craft.lens")}
+                      value={active.lens_look ? taxonomyLabel(active.lens_look, locale) : "—"}
+                    />
+                    <Meta
+                      label={t("craft.grade")}
+                      value={
+                        active.color_grade ? taxonomyLabel(active.color_grade, locale) : "—"
+                      }
+                    />
+                    <Meta
+                      label={t("craft.format")}
+                      value={
+                        active.content_format
+                          ? taxonomyLabel(active.content_format, locale)
+                          : "—"
+                      }
+                    />
+                    <Meta
+                      label={t("filters.era")}
+                      value={active.era ? taxonomyLabel(active.era, locale) : "—"}
+                    />
+                    <Meta
+                      label={t("filters.origin")}
+                      value={active.origin ? taxonomyLabel(active.origin, locale) : "—"}
+                    />
+                    <Meta
+                      label={t("filters.ism")}
+                      value={active.ism ? taxonomyLabel(active.ism, locale) : "—"}
+                    />
+                    <Meta
+                      label={t("filters.director")}
                       value={
                         active.director ||
                         (typeof active.source_meta?.director === "string"
@@ -619,9 +688,22 @@ export function ShotDetailSheet({
                           : "—")
                       }
                     />
-                    <Meta label="Style" value={active.visual_style || "—"} />
-                    <Meta label="Theme" value={active.theme || "—"} />
-                    <Meta label="Genre" value={active.genre || "—"} />
+                    <Meta
+                      label={t("filters.style")}
+                      value={
+                        active.visual_style
+                          ? taxonomyLabel(active.visual_style, locale)
+                          : "—"
+                      }
+                    />
+                    <Meta
+                      label={t("filters.theme")}
+                      value={active.theme ? taxonomyLabel(active.theme, locale) : "—"}
+                    />
+                    <Meta
+                      label={t("filters.genre")}
+                      value={active.genre ? taxonomyLabel(active.genre, locale) : "—"}
+                    />
                   </div>
                   {active.techniques && active.techniques.length > 0 ? (
                     <div className="space-y-1">
@@ -636,7 +718,7 @@ export function ShotDetailSheet({
                             onClick={() => onFilterClick?.("technique", tech)}
                             className="rounded border border-cinema-cyan/40 px-1.5 py-0.5 text-[10px] text-cinema-cyan hover:bg-cinema-cyan/10"
                           >
-                            {tech.replace(/-/g, " ")}
+                            {taxonomyLabel(tech, locale)}
                           </button>
                         ))}
                       </div>
@@ -655,7 +737,7 @@ export function ShotDetailSheet({
                             onClick={() => onFilterClick?.("shape", sh)}
                             className="rounded border border-cinema-border px-1.5 py-0.5 text-[10px] text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
                           >
-                            {sh.replace(/-/g, " ")}
+                            {taxonomyLabel(sh, locale)}
                           </button>
                         ))}
                       </div>
@@ -921,9 +1003,9 @@ export function ShotDetailSheet({
     );
   }
 
-  // Inspector: side panel, no blur — grid stays scrollable
+  // Inspector: docks on the right — grid reserves space + drops to ≤3 cols
   return (
-    <aside className="fixed inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l border-cinema-border bg-cinema-surface shadow-[-12px_0_40px_rgba(0,0,0,0.45)]">
+    <aside className="fixed bottom-0 right-0 top-10 z-[45] flex w-full max-w-md flex-col border-l border-cinema-border bg-cinema-surface shadow-[-12px_0_40px_rgba(0,0,0,0.45)]">
       {panelInner}
     </aside>
   );
@@ -955,11 +1037,13 @@ function SelectField({
   value,
   options,
   onChange,
+  locale,
 }: {
   label: string;
   value: string;
   options: string[];
   onChange: (v: string) => void;
+  locale: string;
 }) {
   return (
     <label className="block space-y-1">
@@ -972,10 +1056,12 @@ function SelectField({
         <option value="">—</option>
         {options.map((o) => (
           <option key={o} value={o}>
-            {o.replace(/-/g, " ")}
+            {taxonomyLabel(o, locale)}
           </option>
         ))}
-        {value && !options.includes(value) ? <option value={value}>{value}</option> : null}
+        {value && !options.includes(value) ? (
+          <option value={value}>{taxonomyLabel(value, locale)}</option>
+        ) : null}
       </select>
     </label>
   );

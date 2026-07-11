@@ -22,6 +22,7 @@ import { DropZone } from "@/components/ingest/DropZone";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { FALLBACK_IDEAS } from "./_fallback_ideas";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type SourceKey = "filmgrab" | "eyecandy" | "shotdeck" | "moviestillsdb" | "stillslab";
 
@@ -44,6 +45,7 @@ const SOURCE_ACCENTS: Record<string, string> = {
 type ShelfTab = "libraries" | "mirrors" | "discover";
 
 export default function ArchivesPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const router = useRouter();
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -204,9 +206,9 @@ export default function ArchivesPage() {
           <div>
             <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-cinema-muted">
               <Archive className="h-3 w-3 text-cinema-cyan" />
-              Archives
+              {t("archives.title")}
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white">Archives</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-white">{t("archives.title")}</h1>
             <p className="mt-1 text-sm text-cinema-muted">
               {archiveProjects.length} archive
               {archiveProjects.length === 1 ? "" : "s"}
@@ -219,16 +221,16 @@ export default function ArchivesPage() {
             className="inline-flex items-center gap-2 rounded border border-cinema-cyan/40 bg-cinema-cyan/10 px-3.5 py-2 text-xs text-cinema-cyan hover:bg-cinema-cyan/20"
           >
             <FolderPlus className="h-3.5 w-3.5" />
-            New archive
+            {t("archives.newArchive")}
           </button>
         </div>
 
         <div className="mt-4 flex gap-1 border-b border-transparent">
           {(
             [
-              ["libraries", "Your archives"],
-              ["mirrors", "Mirrors & logins"],
-              ["discover", "More sources"],
+              ["libraries", t("archives.yourArchives")],
+              ["mirrors", t("archives.builtIn")],
+              ["discover", t("archives.freeLibraries")],
             ] as const
           ).map(([id, label]) => (
             <button

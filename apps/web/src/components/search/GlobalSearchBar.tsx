@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type Props = {
   value: string;
@@ -10,13 +11,14 @@ type Props = {
 };
 
 export function GlobalSearchBar({ value, onChange, placeholder }: Props) {
+  const { t } = useI18n();
   const [local, setLocal] = useState(value);
 
   useEffect(() => setLocal(value), [value]);
 
   useEffect(() => {
-    const t = setTimeout(() => onChange(local), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => onChange(local), 300);
+    return () => clearTimeout(timer);
   }, [local, onChange]);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export function GlobalSearchBar({ value, onChange, placeholder }: Props) {
         id="global-search"
         value={local}
         onChange={(e) => setLocal(e.target.value)}
-        placeholder={placeholder || "Search shots… (⌘K)"}
+        placeholder={placeholder || t("search.placeholder")}
         className="w-full rounded-md border border-cinema-border bg-cinema-black py-1.5 pl-8 pr-3 text-sm text-white outline-none placeholder:text-cinema-muted focus:border-cinema-cyan focus:shadow-glow"
       />
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Columns3, Grid2X2, LayoutGrid, List, PanelRight } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export type ViewMode = "grid" | "compact" | "list";
 
@@ -22,12 +23,13 @@ export function ViewControls({
   inspectorMode,
   onInspectorMode,
 }: Props) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
       <div className="flex overflow-hidden rounded border border-cinema-border">
         <button
           type="button"
-          title="Grid"
+          title={t("view.grid")}
           onClick={() => onViewMode("grid")}
           className={`px-2 py-1.5 ${viewMode === "grid" ? "bg-cinema-panel text-cinema-cyan" : "text-cinema-muted"}`}
         >
@@ -35,7 +37,7 @@ export function ViewControls({
         </button>
         <button
           type="button"
-          title="Compact"
+          title={t("view.compact")}
           onClick={() => onViewMode("compact")}
           className={`px-2 py-1.5 ${viewMode === "compact" ? "bg-cinema-panel text-cinema-cyan" : "text-cinema-muted"}`}
         >
@@ -43,7 +45,7 @@ export function ViewControls({
         </button>
         <button
           type="button"
-          title="List"
+          title={t("view.list")}
           onClick={() => onViewMode("list")}
           className={`px-2 py-1.5 ${viewMode === "list" ? "bg-cinema-panel text-cinema-cyan" : "text-cinema-muted"}`}
         >
@@ -53,11 +55,7 @@ export function ViewControls({
       {onInspectorMode && (
         <button
           type="button"
-          title={
-            inspectorMode
-              ? "Inspector on — click a shot for the side panel (no blur). Click the image or double-click a shot for the full panel."
-              : "Inspector off — click a shot for the full panel. Click outside to return to the grid."
-          }
+          title={inspectorMode ? t("view.inspectorOnHint") : t("view.inspectorOffHint")}
           onClick={() => onInspectorMode(!inspectorMode)}
           className={`inline-flex items-center gap-1.5 rounded border px-2 py-1.5 ${
             inspectorMode
@@ -66,7 +64,7 @@ export function ViewControls({
           }`}
         >
           <PanelRight className="h-3.5 w-3.5" />
-          Inspector
+          {t("view.inspector")}
         </button>
       )}
       {viewMode !== "list" && (
@@ -79,7 +77,7 @@ export function ViewControls({
           >
             {[2, 3, 4, 5, 6, 8].map((n) => (
               <option key={n} value={n}>
-                {n} cols
+                {t("view.cols", { n })}
               </option>
             ))}
           </select>

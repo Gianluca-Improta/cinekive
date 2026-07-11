@@ -18,8 +18,10 @@ import { JobProgressBanner } from "@/components/jobs/JobProgressBanner";
 import { useSearch, useShots } from "@/hooks/useSearch";
 import { api } from "@/lib/api-client";
 import type { Shot } from "@/lib/types";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export default function ProjectPage() {
+  const { t } = useI18n();
   const params = useParams<{ id: string }>();
   const projectId = params.id;
   const qc = useQueryClient();
@@ -274,7 +276,7 @@ export default function ProjectPage() {
           <GlobalSearchBar
             value={query}
             onChange={onChange}
-            placeholder="Search film title, technique, mood…"
+            placeholder={t("search.projectPlaceholder")}
           />
           <FilterDial value={dial} onChange={patchDial} />
           <div className="flex flex-wrap items-center gap-2">
@@ -288,7 +290,7 @@ export default function ProjectPage() {
                     : "text-cinema-muted hover:text-white"
                 }`}
               >
-                Grid
+                {t("project.grid")}
               </button>
               <button
                 type="button"
@@ -301,7 +303,7 @@ export default function ProjectPage() {
                 title="Freeform board for liked shots"
               >
                 <LayoutTemplate className="h-3.5 w-3.5" />
-                Moodboard
+                {t("project.moodboard")}
               </button>
             </div>
             <div className="flex overflow-hidden rounded border border-cinema-border">
@@ -341,7 +343,7 @@ export default function ProjectPage() {
                 }
               >
                 <Brain className="h-3.5 w-3.5" />
-                Enrich
+                {t("project.enrich")}
               </button>
             </div>
             <button
@@ -468,6 +470,7 @@ export default function ProjectPage() {
               selectedIds={selectedIds}
               viewMode={viewMode}
               columns={columns}
+              inspectorOpen={Boolean(selected) && detailMode === "inspector"}
               onDelete={(s) => {
                 if (
                   confirm(

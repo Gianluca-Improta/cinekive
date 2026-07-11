@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { FolderOpen, Link2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type Props = {
   onFiles?: (files: File[], kind: "video" | "image") => void;
@@ -142,6 +143,7 @@ export function DropZone({
   compact = true,
   className,
 }: Props) {
+  const { t } = useI18n();
   const [over, setOver] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [url, setUrl] = useState("");
@@ -285,7 +287,7 @@ export function DropZone({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") void submitUrl();
                 }}
-                placeholder="Paste any video URL…"
+                placeholder={t("ingest.pasteUrl")}
                 disabled={disabled || urlBusy}
                 className="w-full rounded border border-cinema-border bg-cinema-black py-1 pl-6 pr-2 text-[11px] text-white outline-none focus:border-cinema-cyan"
               />
@@ -370,7 +372,7 @@ export function DropZone({
               onKeyDown={(e) => {
                 if (e.key === "Enter") void submitUrl();
               }}
-              placeholder="Paste any video URL…"
+              placeholder={t("ingest.pasteUrl")}
               disabled={disabled || urlBusy}
               className="w-full rounded border border-cinema-border bg-cinema-black py-1.5 pl-7 pr-2 text-xs text-white outline-none focus:border-cinema-cyan"
             />

@@ -20,6 +20,7 @@ out/
 # Desktop builds
 apps/desktop/release/
 apps/desktop/dist/
+apps/desktop/ci-mac/
 
 # Env & secrets
 .env

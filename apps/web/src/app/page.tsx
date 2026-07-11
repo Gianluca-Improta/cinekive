@@ -310,6 +310,7 @@ export default function HomePage() {
             }}
             columns={columns}
             viewMode={viewMode}
+            inspectorOpen={Boolean(selected) && detailMode === "inspector"}
             onDelete={(s) => {
               if (
                 confirm(

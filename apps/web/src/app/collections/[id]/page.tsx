@@ -224,6 +224,7 @@ export default function CollectionPage() {
           }}
           columns={columns}
           viewMode={viewMode}
+          inspectorOpen={Boolean(selected) && detailMode === "inspector"}
         />
       </div>
 

@@ -6,6 +6,7 @@ import type { Shot } from "@/lib/types";
 import { artifactUrl } from "@/lib/api-client";
 import { CANVAS_SHOT_MIME } from "@/lib/canvas-types";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type Props = {
   shots: Shot[];
@@ -22,6 +23,7 @@ export function CanvasShotRail({
   collapsed,
   onToggle,
 }: Props) {
+  const { t } = useI18n();
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
@@ -88,7 +90,7 @@ export function CanvasShotRail({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter…"
+            placeholder={t("project.filterShots")}
             className="w-full bg-transparent text-[11px] text-white outline-none placeholder:text-cinema-muted"
           />
         </label>

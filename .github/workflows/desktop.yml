@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to attach builds to (e.g. v0.3.2)"
+        description: "Release tag to attach builds to (e.g. v0.3.3)"
         required: true
-        default: "v0.3.2"
+        default: "v0.3.3"
 
 permissions:
   contents: write

@@ -3,6 +3,12 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import {
+  taxonomyLabel,
+  taxonomyMatches,
+  techniqueGroupLabel,
+} from "@/lib/i18n/taxonomy-labels";
 
 type Props = {
   shotType: string;
@@ -28,10 +34,6 @@ type Props = {
   onRandomize: () => void;
 };
 
-function labelize(slug: string) {
-  return slug.replace(/-/g, " ");
-}
-
 export function AdvancedFilters({
   shotType,
   composition = "",
@@ -55,6 +57,7 @@ export function AdvancedFilters({
   onMovingOnly,
   onRandomize,
 }: Props) {
+  const { t, locale } = useI18n();
   const [techOpen, setTechOpen] = useState(false);
   const [techQuery, setTechQuery] = useState("");
 
@@ -109,11 +112,11 @@ export function AdvancedFilters({
     if (!q) return groups;
     const out: Record<string, string[]> = {};
     for (const [group, items] of Object.entries(groups)) {
-      const hit = items.filter((t) => t.includes(q) || labelize(t).includes(q));
+      const hit = items.filter((slug) => taxonomyMatches(slug, q, locale));
       if (hit.length) out[group] = hit;
     }
     return out;
-  }, [taxonomy, techQuery]);
+  }, [taxonomy, techQuery, locale]);
 
   return (
     <div className="space-y-2">
@@ -123,10 +126,10 @@ export function AdvancedFilters({
           onChange={(e) => onShotType(e.target.value)}
           className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-cinema-muted outline-none focus:border-cinema-cyan"
         >
-          <option value="">All shot types</option>
-          {shotTypes.map((t) => (
-            <option key={t} value={t}>
-              {labelize(t)}
+          <option value="">{t("filters.allShotTypes")}</option>
+          {shotTypes.map((slug) => (
+            <option key={slug} value={slug}>
+              {taxonomyLabel(slug, locale)}
             </option>
           ))}
         </select>
@@ -136,10 +139,10 @@ export function AdvancedFilters({
             onChange={(e) => onComposition(e.target.value)}
             className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-cinema-muted outline-none focus:border-cinema-cyan"
           >
-            <option value="">All compositions</option>
-            {compositions.map((t) => (
-              <option key={t} value={t}>
-                {labelize(t)}
+            <option value="">{t("filters.allCompositions")}</option>
+            {compositions.map((slug) => (
+              <option key={slug} value={slug}>
+                {taxonomyLabel(slug, locale)}
               </option>
             ))}
           </select>
@@ -149,10 +152,10 @@ export function AdvancedFilters({
           onChange={(e) => onContentFormat(e.target.value)}
           className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-cinema-muted outline-none focus:border-cinema-cyan"
         >
-          <option value="">All formats</option>
-          {formats.map((t) => (
-            <option key={t} value={t}>
-              {labelize(t)}
+          <option value="">{t("filters.allFormats")}</option>
+          {formats.map((slug) => (
+            <option key={slug} value={slug}>
+              {taxonomyLabel(slug, locale)}
             </option>
           ))}
         </select>
@@ -161,10 +164,10 @@ export function AdvancedFilters({
           onChange={(e) => onEmotion(e.target.value)}
           className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-cinema-muted outline-none focus:border-cinema-cyan"
         >
-          <option value="">All emotions</option>
-          {emotions.map((t) => (
-            <option key={t} value={t}>
-              {labelize(t)}
+          <option value="">{t("filters.allEmotions")}</option>
+          {emotions.map((slug) => (
+            <option key={slug} value={slug}>
+              {taxonomyLabel(slug, locale)}
             </option>
           ))}
         </select>
@@ -177,7 +180,9 @@ export function AdvancedFilters({
               : "border-cinema-border text-cinema-muted hover:border-cinema-cyan/50 hover:text-cinema-cyan"
           }`}
         >
-          {technique ? `Technique: ${labelize(technique)}` : "Techniques…"}
+          {technique
+            ? t("filters.techniqueLabeled", { name: taxonomyLabel(technique, locale) })
+            : t("filters.techniquesEllipsis")}
         </button>
         {technique ? (
           <button
@@ -185,13 +190,13 @@ export function AdvancedFilters({
             onClick={() => onTechnique("")}
             className="text-cinema-muted hover:text-white"
           >
-            Clear technique
+            {t("filters.clearTechnique")}
           </button>
         ) : null}
         <input
           value={mood}
           onChange={(e) => onMood(e.target.value)}
-          placeholder="Mood filter…"
+          placeholder={t("filters.moodFilterPlaceholder")}
           className="w-36 rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-white outline-none placeholder:text-cinema-muted focus:border-cinema-cyan"
         />
         <label className="flex items-center gap-1.5 text-cinema-muted">
@@ -201,7 +206,7 @@ export function AdvancedFilters({
             onChange={(e) => onHeroesOnly(e.target.checked)}
             className="accent-cinema-cyan"
           />
-          Heroes
+          {t("filters.heroes")}
         </label>
         <label className="flex items-center gap-1.5 text-cinema-muted">
           <input
@@ -210,7 +215,7 @@ export function AdvancedFilters({
             onChange={(e) => onMovingOnly(e.target.checked)}
             className="accent-cinema-cyan"
           />
-          Moving / GIF
+          {t("filters.movingGif")}
         </label>
         <label className="flex items-center gap-1.5 text-cinema-muted">
           <input
@@ -219,7 +224,7 @@ export function AdvancedFilters({
             onChange={(e) => onFavoritesOnly(e.target.checked)}
             className="accent-cinema-cyan"
           />
-          Favorites only
+          {t("filters.favoritesOnly")}
         </label>
         <label className="flex items-center gap-1.5 text-cinema-muted">
           <input
@@ -228,14 +233,14 @@ export function AdvancedFilters({
             onChange={(e) => onHasPreviewOnly(e.target.checked)}
             className="accent-cinema-cyan"
           />
-          Has preview
+          {t("filters.hasPreview")}
         </label>
         <button
           type="button"
           onClick={onRandomize}
           className="rounded border border-cinema-border px-2 py-1.5 text-cinema-muted hover:border-cinema-cyan/50 hover:text-cinema-cyan"
         >
-          Randomize
+          {t("filters.randomize")}
         </button>
       </div>
 
@@ -245,28 +250,28 @@ export function AdvancedFilters({
             <input
               value={techQuery}
               onChange={(e) => setTechQuery(e.target.value)}
-              placeholder="Search techniques (dolly, dutch-angle, silhouette…)"
+              placeholder={t("filters.searchTechniques")}
               className="min-w-[240px] flex-1 rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-white outline-none placeholder:text-cinema-muted focus:border-cinema-cyan"
             />
             <span className="text-[10px] text-cinema-muted">
-              {taxonomy?.techniques?.length ?? 0} techniques · EyeCandy-style
+              {t("filters.techniquesCount", { n: taxonomy?.techniques?.length ?? 0 })}
             </span>
           </div>
           <div className="max-h-56 space-y-3 overflow-y-auto pr-1">
             {Object.entries(filteredGroups).map(([group, items]) => (
               <div key={group}>
                 <p className="mb-1.5 text-[10px] uppercase tracking-widest text-cinema-muted">
-                  {group}
+                  {techniqueGroupLabel(group, locale)}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {items.map((t) => {
-                    const active = technique === t;
+                  {items.map((slug) => {
+                    const active = technique === slug;
                     return (
                       <button
-                        key={t}
+                        key={slug}
                         type="button"
                         onClick={() => {
-                          onTechnique(active ? "" : t);
+                          onTechnique(active ? "" : slug);
                           if (!active) setTechOpen(false);
                         }}
                         className={`rounded border px-2 py-0.5 text-[11px] transition ${
@@ -275,7 +280,7 @@ export function AdvancedFilters({
                             : "border-cinema-border text-cinema-muted hover:border-cinema-cyan/40 hover:text-white"
                         }`}
                       >
-                        {labelize(t)}
+                        {taxonomyLabel(slug, locale)}
                       </button>
                     );
                   })}
@@ -283,7 +288,7 @@ export function AdvancedFilters({
               </div>
             ))}
             {!Object.keys(filteredGroups).length ? (
-              <p className="text-xs text-cinema-muted">No techniques match.</p>
+              <p className="text-xs text-cinema-muted">{t("filters.noTechniquesMatch")}</p>
             ) : null}
           </div>
         </div>

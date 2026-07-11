@@ -18,6 +18,8 @@ type Props = {
   viewMode?: ViewMode;
   onDelete?: (shot: Shot) => void;
   onColorClick?: (hex: string) => void;
+  /** Side inspector open — reserve right space and tighten columns so cards stay visible. */
+  inspectorOpen?: boolean;
 };
 
 export function VirtualMasonryGrid({
@@ -29,9 +31,19 @@ export function VirtualMasonryGrid({
   viewMode = "grid",
   onDelete,
   onColorClick,
+  inspectorOpen = false,
 }: Props) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const cols = viewMode === "list" ? 1 : viewMode === "compact" ? Math.max(columns, 5) : columns;
+  const cols = useMemo(() => {
+    if (viewMode === "list") return 1;
+    if (inspectorOpen) {
+      // Fit beside max-w-md panel (~28rem): prefer 3 cols, never more than user pick
+      if (viewMode === "compact") return Math.min(columns, 4);
+      return Math.min(columns, 3);
+    }
+    if (viewMode === "compact") return Math.max(columns, 5);
+    return columns;
+  }, [viewMode, columns, inspectorOpen]);
 
   const rows = useMemo(() => {
     const result: Shot[][] = [];
@@ -60,7 +72,12 @@ export function VirtualMasonryGrid({
   }
 
   return (
-    <div ref={parentRef} className="h-[calc(100vh-11rem)] overflow-auto pr-1">
+    <div
+      ref={parentRef}
+      className={`h-[calc(100vh-11rem)] overflow-auto pr-1 transition-[padding] duration-200 ${
+        inspectorOpen ? "md:pr-[28rem]" : ""
+      }`}
+    >
       <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
         {virtualizer.getVirtualItems().map((vRow) => {
           const row = rows[vRow.index] || [];
