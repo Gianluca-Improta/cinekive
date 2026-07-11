@@ -13,7 +13,7 @@ import type {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /** Resolve API base URL at runtime (LAN phone access uses same host, port 8000). */
-export function getApiUrl(): string {
+function getApiUrl(): string {
   const fallback = API_URL;
   if (typeof window === "undefined") return fallback;
   const host = window.location.hostname;
@@ -745,4 +745,4 @@ export const api = {
   },
 };
 
-export { API_URL };
+export { API_URL, getApiUrl };
