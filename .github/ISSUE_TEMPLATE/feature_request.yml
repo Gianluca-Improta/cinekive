@@ -1,0 +1,45 @@
+name: Feature request
+description: Concrete feature or improvement (actionable).
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Soft ideas and “what if…” belong in [Discussions → Ideas](https://github.com/Gianluca-Improta/cinekive/discussions/categories/ideas).
+        Use this form when you can describe a specific change.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is painful today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should Cinekive do instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Search / filters
+        - Ingest / yt-dlp
+        - Archives / mirrors
+        - Moodboard / canvas
+        - Desktop / packaging
+        - VLM / enrichment
+        - i18n / accessibility
+        - Agent API
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context (optional)
+      description: Role (editor, DP, student…), similar tools you use, willingness to PR.

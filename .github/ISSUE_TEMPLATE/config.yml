@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions — ideas, Q&A, show your board
+    url: https://github.com/Gianluca-Improta/cinekive/discussions
+    about: Prefer Discussions for product ideas, setup questions, and screenshots.
+  - name: Read the FAQ
+    url: https://github.com/Gianluca-Improta/cinekive/blob/main/docs/FAQ.md
+    about: Docker, macOS Gatekeeper, search model download, yt-dlp, and more.
+  - name: Download latest desktop build
+    url: https://github.com/Gianluca-Improta/cinekive/releases/latest
+    about: Windows, macOS (arm64 + Intel), Linux AppImage and .deb.

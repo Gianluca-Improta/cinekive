@@ -27,12 +27,27 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 <p align="center">
   <a href="#downloads">Downloads</a> ·
   <a href="#quick-start">Quick start</a> ·
+  <a href="#who-its-for">Who it’s for</a> ·
   <a href="#tour">Tour</a> ·
-  <a href="#roadmap--v2">Roadmap / v2</a> ·
+  <a href="docs/FAQ.md">FAQ</a> ·
+  <a href="docs/COMPARE.md">vs FilmGrab / Flim / Kive</a> ·
+  <a href="#roadmap--v2">Roadmap</a> ·
   <a href="#join-in">Join in</a> ·
-  <a href="#creator--support">Creator & support</a> ·
   <a href="README.zh-CN.md">中文</a>
 </p>
+
+---
+
+## Who it’s for
+
+- **Editors & directors** building lookbooks without scrubbing a full timeline  
+- **Commercial / social teams** who need client-safe references on a studio drive  
+- **Cinephiles & students** collecting stills they have rights to access  
+- Anyone who wants a **local FilmGrab-style archive** plus ingest and moodboards  
+
+New here? Start with the **[FAQ](docs/FAQ.md)** or skim **[Cinekive vs other tools](docs/COMPARE.md)**.
+
+If this saves you time, a [GitHub star](https://github.com/Gianluca-Improta/cinekive) helps others find it.
 
 ---
 
@@ -124,11 +139,14 @@ Then open http://localhost:3000
 - **Narrative / Commercial / Social** — ingest your own footage (drop files or any yt-dlp URL)
 - **Archives** — FilmGrab, EyeCandy, ShotDeck, MovieStillsDB, StillsLab mirrors + Discover list
 - **Search** — film titles, directors, techniques, eras, visual look (SigLIP + metadata routing)
+- **Languages** — UI in EN / 中文 / ES / FR / DE / JA; Chinese craft taxonomy labels
 - **Inspector + full panel** — side inspector by default; click the image for a large stage
 - **Moodboards** — infinite canvas, project clip rail (drag in), text, stickies, audio/media URLs, named concepts, stacks
 - **Desktop or browser** — Windows / Mac / Linux app, or web at `:3000`
 - **Local-first** — no cloud account; optional temporary share link via tunnel
 - **Agent API** — clean local HTTP API for multi-agent / automation workflows
+
+Help & compare: [FAQ](docs/FAQ.md) · [vs other tools](docs/COMPARE.md) · [Support](SUPPORT.md)
 
 ---
 
@@ -239,12 +257,24 @@ Full living list: [docs/ROADMAP.md](docs/ROADMAP.md) · discuss in [GitHub Discu
 
 This is an open, local-first tool for filmmakers and editors. **You are invited.**
 
-- **Ideas & feedback** → [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) (preferred for “what if…”)
-- **Bugs** → [Issues](https://github.com/Gianluca-Improta/cinekive/issues)
-- **Code** → [Contributing](CONTRIBUTING.md) — small focused PRs welcome
-- **Show your board** → post a screenshot (no private client work) in Discussions
+| Channel | Use it for |
+|---------|------------|
+| [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) | Ideas, Q&A, show your board (preferred) |
+| [Issues](https://github.com/Gianluca-Improta/cinekive/issues) | Bugs and concrete tasks |
+| [Contributing](CONTRIBUTING.md) | Small focused PRs |
+| [Roadmap](docs/ROADMAP.md) | What’s next — comment and upvote |
+
+Starter threads:
+
+- [Welcome](https://github.com/Gianluca-Improta/cinekive/discussions/2)  
+- [v0.3.3 release notes](https://github.com/Gianluca-Improta/cinekive/discussions/3)  
+- [Vote next priorities](https://github.com/Gianluca-Improta/cinekive/discussions/4)  
+- [Getting started Q&A](https://github.com/Gianluca-Improta/cinekive/discussions/5)  
+- [Show your board](https://github.com/Gianluca-Improta/cinekive/discussions/6)
 
 Respect copyright: mirror scripts are for *your* licensed access; we do not ship anyone else’s stills in the repo.
+
+Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · Security: [SECURITY.md](SECURITY.md) · Support: [SUPPORT.md](SUPPORT.md)
 
 ---
 

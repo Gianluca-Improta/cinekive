@@ -1,0 +1,30 @@
+title: "[idea] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Soft product ideas live here. Upvote with reactions. Concrete bugs → Issues.
+  - type: textarea
+    id: pitch
+    attributes:
+      label: Idea
+      description: What should exist that does not today?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters
+      description: Who benefits (editors, DPs, students, studios)?
+    validations:
+      required: true
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Rough size (guess)
+      options:
+        - Small (days)
+        - Medium (weeks)
+        - Large (months)
+        - Not sure

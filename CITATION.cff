@@ -1,0 +1,28 @@
+# Cinekive — local cinematic visual archive
+
+<!-- Optional machine-readable citation for academic / tool papers -->
+
+cff-version: 1.2.0
+title: "Cinekive"
+message: "If you use Cinekive in research or tooling, please cite this repository."
+type: software
+authors:
+  - family-names: Improta
+    given-names: Gianluca
+    email: hello@gianlucaimprota.com
+repository-code: "https://github.com/Gianluca-Improta/cinekive"
+url: "https://github.com/Gianluca-Improta/cinekive/releases/latest"
+abstract: >-
+  Local-first cinematic visual archive for filmmakers: search stills by look,
+  mood, and technique; ingest video and yt-dlp URLs; build moodboards.
+  Privacy-first alternative to cloud shot libraries.
+keywords:
+  - filmmaking
+  - film still
+  - moodboard
+  - local-first
+  - visual search
+  - open source
+license: MIT
+version: 0.3.3
+date-released: "2026-07-11"

@@ -1,0 +1,18 @@
+title: "[show] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share a moodboard, archive setup, or workflow tip.
+        **Do not** post private client work or copyrighted dumps.
+  - type: textarea
+    id: story
+    attributes:
+      label: What are you showing?
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How did you build it? (optional)
+      description: Sources, filters, VLM tips, hardware…

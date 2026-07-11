@@ -39,6 +39,8 @@ cd apps/web && npm run lint
 - Issues → bugs and concrete tasks  
 - PRs → fixes and features that match the roadmap  
 
+Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Security reports: [SECURITY.md](SECURITY.md).
+
 ## License
 
 MIT — by contributing you agree your work is licensed under the same terms.

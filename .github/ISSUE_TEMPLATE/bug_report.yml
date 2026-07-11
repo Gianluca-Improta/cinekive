@@ -1,0 +1,59 @@
+name: Bug report
+description: Something is broken in Cinekive (install, search, ingest, UI).
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. For “how do I…?” questions, use [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) instead.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did this happen?
+      options:
+        - Desktop app (Electron)
+        - Browser (localhost:3000)
+        - API / Docker only
+        - Scripts / mirrors
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release tag or commit (e.g. v0.3.3)
+      placeholder: v0.3.3
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Windows 11 / macOS 15 arm64 / Ubuntu 24.04
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Expected vs actual. Paste errors from Activity, terminal, or Docker logs.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: Docker Desktop is running
+        - label: I searched existing Issues / Discussions
+        - label: I am not posting private client footage or credentials

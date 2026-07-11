@@ -17,6 +17,7 @@
   <a href="https://github.com/Gianluca-Improta/cinekive/releases"><img src="https://img.shields.io/github/v/release/Gianluca-Improta/cinekive?label=release" alt="Release" /></a>
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
   <img src="https://img.shields.io/badge/data-stays%20on%20your%20disk-success" alt="Local" />
+  <a href="https://github.com/Gianluca-Improta/cinekive/discussions"><img src="https://img.shields.io/badge/discussions-加入讨论-purple" alt="Discussions" /></a>
   <a href="README.md"><img src="https://img.shields.io/badge/docs-English-informational" alt="English README" /></a>
 </p>
 
@@ -25,6 +26,8 @@
   <a href="#三步安装">三步安装</a> ·
   <a href="#界面语言">界面语言</a> ·
   <a href="#功能概览">功能概览</a> ·
+  <a href="docs/FAQ.md">FAQ（英文）</a> ·
+  <a href="docs/COMPARE.md">对比其他工具</a> ·
   <a href="#加入讨论">加入讨论</a>
 </p>
 
@@ -108,6 +111,7 @@
 - **叙事 / 广告 / 社媒** — 导入自有素材（拖文件或任意 yt-dlp 链接）
 - **档案库** — FilmGrab、EyeCandy、ShotDeck、MovieStillsDB、StillsLab 镜像 + 发现更多来源
 - **搜索** — 片名、导演、技法、年代、画面感（SigLIP + 元数据）
+- **多语言** — 界面 EN / 中文 / ES / FR / DE / JA；景别与技法等中文标签
 - **检视器 + 全屏面板** — 默认侧栏检视；点击画面进入大舞台
 - **情绪板** — 无限画布、项目素材轨、文字/便利贴/音视频链接、概念组、堆叠
 - **桌面或浏览器** — Win / Mac / Linux 应用，或 `:3000` 网页
@@ -163,8 +167,11 @@ cd cinekive
 - **Bug** → [Issues](https://github.com/Gianluca-Improta/cinekive/issues)
 - **代码** → [Contributing](CONTRIBUTING.md)
 - **展示你的板** → 在 Discussions 发截图（勿发客户隐私素材）
+- **常见问题** → [docs/FAQ.md](docs/FAQ.md) · **对比** → [docs/COMPARE.md](docs/COMPARE.md)
 
 请尊重版权：镜像脚本仅供你有权访问的内容；仓库不附带他人静帧。
+
+行为准则：[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · 安全：[SECURITY.md](SECURITY.md) · 支持：[SUPPORT.md](SUPPORT.md)
 
 ---
 
