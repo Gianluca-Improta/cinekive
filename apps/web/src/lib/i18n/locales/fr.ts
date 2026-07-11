@@ -1,29 +1,29 @@
-import type { MessageTree } from "../types";
+﻿import type { MessageTree } from "../types";
 
-/** Partial packs — missing keys fall back to English. */
+/** Partial packs â€” missing keys fall back to English. */
 const fr: MessageTree = {
-  brand: { tagline: "Archive cinématographique locale" },
+  brand: { tagline: "Archive cinÃ©matographique locale" },
   nav: {
     narrative: "Narratif",
-    commercial: "Publicités",
-    social: "Réseaux sociaux",
+    commercial: "PublicitÃ©s",
+    social: "RÃ©seaux sociaux",
     archives: "Archives",
-    discovery: "Découvrir",
+    discovery: "DÃ©couvrir",
     favorites: "Favoris",
     bin: "Corbeille",
   },
   discovery: {
-    title: "Découvrir",
-    searchPlaceholder: "Chercher un film, une technique, une ambiance… (⌘K)",
-    loading: "Chargement…",
+    title: "DÃ©couvrir",
+    searchPlaceholder: "Chercher un film, une technique, une ambianceâ€¦ (âŒ˜K)",
+    loading: "Chargementâ€¦",
   },
-  favorites: { title: "Favoris", empty: "Pas encore de favoris", loading: "Chargement…" },
+  favorites: { title: "Favoris", empty: "Pas encore de favoris", loading: "Chargementâ€¦" },
   detail: {
-    title: "Détail du plan",
+    title: "DÃ©tail du plan",
     connections: "Connexions",
     translate: "Traduire",
-    showOriginal: "Voir l’original",
-    translating: "Traduction…",
+    showOriginal: "Voir lâ€™original",
+    translating: "Traductionâ€¦",
     save: "Enregistrer",
   },
   language: {
@@ -31,7 +31,7 @@ const fr: MessageTree = {
     core: "Noyau : anglais",
     autoTranslate: "Traduire le contenu",
   },
-  common: { create: "Créer", cancel: "Annuler", delete: "Supprimer", close: "Fermer" },
+  common: { create: "CrÃ©er", cancel: "Annuler", delete: "Supprimer", close: "Fermer" },
   filters: { dialIn: "Filtres", composition: "Composition", favoritesOnly: "Favoris seulement" },
   archives: { title: "Archives", newArchive: "Nouvelle archive" },
 };

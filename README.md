@@ -40,9 +40,19 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 <p align="center"><em>Discovery — search by look, craft, director, color</em></p>
 
 <p align="center">
+  <img src="docs/showcase/ui-project.png" width="90%" alt="Project grid UI" />
+</p>
+<p align="center"><em>Project grid — heroes, filters, inspector</em></p>
+
+<p align="center">
+  <img src="docs/showcase/ui-moodboard.png" width="90%" alt="Moodboard canvas UI" />
+</p>
+<p align="center"><em>Moodboard — drag clips from the project rail, text, stickies, concepts, stacks</em></p>
+
+<p align="center">
   <img src="docs/showcase/ui-archives.png" width="90%" alt="Archives UI" />
 </p>
-<p align="center"><em>Archives — mirrors, logins, and more sources</em></p>
+<p align="center"><em>Archives — your still dumps, mirrors &amp; logins, more sources</em></p>
 
 <p align="center">
   <img src="docs/showcase/library-reel.gif" width="80%" alt="Sample archive frames reel" />

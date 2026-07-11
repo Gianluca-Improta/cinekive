@@ -44,6 +44,9 @@ export const api = {
   health: () =>
     request<{
       status: string;
+      sqlite?: boolean;
+      qdrant?: boolean;
+      embedding_model_loaded?: boolean;
       vlm_enabled?: boolean;
       vlm_reachable?: boolean;
       enrich?: {

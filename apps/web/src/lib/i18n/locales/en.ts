@@ -1,4 +1,4 @@
-import type { MessageTree } from "./types";
+﻿import type { MessageTree } from "../types";
 
 /** English is the source of truth for all UI keys. */
 const en: MessageTree = {
@@ -8,15 +8,15 @@ const en: MessageTree = {
   },
   nav: {
     narrative: "Narrative",
-    narrativeHint: "Film · series · ingest your own",
+    narrativeHint: "Film Â· series Â· ingest your own",
     commercial: "Commercials",
-    commercialHint: "Brand · job · campaign",
+    commercialHint: "Brand Â· job Â· campaign",
     social: "Social Media",
-    socialHint: "Short / long · aspect optional",
+    socialHint: "Short / long Â· aspect optional",
     archives: "Archives",
-    archivesHint: "Mirrors · your still dumps",
+    archivesHint: "Mirrors Â· your still dumps",
     archivesHub: "Hub",
-    archivesHubHint: "mirrors · new archive",
+    archivesHubHint: "mirrors Â· new archive",
     discovery: "Discovery",
     favorites: "Favorites",
     bin: "Bin",
@@ -24,10 +24,10 @@ const en: MessageTree = {
   },
   discovery: {
     title: "Discovery",
-    subtitle: "Heroes · techniques · eras · themes · palette",
-    searchPlaceholder: "Search a film, technique, mood… (⌘K)",
+    subtitle: "Heroes Â· techniques Â· eras Â· themes Â· palette",
+    searchPlaceholder: "Search a film, technique, moodâ€¦ (âŒ˜K)",
     clearPalette: "Clear palette",
-    loading: "Loading shots…",
+    loading: "Loading shotsâ€¦",
   },
   favorites: {
     title: "Favorites",
@@ -35,7 +35,7 @@ const en: MessageTree = {
     empty: "No favorites yet",
     emptyHint:
       "Star shots from Discovery or any project (F in the detail sheet, or the star on a card). They all land here.",
-    loading: "Loading favorites…",
+    loading: "Loading favoritesâ€¦",
     count: "{n} shot",
     count_plural: "{n} shots",
   },
@@ -48,7 +48,7 @@ const en: MessageTree = {
     palette: "Palette",
     expandPalette: "Expand palette matches in grid",
     connections: "Connections",
-    connectionsHint: "Visual · craft · palette · same film",
+    connectionsHint: "Visual Â· craft Â· palette Â· same film",
     looksLike: "Looks like",
     sameCraft: "Same craft",
     samePalette: "Same palette",
@@ -63,7 +63,7 @@ const en: MessageTree = {
     expand: "Open full panel",
     collapse: "Back to inspector",
     shiftAlike: "Show alike in archive",
-    notes: "Notes…",
+    notes: "Notesâ€¦",
     tagsPlaceholder: "tags, comma, separated",
     save: "Save",
     downloadFrame: "Download frame",
@@ -72,11 +72,11 @@ const en: MessageTree = {
     exportClip: "Export clip",
     exportEdl: "Export EDL",
     exportZip: "Export zip",
-    favorite: "Favorite (F) — shows in Favorites",
+    favorite: "Favorite (F) â€” shows in Favorites",
     addTo: "Add to",
     translate: "Translate",
     showOriginal: "Show original",
-    translating: "Translating…",
+    translating: "Translatingâ€¦",
   },
   connections: {
     noVisual: "No visual neighbors indexed yet",
@@ -88,13 +88,13 @@ const en: MessageTree = {
     label: "Language",
     core: "Core: English",
     autoTranslate: "Auto-translate content",
-    autoTranslateHint: "Titles, mood, notes, dialogue, tags → your language",
+    autoTranslateHint: "Titles, mood, notes, dialogue, tags â†’ your language",
   },
   common: {
     create: "Create",
     cancel: "Cancel",
     delete: "Delete",
-    loading: "Loading…",
+    loading: "Loadingâ€¦",
     close: "Close",
     clearAll: "Clear all",
     search: "Search",
@@ -102,7 +102,7 @@ const en: MessageTree = {
   filters: {
     dialIn: "Dial in",
     mood: "Mood",
-    moodPlaceholder: "Free mood phrase…",
+    moodPlaceholder: "Free mood phraseâ€¦",
     composition: "Composition",
     shotType: "Shot type",
     techniques: "Techniques",

@@ -1,4 +1,4 @@
-# Creator & support links (used in Settings + README)
+/** Creator & support links (Settings sidebar + README). */
 
 export const CREATOR_LINKS = {
   framechain: {

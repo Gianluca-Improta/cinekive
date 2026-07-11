@@ -1,4 +1,4 @@
-import type { MessageTree } from "../types";
+﻿import type { MessageTree } from "../types";
 
 const de: MessageTree = {
   brand: { tagline: "Lokales filmisches Archiv" },
@@ -13,24 +13,24 @@ const de: MessageTree = {
   },
   discovery: {
     title: "Entdecken",
-    searchPlaceholder: "Film, Technik, Stimmung suchen… (⌘K)",
-    loading: "Lade Shots…",
+    searchPlaceholder: "Film, Technik, Stimmung suchenâ€¦ (âŒ˜K)",
+    loading: "Lade Shotsâ€¦",
   },
-  favorites: { title: "Favoriten", empty: "Noch keine Favoriten", loading: "Lade Favoriten…" },
+  favorites: { title: "Favoriten", empty: "Noch keine Favoriten", loading: "Lade Favoritenâ€¦" },
   detail: {
     title: "Shot-Details",
     connections: "Verbindungen",
-    translate: "Übersetzen",
+    translate: "Ãœbersetzen",
     showOriginal: "Original zeigen",
-    translating: "Übersetze…",
+    translating: "Ãœbersetzeâ€¦",
     save: "Speichern",
   },
   language: {
     label: "Sprache",
     core: "Kern: Englisch",
-    autoTranslate: "Inhalt übersetzen",
+    autoTranslate: "Inhalt Ã¼bersetzen",
   },
-  common: { create: "Erstellen", cancel: "Abbrechen", delete: "Löschen", close: "Schließen" },
+  common: { create: "Erstellen", cancel: "Abbrechen", delete: "LÃ¶schen", close: "SchlieÃŸen" },
   filters: { dialIn: "Filter", composition: "Komposition", favoritesOnly: "Nur Favoriten" },
   archives: { title: "Archive", newArchive: "Neues Archiv" },
 };

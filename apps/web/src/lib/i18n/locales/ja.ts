@@ -1,38 +1,38 @@
-import type { MessageTree } from "../types";
+﻿import type { MessageTree } from "../types";
 
 const ja: MessageTree = {
-  brand: { tagline: "ローカル映画アーカイブ" },
+  brand: { tagline: "ãƒ­ãƒ¼ã‚«ãƒ«æ˜ ç”»ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–" },
   nav: {
-    narrative: "ナラティブ",
+    narrative: "ãƒŠãƒ©ãƒ†ã‚£ãƒ–",
     commercial: "CM",
-    social: "ソーシャル",
-    archives: "アーカイブ",
-    discovery: "ディスカバリー",
-    favorites: "お気に入り",
-    bin: "ゴミ箱",
+    social: "ã‚½ãƒ¼ã‚·ãƒ£ãƒ«",
+    archives: "ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–",
+    discovery: "ãƒ‡ã‚£ã‚¹ã‚«ãƒãƒªãƒ¼",
+    favorites: "ãŠæ°—ã«å…¥ã‚Š",
+    bin: "ã‚´ãƒŸç®±",
   },
   discovery: {
-    title: "ディスカバリー",
-    searchPlaceholder: "映画・技法・ムードを検索… (⌘K)",
-    loading: "読み込み中…",
+    title: "ãƒ‡ã‚£ã‚¹ã‚«ãƒãƒªãƒ¼",
+    searchPlaceholder: "æ˜ ç”»ãƒ»æŠ€æ³•ãƒ»ãƒ ãƒ¼ãƒ‰ã‚’æ¤œç´¢â€¦ (âŒ˜K)",
+    loading: "èª­ã¿è¾¼ã¿ä¸­â€¦",
   },
-  favorites: { title: "お気に入り", empty: "まだお気に入りがありません", loading: "読み込み中…" },
+  favorites: { title: "ãŠæ°—ã«å…¥ã‚Š", empty: "ã¾ã ãŠæ°—ã«å…¥ã‚ŠãŒã‚ã‚Šã¾ã›ã‚“", loading: "èª­ã¿è¾¼ã¿ä¸­â€¦" },
   detail: {
-    title: "ショット詳細",
-    connections: "つながり",
-    translate: "翻訳",
-    showOriginal: "原文を表示",
-    translating: "翻訳中…",
-    save: "保存",
+    title: "ã‚·ãƒ§ãƒƒãƒˆè©³ç´°",
+    connections: "ã¤ãªãŒã‚Š",
+    translate: "ç¿»è¨³",
+    showOriginal: "åŽŸæ–‡ã‚’è¡¨ç¤º",
+    translating: "ç¿»è¨³ä¸­â€¦",
+    save: "ä¿å­˜",
   },
   language: {
-    label: "言語",
-    core: "コア：英語",
-    autoTranslate: "コンテンツを自動翻訳",
+    label: "è¨€èªž",
+    core: "ã‚³ã‚¢ï¼šè‹±èªž",
+    autoTranslate: "ã‚³ãƒ³ãƒ†ãƒ³ãƒ„ã‚’è‡ªå‹•ç¿»è¨³",
   },
-  common: { create: "作成", cancel: "キャンセル", delete: "削除", close: "閉じる" },
-  filters: { dialIn: "フィルター", composition: "構図", favoritesOnly: "お気に入りのみ" },
-  archives: { title: "アーカイブ", newArchive: "新規アーカイブ" },
+  common: { create: "ä½œæˆ", cancel: "ã‚­ãƒ£ãƒ³ã‚»ãƒ«", delete: "å‰Šé™¤", close: "é–‰ã˜ã‚‹" },
+  filters: { dialIn: "ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼", composition: "æ§‹å›³", favoritesOnly: "ãŠæ°—ã«å…¥ã‚Šã®ã¿" },
+  archives: { title: "ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–", newArchive: "æ–°è¦ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–" },
 };
 
 export default ja;
