@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --cinema-black: #000000;
+  --cinema-surface: #0f0f0f;
+  --cinema-panel: #141414;
+  --cinema-border: rgba(0, 229, 255, 0.12);
+  --cinema-muted: #a0a0a0;
+  --cinema-cyan: #00e5ff;
+  --cinema-magenta: #ff006e;
+  --cinema-glow: rgba(0, 229, 255, 0.15);
+  --cinema-grid: rgba(0, 229, 255, 0.03);
+  --cinema-body: #ffffff;
+  --cinema-overlay: rgba(0, 0, 0, 0.55);
+}
+
+/* True light: cream paper, dark ink, soft borders */
+[data-theme="light"] {
+  color-scheme: light;
+  --cinema-black: #f7f5f0;
+  --cinema-surface: #ffffff;
+  --cinema-panel: #efebe3;
+  --cinema-border: rgba(30, 40, 50, 0.14);
+  --cinema-muted: #5a6570;
+  --cinema-cyan: #0a6f7c;
+  --cinema-magenta: #b91c4a;
+  --cinema-glow: rgba(10, 111, 124, 0.1);
+  --cinema-grid: rgba(30, 40, 50, 0.045);
+  --cinema-body: #1a1f24;
+  --cinema-overlay: rgba(247, 245, 240, 0.72);
+}
+
+/* Slate: cool grey stone with subtle texture */
+[data-theme="slate"] {
+  color-scheme: dark;
+  --cinema-black: #1c2128;
+  --cinema-surface: #252b34;
+  --cinema-panel: #2e3642;
+  --cinema-border: rgba(160, 174, 192, 0.22);
+  --cinema-muted: #9aa8b8;
+  --cinema-cyan: #7dd3fc;
+  --cinema-magenta: #f9a8d4;
+  --cinema-glow: rgba(125, 211, 252, 0.14);
+  --cinema-grid: rgba(148, 163, 184, 0.07);
+  --cinema-body: #e8eef4;
+  --cinema-overlay: rgba(28, 33, 40, 0.65);
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--cinema-black);
+  color: var(--cinema-body);
+}
+
+body {
+  background-image:
+    linear-gradient(var(--cinema-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cinema-grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: -1px -1px;
+}
+
+[data-theme="slate"] body {
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(125, 211, 252, 0.06), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(148, 163, 184, 0.05), transparent 45%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.12) 2px,
+      rgba(0, 0, 0, 0.12) 3px
+    ),
+    linear-gradient(var(--cinema-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cinema-grid) 1px, transparent 1px);
+  background-size: auto, auto, auto, 32px 32px, 32px 32px;
+}
+
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(ellipse at 50% -20%, rgba(10, 111, 124, 0.06), transparent 55%),
+    linear-gradient(var(--cinema-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cinema-grid) 1px, transparent 1px);
+  background-size: auto, 40px 40px, 40px 40px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--cinema-cyan) 35%, transparent) transparent;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--cinema-cyan) 35%, transparent);
+}
+
+/* Light: remap hardcoded dark utilities so the whole UI goes light */
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-white\/80,
+[data-theme="light"] .text-white\/90,
+[data-theme="light"] .text-white\/70,
+[data-theme="light"] .text-white\/60 {
+  color: var(--cinema-body) !important;
+}
+[data-theme="light"] .hover\:text-white:hover {
+  color: var(--cinema-body) !important;
+}
+[data-theme="light"] .group:hover .group-hover\:text-white {
+  color: var(--cinema-body) !important;
+}
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/20 {
+  border-color: var(--cinema-border) !important;
+}
+[data-theme="light"] .bg-black,
+[data-theme="light"] .bg-black\/40,
+[data-theme="light"] .bg-black\/50,
+[data-theme="light"] .bg-black\/60,
+[data-theme="light"] .bg-black\/70,
+[data-theme="light"] .bg-black\/75,
+[data-theme="light"] .bg-black\/80,
+[data-theme="light"] .bg-black\/90 {
+  background-color: var(--cinema-overlay) !important;
+}
+[data-theme="light"] .placeholder\:text-white\/40::placeholder,
+[data-theme="light"] .placeholder\:text-white\/50::placeholder {
+  color: color-mix(in srgb, var(--cinema-muted) 75%, transparent) !important;
+}

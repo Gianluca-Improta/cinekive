@@ -1,0 +1,118 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.13.2
+    container_name: cinearchive-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    image: cinearchive-api:latest
+    container_name: cinearchive-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Durable archive — override host path via LIBRARY_HOST_PATH in .env
+      - ${LIBRARY_HOST_PATH:-./data/library}:/data/library
+      - ./scripts:/app/scripts:ro
+      # ShotDeck mirror on host SSD (override path in .env if needed)
+      - ${SHOTDECK_LIBRARY_HOST:-D:/library/_shotdeck}:/data/library/_shotdeck
+      - ./data/videos:/data/videos
+      - ./data/artifacts:/data/artifacts
+      - ./data/db:/data/db
+      - ./data/models:/data/models
+      # Live code mount so fixes apply without full image rebuild
+      - ./apps/api/src:/app/src
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:////data/db/cinearchive.db}
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-cinearchive_shots_v1}
+      - VIDEOS_DIR=/data/videos
+      - ARTIFACTS_DIR=/data/artifacts
+      - LIBRARY_DIR=/data/library
+      - MODELS_DIR=/data/models
+      - HF_HOME=/data/models/huggingface
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-google/siglip-so400m-patch14-384}
+      - EMBEDDING_BATCH_SIZE=${EMBEDDING_BATCH_SIZE:-8}
+      - DEVICE=${DEVICE:-cpu}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3-vl:8b}
+      - VLM_ENABLED=${VLM_ENABLED:-true}
+      - ENRICH_TIER=${ENRICH_TIER:-auto}
+      - ENRICH_VRAM_GB=${ENRICH_VRAM_GB:-16}
+      - ENRICH_CONTINUOUS=${ENRICH_CONTINUOUS:-true}
+      - ENRICH_INTERVAL_SEC=${ENRICH_INTERVAL_SEC:-90}
+      - ENRICH_BATCH_SIZE=${ENRICH_BATCH_SIZE:-4}
+      - ENRICH_QUALITY_MIN=${ENRICH_QUALITY_MIN:-55}
+      - ENRICH_REENRICH_FAILS=${ENRICH_REENRICH_FAILS:-true}
+      - WATCHER_ENABLED=${WATCHER_ENABLED:-false}
+      - WATCHER_POLL_SEC=${WATCHER_POLL_SEC:-5}
+      - SEEK_ENABLED=${SEEK_ENABLED:-true}
+      - SHOTDECK_USER=${SHOTDECK_USER:-}
+      - SHOTDECK_PASS=${SHOTDECK_PASS:-}
+      - MIRROR_SCRIPTS_DIR=/app/scripts
+      - DEDUPE_ON_INGEST=${DEDUPE_ON_INGEST:-false}
+      - DEDUPE_GLOBAL=${DEDUPE_GLOBAL:-false}
+      - DEDUPE_INTERVAL_SEC=${DEDUPE_INTERVAL_SEC:-300}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    image: cinearchive-web:latest
+    container_name: cinearchive-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Phase 1 VLM — enable with: docker compose --profile vlm up -d
+  ollama:
+    profiles: ["vlm"]
+    image: ollama/ollama:latest
+    container_name: cinearchive-ollama
+    volumes:
+      - ./data/ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

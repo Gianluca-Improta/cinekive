@@ -1,0 +1,51 @@
+# Data volumes — never commit personal libraries / models / DB
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Desktop builds
+apps/desktop/release/
+apps/desktop/dist/
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+**/.cache/accounts.json
+**/.cache/session.json
+**/credentials*.json
+**/source_credentials.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Models cache (large)
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+
+# Logs
+*.log

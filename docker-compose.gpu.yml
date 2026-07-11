@@ -1,0 +1,26 @@
+# GPU override: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+# With VLM: docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile vlm up -d
+services:
+  api:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - DEVICE=cuda
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all

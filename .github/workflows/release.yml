@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Cinekive ${{ github.ref_name }}
+
+            Local-first cinematic archive — see the [README](https://github.com/Gianluca-Improta/cinekive#readme) for install.
+
+            **Join in:** [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) · [Sponsors](https://github.com/sponsors/Gianluca-Improta)
+
+            Desktop installers (when attached): Windows `.exe` · macOS · Linux AppImage/deb

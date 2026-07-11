@@ -1,0 +1,126 @@
+{
+  "name": "cinekive-desktop",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Cinekive — local cinematic archive desktop app",
+  "main": "main.js",
+  "author": "Cinekive",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win nsis portable",
+    "dist:win": "electron-builder --win nsis portable",
+    "dist:mac": "electron-builder --mac dmg zip",
+    "dist:linux": "electron-builder --linux AppImage deb",
+    "dist:all": "electron-builder --win nsis portable --mac dmg zip --linux AppImage deb",
+    "dist:dir": "electron-builder --win --dir"
+  },
+  "build": {
+    "appId": "app.cinekive.desktop",
+    "productName": "Cinekive",
+    "copyright": "Copyright © Cinekive",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "launcher.js",
+      "paths.js",
+      "wizard.html",
+      "assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../../docker-compose.desktop.yml",
+        "to": "cinekive/docker-compose.desktop.yml"
+      },
+      {
+        "from": "../../.env.example",
+        "to": "cinekive/.env.example"
+      },
+      {
+        "from": "../../apps/api",
+        "to": "cinekive/apps/api",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/.venv/**",
+          "!**/venv/**",
+          "!**/.pytest_cache/**",
+          "!**/*.pyc"
+        ]
+      },
+      {
+        "from": "../../apps/web",
+        "to": "cinekive/apps/web",
+        "filter": [
+          "**/*",
+          "!**/node_modules/**",
+          "!**/.next/**",
+          "!**/out/**"
+        ]
+      },
+      {
+        "from": "../../scripts",
+        "to": "cinekive/scripts",
+        "filter": ["**/*", "!**/_tmp_*"]
+      },
+      {
+        "from": "../../docs/DESKTOP.md",
+        "to": "cinekive/docs/DESKTOP.md"
+      },
+      {
+        "from": "../../docs/PACKAGING.md",
+        "to": "cinekive/docs/PACKAGING.md"
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "Cinekive-${version}-${os}-${arch}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "assets/icon.png",
+      "category": "public.app-category.photography",
+      "artifactName": "Cinekive-${version}-${os}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Graphics",
+      "artifactName": "Cinekive-${version}-${os}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Cinekive",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "license": "../../LICENSE"
+    },
+    "portable": {
+      "artifactName": "Cinekive-${version}-portable.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^35.1.0",
+    "electron-builder": "^25.1.8"
+  }
+}

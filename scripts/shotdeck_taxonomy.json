@@ -1,0 +1,110 @@
+{
+  "filmgrab_skip": true,
+  "facets": {
+    "int_ext": ["Interior", "Exterior"],
+    "time_of_day": ["Day", "Night", "Sunrise", "Sunset", "Dawn", "Dusk", "Magic Hour", "Overcast"],
+    "color": [
+      "Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Pink", "Cyan", "Brown",
+      "Black", "White", "Gray", "Mixed Warm", "Mixed Cool", "Desaturated", "Saturated"
+    ],
+    "shot_type": [
+      "Wide", "Medium Wide", "Medium", "Medium Close-Up", "Close-Up", "Extreme Close-Up",
+      "Establishing", "Insert", "Aerial"
+    ],
+    "lighting": [
+      "Hard", "Soft", "High Key", "Low Key", "Natural", "Artificial", "Backlight",
+      "Silhouette", "Practical", "Motivated"
+    ],
+    "composition": [
+      "Center", "Left Heavy", "Right Heavy", "Symmetrical", "Asymmetrical",
+      "Leading Lines", "Depth", "Negative Space"
+    ],
+    "mood": [
+      "Dark", "Bright", "Melancholy", "Joyful", "Tense", "Peaceful", "Mysterious",
+      "Romantic", "Whimsical", "Gritty", "Dreamlike"
+    ],
+    "format": ["35mm", "65mm", "Digital", "Anamorphic"]
+  },
+  "pair_seeds": [
+    ["int_ext", "Exterior", "time_of_day", "Night"],
+    ["int_ext", "Interior", "time_of_day", "Day"],
+    ["int_ext", "Exterior", "time_of_day", "Sunrise"],
+    ["int_ext", "Exterior", "time_of_day", "Sunset"],
+    ["int_ext", "Interior", "lighting", "Soft"],
+    ["int_ext", "Exterior", "lighting", "Natural"],
+    ["shot_type", "Close-Up", "lighting", "Soft"],
+    ["shot_type", "Wide", "composition", "Symmetrical"],
+    ["color", "Blue", "mood", "Peaceful"],
+    ["color", "Red", "mood", "Tense"],
+    ["color", "Desaturated", "lighting", "Low Key"],
+    ["format", "Anamorphic", "composition", "Center"]
+  ],
+  "media_scopes": [
+    {
+      "media_type": "Commercial",
+      "output_subdir": "by_commercial",
+      "content_type": "commercial",
+      "include_facets": true,
+      "include_pair_seeds": true,
+      "include_broad": true,
+      "text_seeds": [
+        "car", "phone", "watch", "perfume", "sneaker", "beer", "coffee", "luxury",
+        "fashion", "sport", "fitness", "food", "restaurant", "travel", "hotel",
+        "technology", "bank", "insurance", "cosmetics", "skincare", "jewelry",
+        "product", "packshot", "lifestyle", "family", "celebrity", "athlete",
+        "city", "beach", "kitchen", "bathroom", "office", "studio", "street",
+        "slow motion", "macro", "splash", "smoke", "water", "neon", "sunset",
+        "nike", "apple", "coca cola", "mercedes", "bmw", "gucci", "chanel",
+        "dior", "adidas", "pepsi", "amazon", "google", "samsung", "sony",
+        "super bowl", "christmas", "summer", "launch", "heritage", "minimal"
+      ]
+    },
+    {
+      "media_type": "Music Video",
+      "output_subdir": "by_music_video",
+      "content_type": "music_video",
+      "include_facets": true,
+      "include_pair_seeds": true,
+      "include_broad": true,
+      "text_seeds": [
+        "performance", "choreography", "dance", "concert", "stage", "studio",
+        "nightclub", "party", "desert", "warehouse", "rooftop", "highway",
+        "slow motion", "anamorphic", "neon", "silhouette", "mirror", "smoke",
+        "beyonce", "rihanna", "kanye", "drake", "taylor swift", "billie eilish",
+        "kendrick", "frank ocean", "the weeknd", "dua lipa", "bad bunny",
+        "hype williams", "dave meyers", "jonas akerlund", "colin tilley",
+        "michel gondry", "spike jonze", "melina matsoukas", "nabil"
+      ]
+    },
+    {
+      "media_type": "Short",
+      "output_subdir": "by_indie",
+      "content_type": "indie",
+      "skip_if_in_filmgrab": true,
+      "include_facets": true,
+      "include_pair_seeds": true,
+      "include_broad": true,
+      "text_seeds": [
+        "short film", "student film", "sundance", "cannes", "berlinale", "sxsw",
+        "tribeca", "afi", "bfi", "locarno", "venice", "rotterdam", "clermont",
+        "experimental", "micro budget", "debut", "festival", "anthology"
+      ]
+    },
+    {
+      "media_type": "Feature",
+      "output_subdir": "by_indie",
+      "content_type": "indie",
+      "skip_if_in_filmgrab": true,
+      "include_facets": false,
+      "include_pair_seeds": true,
+      "include_broad": true,
+      "text_seeds": [
+        "a24", "mubi", "neon", "focus features", "searchlight", "ifc", "magnolia",
+        "sundance", "cannes", "arthouse", "indie", "limited release", "micro budget",
+        "debut feature", "foreign film", "documentary", "mumblecore", "no budget",
+        "sean baker", "chloe zhao", "barry jenkins", "greta gerwig", "ari aster",
+        "robert eggers", "xavier dolan", "andrea arnold", "criterion"
+      ]
+    }
+  ]
+}
