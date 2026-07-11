@@ -22,6 +22,16 @@ fi
 
 mkdir -p data/videos data/artifacts data/qdrant data/db data/models data/library
 
+# Host yt-dlp (URL paste uses the API container; host CLI helps scripts)
+if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+  PY=$(command -v python3 || command -v python)
+  echo "  Ensuring yt-dlp on this machine…"
+  "$PY" -m pip install -U "yt-dlp>=2024.8.0" >/dev/null 2>&1 || true
+  if command -v yt-dlp >/dev/null 2>&1; then
+    echo "  yt-dlp $(yt-dlp --version 2>/dev/null || true)"
+  fi
+fi
+
 echo "  Starting stack (first run may take several minutes)…"
 docker compose up -d --build
 

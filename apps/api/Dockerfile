@@ -35,9 +35,13 @@ RUN mkdir -p /data/videos /data/artifacts /data/db /data/models /data/library \
     && useradd --create-home --shell /bin/bash cinearchive \
     && chown -R cinearchive:cinearchive /app /data
 
-# Ensure tokenizer deps always present (SigLIP)
+# Ensure tokenizer + URL download deps always present (SigLIP / yt-dlp)
 USER root
-RUN pip install --no-cache-dir "sentencepiece>=0.2.0" "protobuf>=4.25.0"
+RUN pip install --no-cache-dir \
+    "sentencepiece>=0.2.0" \
+    "protobuf>=4.25.0" \
+    "yt-dlp>=2024.8.0" \
+    "curl_cffi>=0.7.0"
 USER cinearchive
 
 EXPOSE 8000

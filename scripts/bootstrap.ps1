@@ -41,6 +41,16 @@ if (-not (Test-Path .env)) {
   "data/library"
 ) | ForEach-Object { New-Item -ItemType Directory -Force -Path $_ | Out-Null }
 
+# Host yt-dlp (URL paste uses the API container; host CLI helps scripts / desktop)
+try {
+  Write-Host "  Ensuring yt-dlp on this machine…"
+  python -m pip install -U "yt-dlp>=2024.8.0" 1>$null
+  $yd = (yt-dlp --version 2>$null)
+  if ($yd) { Write-Host "  yt-dlp $yd" }
+} catch {
+  Write-Host "  (optional) Could not install host yt-dlp — API image still bundles it."
+}
+
 Write-Host "  Starting stack (first run may take several minutes)…"
 docker compose up -d --build
 

@@ -53,6 +53,7 @@ if (-not (Test-Path (Join-Path $Py "Scripts\python.exe"))) {
   python -m venv $Py
   & "$Py\Scripts\python.exe" -m pip install --upgrade pip
   & "$Py\Scripts\pip.exe" install -e (Join-Path $Root "apps\api")
+  & "$Py\Scripts\pip.exe" install -U "yt-dlp>=2024.8.0" "curl_cffi>=0.7.0"
 }
 
 # --- Next standalone ---
