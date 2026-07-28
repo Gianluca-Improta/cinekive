@@ -13,7 +13,12 @@ from cinearchive.db.models.job import Job
 from cinearchive.jobs.dedupe_runner import run_dedupe_job
 from cinearchive.jobs.dialogue_runner import run_dialogue_job
 from cinearchive.jobs.enrich_runner import resolve_enrich_model, run_enrich_job
-from cinearchive.jobs.enrich_scheduler import last_enrich_pass_at, run_enrich_pass
+from cinearchive.jobs.enrich_scheduler import (
+    count_pending_enrich,
+    enrich_activity_snapshot,
+    last_enrich_pass_at,
+    run_enrich_pass,
+)
 from cinearchive.jobs.reindex_runner import run_reindex_job
 from cinearchive.pipelines.dialogue import asr_available
 from cinearchive.pipelines.tag_quality import score_enrichment
@@ -157,6 +162,9 @@ async def put_enrich_config(
     cfg = vc.merge_runtime(settings, patch)
     # Kick a drip if enabling continuous
     if vc.effective_continuous(settings):
+        from cinearchive.jobs.enrich_scheduler import schedule_enrich_pass
+
+        schedule_enrich_pass(delay_sec=2.0)
         background.add_task(run_enrich_pass, settings)
     return {
         "ok": True,
@@ -213,6 +221,26 @@ async def list_enrich_models(settings: Settings = Depends(get_settings)) -> dict
     }
 
 
+@router.get("/enrich/status")
+async def enrich_status(settings: Settings = Depends(get_settings)) -> dict:
+    """Live continuous-enrich scheduler state for Activity panel."""
+    from cinearchive.services import vlm_config as vc
+
+    snap = enrich_activity_snapshot(settings)
+    pending = await count_pending_enrich(settings)
+    vlm_ok = False
+    if vc.effective_enabled(settings):
+        from cinearchive.pipelines.vlm_enrichment import VLMEnricher
+
+        model = vc.effective_model(settings)
+        vlm_ok = await VLMEnricher(settings, model=model).health()
+    return {
+        **snap,
+        "pending_shots": pending,
+        "vlm_reachable": vlm_ok,
+    }
+
+
 @router.post("/enrich/tick")
 async def enrich_tick(
     background: BackgroundTasks,
@@ -223,6 +251,9 @@ async def enrich_tick(
 
     if not vc.effective_enabled(settings):
         raise HTTPException(status_code=400, detail="VLM enrichment is disabled")
+    from cinearchive.jobs.enrich_scheduler import schedule_enrich_pass
+
+    schedule_enrich_pass(delay_sec=0.0)
     background.add_task(run_enrich_pass, settings)
     return {"queued": True, "message": "Enrich drip queued"}
 

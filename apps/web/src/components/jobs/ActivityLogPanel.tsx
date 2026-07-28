@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, ChevronRight, RefreshCw, X } from "lucide-react";
+import { Activity, ChevronRight, RefreshCw, Sparkles, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import type { Job } from "@/lib/types";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "cinekive.activityLogOpen";
@@ -20,6 +21,7 @@ function statusColor(status: Job["status"]) {
 }
 
 function formatJobType(type: string) {
+  if (type === "enrich_drip") return "craft enrich (background)";
   return type.replace(/_/g, " ");
 }
 
@@ -52,9 +54,11 @@ function writeDismissed(map: Record<string, number>) {
 
 export function ActivityLogPanel() {
   const qc = useQueryClient();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState<Record<string, number>>({});
   const prevActive = useRef(0);
+  const prevEnrichBusy = useRef(false);
 
   useEffect(() => {
     try {
@@ -75,19 +79,22 @@ export function ActivityLogPanel() {
   };
 
   const { data, refetch, isFetching } = useQuery({
-    queryKey: ["jobs", "recent"],
-    queryFn: () => api.listRecentJobs(40),
+    queryKey: ["activity"],
+    queryFn: () => api.listActivity(40),
     refetchInterval: (query) => {
       const items = query.state.data?.items ?? [];
+      const enrich = query.state.data?.enrich;
       const active = items.some((j) => j.status === "pending" || j.status === "running");
-      return active ? 2000 : 10000;
+      const enrichLive =
+        enrich?.continuous && (enrich.busy || (enrich.pending_shots ?? 0) > 0);
+      return active || enrichLive ? 2000 : 8000;
     },
   });
 
   const jobs = data?.items ?? [];
+  const enrich = data?.enrich;
   const now = Date.now();
 
-  // Auto-dismiss terminal jobs after AUTO_CLEAR_MS
   useEffect(() => {
     const terminal = jobs.filter(
       (j) => j.status === "completed" || j.status === "failed" || j.status === "cancelled"
@@ -97,7 +104,7 @@ export function ActivityLogPanel() {
     let changed = false;
     for (const j of terminal) {
       if (next[j.id]) continue;
-                    const end = new Date(j.finished_at || j.created_at).getTime();
+      const end = new Date(j.finished_at || j.created_at).getTime();
       if (!Number.isNaN(end) && now - end > AUTO_CLEAR_MS) {
         next[j.id] = now;
         changed = true;
@@ -109,16 +116,17 @@ export function ActivityLogPanel() {
     }
   }, [jobs, now]);
 
-  // When jobs finish, refresh library grids
   useEffect(() => {
     const active = jobs.filter((j) => j.status === "pending" || j.status === "running").length;
-    if (prevActive.current > 0 && active === 0) {
+    const enrichBusy = Boolean(enrich?.busy);
+    if ((prevActive.current > 0 && active === 0) || (prevEnrichBusy.current && !enrichBusy)) {
       qc.invalidateQueries({ queryKey: ["shots"] });
       qc.invalidateQueries({ queryKey: ["search"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
     }
     prevActive.current = active;
-  }, [jobs, qc]);
+    prevEnrichBusy.current = enrichBusy;
+  }, [jobs, enrich?.busy, qc]);
 
   const visibleJobs = jobs.filter((j) => {
     if (j.status === "pending" || j.status === "running") return true;
@@ -127,6 +135,10 @@ export function ActivityLogPanel() {
 
   const activeCount = jobs.filter((j) => j.status === "pending" || j.status === "running").length;
   const failCount = visibleJobs.filter((j) => j.status === "failed").length;
+  const enrichActive =
+    enrich?.continuous &&
+    enrich.enabled &&
+    (enrich.busy || (enrich.pending_shots ?? 0) > 0 || !enrich.vlm_reachable);
 
   const clearFinished = () => {
     const next = { ...dismissed };
@@ -138,8 +150,7 @@ export function ActivityLogPanel() {
     setDismissed(next);
   };
 
-  // Hide floating pill when nothing interesting
-  const showFab = open || activeCount > 0 || failCount > 0;
+  const showFab = open || activeCount > 0 || failCount > 0 || enrichActive;
 
   return (
     <>
@@ -150,21 +161,23 @@ export function ActivityLogPanel() {
           title="Activity"
           className={cn(
             "fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs shadow-lg transition",
-            activeCount
+            activeCount || enrich?.busy
               ? "border-cinema-cyan/50 bg-cinema-surface text-cinema-cyan"
               : failCount
                 ? "border-cinema-magenta/40 bg-cinema-surface text-cinema-magenta"
-                : "border-cinema-border bg-cinema-surface text-cinema-muted hover:text-white"
+                : enrichActive
+                  ? "border-cinema-cyan/40 bg-cinema-surface text-cinema-cyan/90"
+                  : "border-cinema-border bg-cinema-surface text-cinema-muted hover:text-white"
           )}
         >
           <Activity className="h-3.5 w-3.5" />
           Activity
-          {activeCount > 0 && (
+          {(activeCount > 0 || enrich?.busy) && (
             <span className="rounded-full bg-cinema-cyan/20 px-1.5 py-0.5 font-mono text-[10px]">
-              {activeCount}
+              {activeCount + (enrich?.busy ? 1 : 0)}
             </span>
           )}
-          {failCount > 0 && activeCount === 0 && (
+          {failCount > 0 && activeCount === 0 && !enrich?.busy && (
             <span className="rounded-full bg-cinema-magenta/20 px-1.5 py-0.5 font-mono text-[10px]">
               {failCount}
             </span>
@@ -182,8 +195,8 @@ export function ActivityLogPanel() {
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-cinema-cyan" />
             <div>
-              <div className="text-sm font-medium text-white">Activity</div>
-              <div className="text-[10px] text-cinema-muted">Ingest · enrich · downloads</div>
+              <div className="text-sm font-medium text-white">{t("activity.title")}</div>
+              <div className="text-[10px] text-cinema-muted">{t("activity.subtitle")}</div>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -212,17 +225,61 @@ export function ActivityLogPanel() {
             onClick={clearFinished}
             className="text-[10px] text-cinema-muted hover:text-cinema-cyan"
           >
-            Clear finished
+            {t("activity.clearFinished")}
           </button>
-          <span className="text-[10px] text-cinema-muted">
-            Auto-clears after ~45s
-          </span>
+          <span className="text-[10px] text-cinema-muted">{t("activity.autoClear")}</span>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 py-2">
+          {enrich?.continuous && enrich.enabled && (
+            <div
+              className={cn(
+                "mb-2 rounded border px-2.5 py-2",
+                enrich.busy
+                  ? "border-cinema-cyan/40 bg-cinema-cyan/5"
+                  : enrich.vlm_reachable
+                    ? "border-cinema-border/60 bg-cinema-black/40"
+                    : "border-amber-500/30 bg-amber-500/5"
+              )}
+            >
+              <div className="mb-1 flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3 text-cinema-cyan" />
+                <span className="text-[11px] font-medium text-white">{t("activity.craftEnrich")}</span>
+                <span
+                  className={cn(
+                    "ml-auto text-[10px] capitalize",
+                    enrich.busy
+                      ? "text-cinema-cyan"
+                      : enrich.vlm_reachable
+                        ? "text-emerald-400"
+                        : "text-amber-400"
+                  )}
+                >
+                  {enrich.busy
+                    ? t("activity.running")
+                    : enrich.vlm_reachable
+                      ? t("activity.background")
+                      : t("activity.waitingVlm")}
+                </span>
+              </div>
+              <p className="text-[10px] leading-relaxed text-cinema-muted">
+                {enrich.current_step ||
+                  (enrich.pending_shots
+                    ? t("activity.shotsQueued", { count: enrich.pending_shots })
+                    : t("activity.upToDate"))}
+              </p>
+              {(enrich.pending_shots ?? 0) > 0 && (
+                <p className="mt-1 font-mono text-[10px] text-cinema-cyan/80">
+                  {enrich.pending_shots} {t("activity.inQueue")}
+                  {enrich.last_model ? ` · ${enrich.last_model}` : ""}
+                </p>
+              )}
+            </div>
+          )}
+
           {visibleJobs.length === 0 ? (
             <p className="px-2 py-6 text-xs leading-relaxed text-cinema-muted">
-              Nothing running. Ingest, enrich, and URL downloads show up here.
+              {t("activity.empty")}
             </p>
           ) : (
             <ul className="space-y-1">

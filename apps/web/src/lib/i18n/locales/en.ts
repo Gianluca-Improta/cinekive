@@ -222,6 +222,17 @@ const en: MessageTree = {
   },
   activity: {
     title: "Activity",
+    subtitle: "Ingest · craft enrich · downloads",
+    clearFinished: "Clear finished",
+    autoClear: "Auto-clears after ~45s",
+    empty: "Nothing running yet. Ingest and URL downloads show up here. Background craft enrich appears above when on.",
+    craftEnrich: "Craft enrich",
+    running: "running",
+    background: "on",
+    waitingVlm: "waiting for VLM",
+    shotsQueued: "{count} shots waiting for craft tags",
+    inQueue: "in queue",
+    upToDate: "Library craft tags are up to date",
   },
   archives: {
     title: "Archives",

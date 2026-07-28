@@ -218,6 +218,17 @@ const zh: MessageTree = {
   },
   activity: {
     title: "活动",
+    subtitle: "导入 · 工艺标注 · 下载",
+    clearFinished: "清除已完成",
+    autoClear: "约 45 秒后自动清除",
+    empty: "暂无任务。导入与 URL 下载会显示在此。开启后台工艺标注时，状态显示在上方。",
+    craftEnrich: "工艺标注",
+    running: "运行中",
+    background: "已开启",
+    waitingVlm: "等待 VLM",
+    shotsQueued: "{count} 个镜头等待工艺标注",
+    inQueue: "排队中",
+    upToDate: "工艺标签已是最新",
   },
   archives: {
     title: "档案库",

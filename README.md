@@ -26,6 +26,7 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 
 <p align="center">
   <a href="#downloads">Downloads</a> ·
+  <a href="#watch">Watch</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#who-its-for">Who it’s for</a> ·
   <a href="#tour">Tour</a> ·
@@ -93,6 +94,17 @@ Then open http://localhost:3000
 
 ---
 
+## Watch
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=oNqlKUWVp5I">
+    <img src="https://img.youtube.com/vi/oNqlKUWVp5I/hqdefault.jpg" width="70%" alt="Watch Cinekive on YouTube" />
+  </a>
+</p>
+<p align="center"><em>Cinekive walkthrough — <a href="https://www.youtube.com/watch?v=oNqlKUWVp5I">watch on YouTube</a></em></p>
+
+---
+
 ## Screenshots
 
 <p align="center">
@@ -139,10 +151,12 @@ Then open http://localhost:3000
 
 ---
 
-## What you get (v0.4.1)
+## What you get (v0.4.2)
 
 - **No Docker on Windows / Mac (optional)** — native engine pack downloads on first start; Docker still supported
 - **Phone on same WiFi** — browse your library from a phone browser on your LAN
+- **Faster craft enrich** — continuous VLM drip with live Activity status; quicker Ollama calls
+- **One-click downloads** — hero frames and GIF/loop previews save in-place (no tab navigation)
 - **Local AI** — SigLIP + yt-dlp bundled in the engine; Ollama auto-detected for craft tags (optional install)
 - **GHCR pre-built images** — Docker users pull images instead of building locally when possible
 

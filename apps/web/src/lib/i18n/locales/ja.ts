@@ -123,6 +123,17 @@ const ja: MessageTree = {
   },
   activity: {
     title: "アクティビティ",
+    subtitle: "取り込み · クラフト強化 · ダウンロード",
+    clearFinished: "完了を消去",
+    autoClear: "約45秒後に自動消去",
+    empty: "まだ実行中のものはありません。取り込みとURLダウンロードがここに表示されます。バックグラウンドのクラフト強化は有効時に上に表示されます。",
+    craftEnrich: "クラフト強化",
+    running: "実行中",
+    background: "オン",
+    waitingVlm: "VLM待ち",
+    shotsQueued: "{count} ショットがクラフトタグ待ち",
+    inQueue: "キュー内",
+    upToDate: "ライブラリのクラフトタグは最新です",
   },
   archives: { title: "アーカイブ", newArchive: "新規アーカイブ" },
   settings: {

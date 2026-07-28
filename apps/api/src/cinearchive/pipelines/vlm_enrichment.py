@@ -357,6 +357,32 @@ def _clean_title(filename: str) -> str:
     return stem[:200] or filename
 
 
+def _image_b64_for_vlm(image_path: Path, *, max_side: int = 1024) -> tuple[str, str]:
+    """Downscale large keyframes before VLM — big images dominate latency/VRAM."""
+    mime = "image/jpeg"
+    suffix = image_path.suffix.lower()
+    if suffix == ".png":
+        mime = "image/png"
+    elif suffix == ".webp":
+        mime = "image/webp"
+    try:
+        from io import BytesIO
+
+        from PIL import Image
+
+        with Image.open(image_path) as im:
+            im = im.convert("RGB")
+            w, h = im.size
+            if max(w, h) > max_side:
+                im.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+            buf = BytesIO()
+            im.save(buf, format="JPEG", quality=85, optimize=True)
+            return base64.b64encode(buf.getvalue()).decode("ascii"), "image/jpeg"
+    except Exception as exc:
+        logger.debug("VLM image downscale skipped (%s) — using original", exc)
+        return base64.b64encode(image_path.read_bytes()).decode("ascii"), mime
+
+
 class VLMEnricher:
     def __init__(
         self,
@@ -439,7 +465,8 @@ class VLMEnricher:
         ).normalized()
 
     def _build_user_prompt(self, context: dict[str, Any]) -> str:
-        examples = "\n".join(json.dumps(ex) for ex in FEW_SHOT_EXAMPLES)
+        # One example keeps quality cues without blowing prompt/KV cache size
+        examples = json.dumps(FEW_SHOT_EXAMPLES[0])
         ctx_bits = []
         if context.get("source_title"):
             ctx_bits.append(f"Source title: {context['source_title']}")
@@ -509,7 +536,7 @@ class VLMEnricher:
     ) -> EnrichmentResult:
         from cinearchive.services import vlm_config as vc
 
-        b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
+        b64, _mime = _image_b64_for_vlm(image_path)
         user_prompt = self._build_user_prompt(context)
         payload = {
             "model": model or self.model,
@@ -518,7 +545,12 @@ class VLMEnricher:
             "images": [b64],
             "stream": False,
             "format": "json",
-            "options": {"temperature": 0.25},
+            # Cap context — qwen3-vl defaults to huge ctx and crawls on consumer GPUs
+            "options": {
+                "temperature": 0.25,
+                "num_ctx": 4096,
+                "num_predict": 900,
+            },
         }
         url = vc.effective_ollama_url(self.settings)
         timeout = vc.effective_timeout(self.settings)
@@ -553,7 +585,7 @@ class VLMEnricher:
             mime = "image/png"
         elif suffix == ".webp":
             mime = "image/webp"
-        b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
+        b64, mime = _image_b64_for_vlm(image_path)
         data_url = f"data:{mime};base64,{b64}"
         user_prompt = self._build_user_prompt(context)
 

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 
 JobStatus = Literal["pending", "running", "completed", "failed", "cancelled"]
-JobType = Literal["ingest_video", "ingest_images", "reindex", "enrich", "export"]
+JobType = Literal["ingest_video", "ingest_images", "reindex", "enrich", "enrich_drip", "export"]
 
 
 class JobRead(BaseModel):
@@ -34,3 +34,9 @@ class JobRead(BaseModel):
 class JobList(BaseModel):
     items: list[JobRead]
     total: int
+
+
+class ActivityFeed(BaseModel):
+    items: list[JobRead]
+    total: int
+    enrich: dict[str, Any] | None = None

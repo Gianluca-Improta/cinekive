@@ -42,9 +42,10 @@ async def health(
     enrich_info: dict = {}
     try:
         from cinearchive.jobs.enrich_runner import resolve_enrich_model
-        from cinearchive.jobs.enrich_scheduler import last_enrich_pass_at
+        from cinearchive.jobs.enrich_scheduler import count_pending_enrich, last_enrich_pass_at
 
         model, tier, vram = await resolve_enrich_model(settings)
+        pending = await count_pending_enrich(settings)
         enrich_info = {
             "tier": tier,
             "model": model,
@@ -52,6 +53,7 @@ async def health(
             "vram_gb": round(vram, 1) if vram is not None else None,
             "continuous": vc.effective_continuous(settings),
             "last_pass_at": last_enrich_pass_at() or None,
+            "pending_shots": pending,
             "gpu": "RTX 5060 Ti 16GB → balanced (qwen3-vl:8b)"
             if vram and 14 <= vram <= 18
             else None,
@@ -68,6 +70,6 @@ async def health(
         "vlm_reachable": vlm_ok,
         "enrich": enrich_info,
         "watcher_enabled": settings.watcher_enabled,
-        "version": "0.4.1",
+        "version": "0.4.2",
         "lan_web_url": os.environ.get("CINEKIVE_LAN_WEB_URL") or None,
     }

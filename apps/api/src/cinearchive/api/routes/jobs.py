@@ -7,9 +7,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cinearchive.api.deps import get_db_session
+from cinearchive.api.deps import get_db_session, get_settings
+from cinearchive.config import Settings
+from cinearchive.jobs.enrich_scheduler import count_pending_enrich, enrich_activity_snapshot
 from cinearchive.repositories.job_repo import JobRepository
-from cinearchive.schemas.job import JobList, JobRead
+from cinearchive.schemas.job import ActivityFeed, JobList, JobRead
 
 router = APIRouter(tags=["jobs"])
 
@@ -23,6 +25,36 @@ async def list_recent_jobs(
     repo = JobRepository(session)
     items = await repo.list_recent(min(max(limit, 1), 100))
     return JobList(items=[JobRead.model_validate(j) for j in items], total=len(items))
+
+
+@router.get("/activity", response_model=ActivityFeed)
+async def list_activity(
+    limit: int = 40,
+    session: AsyncSession = Depends(get_db_session),
+    settings: Settings = Depends(get_settings),
+) -> ActivityFeed:
+    """Jobs plus live craft-enrich scheduler state."""
+    from cinearchive.services import vlm_config as vc
+
+    repo = JobRepository(session)
+    items = await repo.list_recent(min(max(limit, 1), 100))
+    snap = enrich_activity_snapshot(settings)
+    pending = await count_pending_enrich(settings)
+    vlm_ok = False
+    if vc.effective_enabled(settings):
+        from cinearchive.pipelines.vlm_enrichment import VLMEnricher
+
+        model = vc.effective_model(settings)
+        vlm_ok = await VLMEnricher(settings, model=model).health()
+    return ActivityFeed(
+        items=[JobRead.model_validate(j) for j in items],
+        total=len(items),
+        enrich={
+            **snap,
+            "pending_shots": pending,
+            "vlm_reachable": vlm_ok,
+        },
+    )
 
 
 @router.get("/jobs/{job_id}", response_model=JobRead)

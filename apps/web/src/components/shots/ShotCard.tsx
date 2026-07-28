@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Download, Pause, Play, Star, X } from "lucide-react";
+import { Pause, Play, Star, X } from "lucide-react";
 import type { Shot } from "@/lib/types";
 import { api, artifactUrl } from "@/lib/api-client";
+import { shotArtifactFilename } from "@/lib/download";
 import { formatTimecode } from "@/lib/utils";
 import { AddToProjectMenu } from "@/components/shots/AddToProjectMenu";
+import { ArtifactDownloadButton } from "@/components/shots/ArtifactDownloadButton";
 
 type Props = {
   shot: Shot;
@@ -20,16 +22,6 @@ type Props = {
 
 function isVideoUrl(url: string): boolean {
   return url.endsWith(".mp4") || url.endsWith(".webm");
-}
-
-function downloadName(shot: Shot): string {
-  const base = (shot.source_title || shot.source_filename || "hero-frame")
-    .replace(/[^\w.\- ]+/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .slice(0, 80);
-  const role = shot.frame_role && shot.frame_role !== "mid" ? `-${shot.frame_role}` : "";
-  return `${base}${role}.jpg`;
 }
 
 export function ShotCard({
@@ -205,15 +197,22 @@ export function ShotCard({
             {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
           </span>
         )}
-        <a
-          href={artifactUrl(shot.keyframe_url)}
-          download={downloadName(shot)}
-          onClick={(e) => e.stopPropagation()}
-          className="rounded border border-cinema-border bg-black/75 p-1 text-white hover:border-cinema-cyan/50 hover:text-cinema-cyan"
+        {preview && (
+          <ArtifactDownloadButton
+            url={preview}
+            filename={shotArtifactFilename(shot, "loop", preview)}
+            iconOnly
+            title="Download loop / GIF"
+            className="rounded border border-cinema-border bg-black/75 p-1 text-white hover:border-cinema-cyan/50 hover:text-cinema-cyan"
+          />
+        )}
+        <ArtifactDownloadButton
+          url={artifactUrl(shot.keyframe_url)}
+          filename={shotArtifactFilename(shot, "frame")}
+          iconOnly
           title="Download hero frame (JPG)"
-        >
-          <Download className="h-3.5 w-3.5" />
-        </a>
+          className="rounded border border-cinema-border bg-black/75 p-1 text-white hover:border-cinema-cyan/50 hover:text-cinema-cyan"
+        />
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 transition group-hover:opacity-100">

@@ -914,6 +914,12 @@ async def run_ingest_job(
             from cinearchive.jobs.dedupe_scheduler import schedule_global_dedupe
 
             schedule_global_dedupe(delay_sec=45.0)
+        if processed > 0:
+            from cinearchive.jobs.enrich_scheduler import schedule_enrich_pass
+            from cinearchive.services import vlm_config as vc
+
+            if vc.effective_continuous(settings):
+                schedule_enrich_pass(delay_sec=30.0)
 
     except Exception as exc:
         logger.error("Ingest job %s failed: %s\n%s", job_id, exc, traceback.format_exc())

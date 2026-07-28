@@ -61,8 +61,8 @@ class Settings(BaseSettings):
     # Override when API runs in Docker without nvidia-smi (e.g. 16 for 5060 Ti)
     enrich_vram_gb: float | None = None
     enrich_continuous: bool = True
-    enrich_interval_sec: float = 90.0
-    enrich_batch_size: int = 4
+    enrich_interval_sec: float = 15.0
+    enrich_batch_size: int = 8
     enrich_quality_min: float = 55.0
     enrich_reenrich_fails: bool = True
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 import traceback
 from pathlib import Path
 from typing import Any
@@ -146,6 +147,7 @@ def _apply_result(shot: Any, result: Any) -> dict[str, Any]:
         "pass": qa["pass"],
         "issues": qa["issues"],
         "checked_at_version": ENRICHMENT_VERSION,
+        "checked_at": time.time(),
     }
     meta["link_hints"] = link_hints(shot)
     shot.source_meta_json = meta
@@ -327,6 +329,9 @@ async def enrich_shot_batch(
     settings: Settings,
     model_name: str,
     project_ctx: dict | None = None,
+    job_id: str | None = None,
+    progress_offset: int = 0,
+    progress_total: int | None = None,
 ) -> dict[str, int]:
     """Enrich a small batch (used by continuous scheduler). Returns counts."""
     from cinearchive.utils.paths import library_root
@@ -340,7 +345,8 @@ async def enrich_shot_batch(
 
     ok = 0
     fail = 0
-    for sid in shot_ids:
+    total = progress_total if progress_total is not None else len(shot_ids)
+    for idx, sid in enumerate(shot_ids):
         async with SessionLocal() as session:
             repo = ShotRepository(session)
             shot = await repo.get(sid)
@@ -379,4 +385,14 @@ async def enrich_shot_batch(
                 ok += 1
             else:
                 fail += 1
+        if job_id:
+            done = progress_offset + idx + 1
+            pct = min(99.0, (done / max(total, 1)) * 100.0)
+            await update_job(
+                job_id,
+                processed_items=done,
+                total_items=total,
+                progress_pct=pct,
+                current_step=f"Craft AI {done}/{total} · {model_name}",
+            )
     return {"ok": ok, "fail": fail, "total": len(shot_ids)}

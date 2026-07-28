@@ -179,6 +179,17 @@ const es: MessageTree = {
   },
   activity: {
     title: "Actividad",
+    subtitle: "Ingesta · enriquecimiento · descargas",
+    clearFinished: "Limpiar terminados",
+    autoClear: "Se borran solos ~45s",
+    empty: "Nada en curso. La ingesta y descargas URL aparecen aquí. El enriquecimiento en segundo plano se muestra arriba.",
+    craftEnrich: "Enriquecimiento craft",
+    running: "en curso",
+    background: "activo",
+    waitingVlm: "esperando VLM",
+    shotsQueued: "{count} planos en cola para craft",
+    inQueue: "en cola",
+    upToDate: "Etiquetas craft al día",
   },
   archives: {
     title: "Archivos",

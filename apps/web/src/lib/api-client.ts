@@ -9,6 +9,7 @@ import type {
   Shot,
   Taxonomy,
 } from "./types";
+import { downloadBlob } from "./download";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -513,6 +514,37 @@ export const api = {
   listRecentJobs: (limit = 40) =>
     request<{ items: Job[]; total: number }>(`/jobs?limit=${limit}`),
 
+  listActivity: (limit = 40) =>
+    request<{
+      items: Job[];
+      total: number;
+      enrich: {
+        enabled: boolean;
+        continuous: boolean;
+        busy: boolean;
+        vlm_reachable: boolean;
+        pending_shots: number;
+        last_pass_at: number | null;
+        last_processed: number;
+        last_model: string | null;
+        current_step: string | null;
+        interval_sec?: number;
+      } | null;
+    }>(`/activity?limit=${limit}`),
+
+  enrichStatus: () =>
+    request<{
+      enabled: boolean;
+      continuous: boolean;
+      busy: boolean;
+      vlm_reachable: boolean;
+      pending_shots: number;
+      current_step: string | null;
+      last_pass_at: number | null;
+      last_processed: number;
+      last_model: string | null;
+    }>("/enrich/status"),
+
   listProjectJobs: (projectId: string) =>
     request<{ items: Job[]; total: number }>(`/projects/${projectId}/jobs`),
 
@@ -716,12 +748,7 @@ export const api = {
     });
     if (!res.ok) throw new Error("Clip export failed");
     const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `clip_${shotId.slice(0, 8)}.mp4`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `clip_${shotId.slice(0, 8)}.mp4`);
   },
 
   exportShots: async (
@@ -735,13 +762,8 @@ export const api = {
     });
     if (!res.ok) throw new Error("Export failed");
     const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
     const ext = format === "zip" ? "zip" : format === "edl" ? "edl" : "json";
-    a.download = `cinearchive_export.${ext}`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `cinearchive_export.${ext}`);
   },
 };
 

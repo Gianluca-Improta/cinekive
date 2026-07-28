@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   X,
-  Download,
   Star,
   DownloadCloud,
   Pause,
@@ -15,8 +14,10 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Shot } from "@/lib/types";
 import { api, artifactUrl } from "@/lib/api-client";
+import { shotArtifactFilename } from "@/lib/download";
 import { formatTimecode } from "@/lib/utils";
 import { AddToProjectMenu } from "@/components/shots/AddToProjectMenu";
+import { ArtifactDownloadButton } from "@/components/shots/ArtifactDownloadButton";
 import { SendToBoardMenu } from "@/components/shots/SendToBoardMenu";
 import { ShotConnections } from "@/components/shots/ShotConnections";
 import { TranslatedText } from "@/components/i18n/TranslatedText";
@@ -212,11 +213,8 @@ export function ShotDetailSheet({
   const isAnimPreview = Boolean(
     preview && (preview.endsWith(".webp") || preview.endsWith(".gif") || isVideoPreview)
   );
-  const frameName = `${(active.source_title || active.source_filename || "hero-frame")
-    .replace(/[^\w.\- ]+/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .slice(0, 80)}.jpg`;
+  const frameFilename = shotArtifactFilename(active, "frame");
+  const loopFilename = preview ? shotArtifactFilename(active, "loop", preview) : "";
 
   const openConnected = (s: Shot) => {
     setActive(s);
@@ -395,16 +393,13 @@ export function ShotDetailSheet({
                     Click for full panel
                   </span>
                 )}
-                <a
-                  href={keyframe}
-                  download={frameName}
-                  onClick={(e) => e.stopPropagation()}
-                  className="ml-auto inline-flex items-center gap-1.5 rounded border border-cinema-cyan/40 bg-black/75 px-2.5 py-1.5 text-xs text-cinema-cyan hover:bg-cinema-cyan/10"
+                <ArtifactDownloadButton
+                  url={keyframe}
+                  filename={frameFilename}
+                  label={t("detail.downloadFrame")}
                   title={t("detail.downloadFrame")}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  {t("detail.downloadFrame")}
-                </a>
+                  className="ml-auto inline-flex items-center gap-1.5 rounded border border-cinema-cyan/40 bg-black/75 px-2.5 py-1.5 text-xs text-cinema-cyan hover:bg-cinema-cyan/10"
+                />
               </div>
             </div>
 
@@ -946,15 +941,20 @@ export function ShotDetailSheet({
             </section>
 
             <section className="flex flex-wrap gap-2">
-              <a
-                href={keyframe}
-                download={frameName}
+              <ArtifactDownloadButton
+                url={keyframe}
+                filename={frameFilename}
+                label={t("detail.downloadHero")}
                 className="inline-flex items-center gap-1.5 rounded border border-cinema-cyan/40 bg-cinema-panel px-3 py-1.5 text-xs text-cinema-cyan hover:border-cinema-cyan/70"
-              >
-                <Download className="h-3.5 w-3.5" />
-                {t("detail.downloadHero")}
-              </a>
-              {preview && <DownloadLink href={preview} label={t("detail.downloadLoop")} />}
+              />
+              {preview && (
+                <ArtifactDownloadButton
+                  url={preview}
+                  filename={loopFilename}
+                  label={t("detail.downloadLoop")}
+                  className="inline-flex items-center gap-1.5 rounded border border-cinema-border bg-cinema-panel px-3 py-1.5 text-xs text-cinema-cyan hover:border-cinema-cyan/50"
+                />
+              )}
               {active.source_type === "video" && active.start_timecode_ms != null && (
                 <button
                   type="button"
@@ -1082,18 +1082,5 @@ function MetaTrans({ label, value }: { label: string; value: string }) {
       <div className="text-[10px] uppercase tracking-widest text-cinema-muted">{label}</div>
       <TranslatedText text={value} className="mt-0.5 font-mono text-xs text-white" as="div" />
     </div>
-  );
-}
-
-function DownloadLink({ href, label }: { href: string; label: string }) {
-  return (
-    <a
-      href={href}
-      download
-      className="inline-flex items-center gap-1.5 rounded border border-cinema-border bg-cinema-panel px-3 py-1.5 text-xs text-cinema-cyan hover:border-cinema-cyan/50"
-    >
-      <Download className="h-3.5 w-3.5" />
-      {label}
-    </a>
   );
 }
