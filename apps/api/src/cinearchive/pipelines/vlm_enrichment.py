@@ -336,7 +336,10 @@ class EnrichmentResult(BaseModel):
 
 
 def _extract_json(text: str) -> dict[str, Any]:
-    text = text.strip()
+    text = (text or "").strip()
+    # Thinking models wrap reasoning in <think>…</think> (sometimes unclosed).
+    text = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.I).strip()
+    text = re.sub(r"^<think>[\s\S]*?(?=\{)", "", text, flags=re.I).strip()
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
@@ -347,6 +350,37 @@ def _extract_json(text: str) -> dict[str, Any]:
         if match:
             return json.loads(match.group(0))
         raise
+
+
+def _ollama_text(data: dict[str, Any]) -> str:
+    """Pull model text from Ollama generate/chat payloads.
+
+    Newer Ollama builds (thinking models) often leave ``response``/``content``
+    empty and put usable JSON in ``thinking`` instead.
+    """
+    msg = data.get("message") if isinstance(data.get("message"), dict) else {}
+    candidates: list[str] = []
+    for raw in (
+        data.get("response"),
+        msg.get("content") if isinstance(msg, dict) else None,
+        msg.get("thinking") if isinstance(msg, dict) else None,
+        data.get("thinking"),
+    ):
+        if isinstance(raw, str) and raw.strip():
+            candidates.append(raw.strip())
+        elif isinstance(raw, list):
+            joined = " ".join(
+                str(part.get("text") or "") for part in raw if isinstance(part, dict)
+            ).strip()
+            if joined:
+                candidates.append(joined)
+    if not candidates:
+        return ""
+    # Prefer a candidate that already contains a JSON object
+    for c in candidates:
+        if "{" in c and "}" in c:
+            return c
+    return candidates[0]
 
 
 def _clean_title(filename: str) -> str:
@@ -538,27 +572,54 @@ class VLMEnricher:
 
         b64, _mime = _image_b64_for_vlm(image_path)
         user_prompt = self._build_user_prompt(context)
-        payload = {
+        options = {
+            "temperature": 0.25,
+            # Cap context — qwen3-vl defaults to huge ctx and crawls on consumer GPUs
+            "num_ctx": 4096,
+            # Leave headroom: thinking models burn tokens before JSON
+            "num_predict": 1400,
+        }
+        # /api/generate: thinking VLMs often put the JSON body in ``thinking``
+        # with empty ``response``. /api/chat is used as fallback.
+        gen_payload: dict[str, Any] = {
             "model": model or self.model,
             "prompt": user_prompt,
-            "system": SYSTEM_PROMPT,
+            "system": SYSTEM_PROMPT + "\nReturn a single JSON object only. No markdown.",
             "images": [b64],
             "stream": False,
             "format": "json",
-            # Cap context — qwen3-vl defaults to huge ctx and crawls on consumer GPUs
-            "options": {
-                "temperature": 0.25,
-                "num_ctx": 4096,
-                "num_predict": 900,
-            },
+            "think": False,
+            "options": options,
         }
         url = vc.effective_ollama_url(self.settings)
         timeout = vc.effective_timeout(self.settings)
         async with httpx.AsyncClient(timeout=timeout) as client:
-            r = await client.post(f"{url}/api/generate", json=payload)
+            r = await client.post(f"{url}/api/generate", json=gen_payload)
+            if r.status_code >= 400:
+                chat_payload: dict[str, Any] = {
+                    "model": gen_payload["model"],
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": SYSTEM_PROMPT + "\nReturn a single JSON object only.",
+                        },
+                        {
+                            "role": "user",
+                            "content": user_prompt,
+                            "images": [b64],
+                        },
+                    ],
+                    "stream": False,
+                    "format": "json",
+                    "think": False,
+                    "options": options,
+                }
+                r = await client.post(f"{url}/api/chat", json=chat_payload)
             r.raise_for_status()
             data = r.json()
-        raw = data.get("response") or data.get("message", {}).get("content") or ""
+        raw = _ollama_text(data)
+        if not raw.strip():
+            raise RuntimeError("Ollama returned empty content (no response/thinking)")
         return self._parse_result(raw)
 
     async def _call_openai(
@@ -627,11 +688,13 @@ class VLMEnricher:
 
         choice = (data.get("choices") or [{}])[0]
         msg = choice.get("message") or {}
-        raw = msg.get("content") or ""
+        raw = msg.get("content") or msg.get("reasoning_content") or msg.get("reasoning") or ""
         if isinstance(raw, list):
             raw = " ".join(
                 str(part.get("text") or "") for part in raw if isinstance(part, dict)
             )
+        if not str(raw).strip():
+            raise RuntimeError("OpenAI-compatible VLM returned empty content")
         return self._parse_result(str(raw))
 
 

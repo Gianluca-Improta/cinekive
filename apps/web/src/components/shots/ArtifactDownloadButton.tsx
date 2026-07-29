@@ -31,8 +31,10 @@ export function ArtifactDownloadButton({
     setBusy(true);
     try {
       await downloadArtifact(url, filename);
-    } catch {
-      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      // Never navigate the app away — keep the user on the grid/detail view.
+      console.warn("Artifact download failed:", err);
+      window.alert("Download failed. Try again in a moment.");
     } finally {
       setBusy(false);
     }

@@ -20,9 +20,10 @@ export function downloadBlob(blob: Blob, filename: string): void {
 /** Fetch artifact and trigger a save dialog without leaving the page. */
 export async function downloadArtifact(url: string, filename: string): Promise<void> {
   if (!url) throw new Error("Missing download URL");
-  const res = await fetch(url);
+  const res = await fetch(url, { mode: "cors", credentials: "omit", cache: "no-store" });
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
   const blob = await res.blob();
+  if (!blob || blob.size === 0) throw new Error("Download returned empty file");
   downloadBlob(blob, filename);
 }
 

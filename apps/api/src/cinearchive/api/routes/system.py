@@ -18,7 +18,7 @@ async def system_info(settings: Settings = Depends(get_settings)) -> dict:
     lib = library_root(settings)
     return {
         "app": "Cinekive",
-        "version": "0.4.2",
+        "version": "0.4.3",
         "library_dir": str(lib.resolve()),
         "videos_dir": str(Path(settings.videos_dir).resolve()),
         "artifacts_dir": str(Path(settings.artifacts_dir).resolve()),
