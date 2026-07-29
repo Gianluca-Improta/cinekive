@@ -151,7 +151,7 @@ Then open http://localhost:3000
 
 ---
 
-## What you get (v0.4.2)
+## What you get (v0.4.3)
 
 - **No Docker on Windows / Mac (optional)** — native engine pack downloads on first start; Docker still supported
 - **Phone on same WiFi** — browse your library from a phone browser on your LAN
