@@ -7,12 +7,17 @@ services:
       - "6334:6334"
     volumes:
       - ./data/qdrant:/qdrant/storage
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333'"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
       start_period: 10s
 
   api:
@@ -49,6 +54,7 @@ services:
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-google/siglip-so400m-patch14-384}
       - EMBEDDING_BATCH_SIZE=${EMBEDDING_BATCH_SIZE:-8}
       - DEVICE=${DEVICE:-cpu}
+      - OPENBLAS_NUM_THREADS=4
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}

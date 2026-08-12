@@ -72,13 +72,22 @@ function defaultLibraryDir() {
 }
 
 function readConfigDefaults() {
+  let engineMode = "auto";
+  try {
+    // Packaged Mac/Windows: native engine = no Docker required (one-click install)
+    if (app.isPackaged && (process.platform === "win32" || process.platform === "darwin")) {
+      engineMode = "native";
+    }
+  } catch {
+    /* not in Electron yet */
+  }
   return {
     firstRunComplete: false,
     libraryPath: null,
     dataDir: null,
     stopStackOnQuit: false,
     /** "auto" | "docker" | "native" */
-    engineMode: "auto",
+    engineMode,
     /** Allow phone/tablet on same WiFi to open http://{lan-ip}:3000 */
     lanAccess: true,
   };

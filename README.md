@@ -151,9 +151,9 @@ Then open http://localhost:3000
 
 ---
 
-## What you get (v0.4.3)
+## What you get (v0.4.4)
 
-- **No Docker on Windows / Mac (optional)** — native engine pack downloads on first start; Docker still supported
+- **One-click desktop install** — Windows `.exe` / Mac `.dmg`; native engine by default (no Docker or terminal)
 - **Phone on same WiFi** — browse your library from a phone browser on your LAN
 - **Faster craft enrich** — continuous VLM drip with live Activity status; quicker Ollama calls
 - **One-click downloads** — hero frames and GIF/loop previews save in-place (no tab navigation)

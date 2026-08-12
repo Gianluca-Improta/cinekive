@@ -31,6 +31,6 @@ jobs:
 
             Desktop installers attach automatically via CI (may take ~15 min after this release is created).
 
-            **No Docker on Windows / Mac:** the app downloads a native engine pack on first start (`engine-*.zip` on this release).
+            **No Docker on Windows / Mac:** the app uses a native engine by default. Engine packs (`engine-*.zip`) attach to each release if you prefer manual install.
 
             [README](https://github.com/Gianluca-Improta/cinekive#readme) · [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) · [Sponsors](https://github.com/sponsors/Gianluca-Improta)

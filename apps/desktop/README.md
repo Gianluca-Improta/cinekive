@@ -1,6 +1,6 @@
 # Cinekive Desktop
 
-Windows app shell around the local Docker engine. Double-click, wizard, tray, Share menu.
+Windows / Mac app — double-click, wizard, native engine (no Docker required). Tray + Share menu.
 
 ```powershell
 # From repo root
@@ -8,4 +8,4 @@ Windows app shell around the local Docker engine. Double-click, wizard, tray, Sh
 .\scripts\desktop.ps1 -Dist     # installer + portable → release/
 ```
 
-Requires **Docker Desktop**. See [docs/DESKTOP.md](../../docs/DESKTOP.md).
+See [docs/DESKTOP.md](../../docs/DESKTOP.md).

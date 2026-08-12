@@ -104,14 +104,15 @@
   <body>
     <div class="wrap">
       <h1 class="brand">Cinekive</h1>
-      <p class="sub">Local cinematic archive. One-time setup — Docker optional on Windows and Mac.</p>
+      <p class="sub">Install, open, click Start — Cinekive downloads its engine once. No Docker or terminal needed.</p>
 
       <div class="card">
         <h2>1. Engine</h2>
         <p>How Cinekive runs search and ingest on your machine.</p>
-        <label class="engine"><input type="radio" name="engine" value="auto" checked /> Auto (recommended — Docker if available, else native on Windows / Mac)</label>
-        <label class="engine"><input type="radio" name="engine" value="docker" /> Docker Desktop (fast if already installed)</label>
-        <label class="engine" id="nativeOpt"><input type="radio" name="engine" value="native" /> Native engine — no Docker (Windows / Mac, ~2 GB one-time download)</label>
+        <label class="engine"><input type="radio" name="engine" value="native" checked /> Native engine — recommended (no Docker, one-time ~550 MB download)</label>
+        <label class="engine"><input type="radio" name="engine" value="auto" /> Auto (Docker if available, else native)</label>
+        <label class="engine"><input type="radio" name="engine" value="docker" /> Docker Desktop only</label>
+        <label class="engine" id="nativeOpt" hidden></label>
         <div class="status">
           <span class="dot wait" id="engineDot"></span>
           <span id="engineLabel">Checking…</span>
@@ -225,7 +226,8 @@
         libraryPath = info.libraryPath || info.defaultLibraryPath;
         libPath.textContent = libraryPath;
         if (!info.packSupported) {
-          document.getElementById("nativeOpt").style.opacity = "0.45";
+          document.querySelector('input[value="native"]').checked = false;
+          document.querySelector('input[value="auto"]').checked = true;
         }
         await refreshHealth();
         syncStart();

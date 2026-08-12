@@ -1,13 +1,13 @@
 # Cinekive Desktop
 
-Double-click app. No terminal required. **Docker Desktop** is required (one-time install).
+Double-click app. No terminal required. **Docker is optional** on Windows and Mac.
 
 ## For users
 
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it  
-2. Install Cinekive for your OS  
-3. Open **Cinekive** → wizard → pick archive folder → **Start**  
-4. First launch builds containers and may download the embedding model (~800 MB)
+1. Download the installer for your OS from [Releases](https://github.com/Gianluca-Improta/cinekive/releases/latest)
+2. **Windows:** run `Cinekive-*-win-x64.exe` (one-click install) or `*-portable.exe` (no install)
+3. **Mac:** open `Cinekive-*-mac-*.dmg`, drag Cinekive to Applications
+4. Open **Cinekive** → wizard → click **Start Cinekive** (native engine downloads once, ~550 MB)
 
 | OS | Artifact |
 |----|----------|

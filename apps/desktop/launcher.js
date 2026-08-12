@@ -24,6 +24,18 @@ const API_HEALTH = process.env.CINEKIVE_API_URL || "http://localhost:8000/health
 const GHCR_API = "ghcr.io/gianluca-improta/cinekive-api";
 const GHCR_WEB = "ghcr.io/gianluca-improta/cinekive-web";
 
+function appVersion() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")).version;
+  } catch {
+    return "0.4.4";
+  }
+}
+
+function ghcrTag() {
+  return appVersion();
+}
+
 function composeFile(root) {
   const desktop = path.join(root, "docker-compose.desktop.yml");
   if (fs.existsSync(desktop)) return desktop;
@@ -90,16 +102,38 @@ async function checkDocker() {
         ok: false,
         reason: "missing",
         message:
-          "Docker Desktop is not installed.\n\nOn Windows or Mac, Cinekive can download a native engine instead — no Docker required.",
+          "Docker Desktop is not installed.\n\nCinekive will use the native engine instead — no Docker required.",
       };
     }
     return {
       ok: false,
       reason: "not_running",
       message:
-        "Docker is installed but not running.\n\nStart Docker Desktop, or switch to native engine in the wizard.",
+        "Docker is installed but not running.\n\nStart Docker Desktop, or use the native engine (no Docker).",
     };
   }
+}
+
+/** Best-effort start of Docker Desktop on Windows when user chose Docker mode. */
+async function tryStartDockerDesktop() {
+  if (process.platform !== "win32") return false;
+  const exe = path.join(process.env.ProgramFiles || "C:\\Program Files", "Docker", "Docker", "Docker Desktop.exe");
+  if (!fs.existsSync(exe)) return false;
+  try {
+    spawn(exe, [], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+    for (let i = 0; i < 24; i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      try {
+        await run("docker", ["info"]);
+        return true;
+      } catch {
+        /* still starting */
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
 }
 
 function toPosix(p) {
@@ -143,7 +177,7 @@ function writeEnvFile({ dataDir, libraryPath }) {
   text = setLine(text, "OLLAMA_URL", "http://host.docker.internal:11434");
   text = setLine(text, "CORS_ORIGINS", cors);
   text = setLine(text, "CINEKIVE_LAN_WEB_URL", lan.webUrl || "");
-  text = setLine(text, "CINEKIVE_IMAGE_TAG", "latest");
+  text = setLine(text, "CINEKIVE_IMAGE_TAG", ghcrTag());
   if (/^SHOTDECK_LIBRARY_HOST=.*/m.test(text)) {
     text = text.replace(/^SHOTDECK_LIBRARY_HOST=.*/m, "SHOTDECK_LIBRARY_HOST=");
   }
@@ -169,8 +203,17 @@ async function dockerImageExists(name) {
 }
 
 async function imagesReady(root) {
-  const hasGhcr = (await dockerImageExists(GHCR_API)) && (await dockerImageExists(GHCR_WEB));
+  const tag = ghcrTag();
+  const ghcrApi = `${GHCR_API}:${tag}`;
+  const ghcrWeb = `${GHCR_WEB}:${tag}`;
+  const hasGhcr =
+    (await dockerImageExists(ghcrApi)) && (await dockerImageExists(ghcrWeb));
   if (hasGhcr) return true;
+  // Also accept :latest if version-tagged images were pulled previously
+  const hasGhcrLatest =
+    (await dockerImageExists(`${GHCR_API}:latest`)) &&
+    (await dockerImageExists(`${GHCR_WEB}:latest`));
+  if (hasGhcrLatest) return true;
   try {
     const { out } = await run("docker", ["images", "-q", "cinearchive-api:latest"], { cwd: root });
     const { out: out2 } = await run("docker", ["images", "-q", "cinearchive-web:latest"], {
@@ -207,15 +250,19 @@ async function resolveEngineMode() {
   const mode = cfg.engineMode || "auto";
 
   if (mode === "native") return "native";
-  if (mode === "docker") {
-    const docker = await checkDocker();
-    if (docker.ok) return "docker";
-    if (nativePackPlatform()) return "native";
-    throw new Error(docker.message);
+
+  let docker = await checkDocker();
+  if (!docker.ok && mode === "docker") {
+    const started = await tryStartDockerDesktop();
+    if (started) docker = await checkDocker();
   }
 
-  // auto
-  const docker = await checkDocker();
+  if (mode === "docker") {
+    if (!docker.ok) throw new Error(docker.message);
+    return "docker";
+  }
+
+  // auto — Docker when available, else native on Windows / Mac
   if (docker.ok) return "docker";
   if (nativePackPlatform()) return "native";
   throw new Error(
