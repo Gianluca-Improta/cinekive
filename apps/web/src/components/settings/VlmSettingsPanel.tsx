@@ -1,20 +1,29 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cpu, RefreshCw, Sparkles } from "lucide-react";
+import { Crown, Cpu, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ProGateBanner } from "@/components/pro/ProGateBanner";
+import { PRO_UPGRADE_URL, useHasFeature } from "@/hooks/useEntitlements";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-import { useHasFeature } from "@/hooks/useEntitlements";
-import { ProGateBanner } from "@/components/pro/ProGateBanner";
+
+type Preset = {
+  id: string;
+  label: string;
+  hint?: string;
+  cloud?: boolean;
+  provider?: string;
+};
 
 /**
- * Settings → VLM / craft AI — pick local Ollama or any OpenAI-compatible
- * endpoint (OpenRouter, Kimi, LM Studio, OpenClaw gateways…).
+ * Settings → VLM / craft AI — local Ollama free; cloud providers (OpenRouter,
+ * ChatGPT, Claude, Kimi…) are Pro.
  */
 export function VlmSettingsPanel() {
   const qc = useQueryClient();
   const canContinuous = useHasFeature("continuous_enrich");
+  const canCloud = useHasFeature("cloud_vlm");
   const cfgQuery = useQuery({
     queryKey: ["enrich-config"],
     queryFn: () => api.enrichConfig(),
@@ -58,8 +67,22 @@ export function VlmSettingsPanel() {
     setDirtyKey(false);
   }, [cfg]);
 
+  const isLocalUrl = (url: string) => {
+    const u = url.toLowerCase();
+    return (
+      !u.trim() ||
+      u.includes("localhost") ||
+      u.includes("127.0.0.1") ||
+      u.includes("host.docker.internal") ||
+      u.includes("0.0.0.0")
+    );
+  };
+
   const save = useMutation({
     mutationFn: () => {
+      if (provider === "openai_compatible" && !isLocalUrl(openaiUrl) && !canCloud) {
+        throw new Error("Cloud VLM providers require Cinekive Pro.");
+      }
       const body: Record<string, unknown> = {
         enabled,
         provider,
@@ -94,6 +117,7 @@ export function VlmSettingsPanel() {
       await qc.invalidateQueries({ queryKey: ["enrich-config"] });
       await qc.invalidateQueries({ queryKey: ["enrich-models"] });
     },
+    onError: (e: Error) => setMsg(e.message || "Preset failed"),
   });
 
   const tick = useMutation({
@@ -104,6 +128,7 @@ export function VlmSettingsPanel() {
   const models = modelsQuery.data?.models || [];
   const reachable = health.data?.vlm_reachable;
   const active = health.data?.enrich?.model || cfg?.active_model;
+  const presets = (cfg?.presets || []) as Preset[];
 
   return (
     <section className="space-y-3" data-no-translate>
@@ -112,14 +137,22 @@ export function VlmSettingsPanel() {
         <h2 className="text-sm font-medium text-white">Craft AI (VLM)</h2>
       </div>
       <p className="text-xs text-cinema-muted">
-        Tags shots with craft DNA. Use local Ollama, or paste any OpenAI-compatible URL
-        (OpenRouter, Kimi/Moonshot, LM Studio, OpenClaw, vLLM…). Changes apply live.
+        Tags shots with craft DNA. Free: local Ollama or LM Studio. Pro: OpenRouter, ChatGPT,
+        Claude, Kimi, and any cloud OpenAI-compatible endpoint.
       </p>
+      {!canCloud && (
+        <ProGateBanner
+          feature="cloud_vlm"
+          title="Cloud VLM is Pro"
+          detail="Bring your OpenRouter / OpenAI / Claude / Kimi key. Local Ollama stays free."
+          compact
+        />
+      )}
       {!canContinuous && (
         <ProGateBanner
           feature="continuous_enrich"
           title="Always-on enrich is Pro"
-          detail="Manual enrich stays free. Continuous drip + cloud VLM settings unlock with Pro."
+          detail="Manual enrich stays free. Continuous drip unlocks with Pro."
           compact
         />
       )}
@@ -166,17 +199,33 @@ export function VlmSettingsPanel() {
         </div>
 
         <div className="flex flex-wrap gap-1.5">
-          {(cfg?.presets || []).map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              title={p.hint}
-              onClick={() => applyPreset.mutate(p.id)}
-              className="rounded border border-cinema-border px-2 py-1 text-[11px] text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
-            >
-              {p.label}
-            </button>
-          ))}
+          {presets.map((p) => {
+            const locked = Boolean(p.cloud) && !canCloud;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                title={locked ? `${p.hint || p.label} (Pro)` : p.hint}
+                disabled={locked || applyPreset.isPending}
+                onClick={() => {
+                  if (locked) {
+                    window.open(PRO_UPGRADE_URL, "_blank", "noopener,noreferrer");
+                    return;
+                  }
+                  applyPreset.mutate(p.id);
+                }}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px]",
+                  locked
+                    ? "border-cinema-border/60 text-cinema-muted/70"
+                    : "border-cinema-border text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
+                )}
+              >
+                {locked && <Crown className="h-3 w-3 text-cinema-cyan" />}
+                {p.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -184,11 +233,19 @@ export function VlmSettingsPanel() {
             <span className="text-[10px] uppercase tracking-widest text-cinema-muted">Provider</span>
             <select
               value={provider}
-              onChange={(e) => setProvider(e.target.value as "ollama" | "openai_compatible")}
+              onChange={(e) => {
+                const next = e.target.value as "ollama" | "openai_compatible";
+                if (next === "openai_compatible" && !canCloud && !isLocalUrl(openaiUrl)) {
+                  setOpenaiUrl("http://host.docker.internal:1234/v1");
+                }
+                setProvider(next);
+              }}
               className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-white outline-none focus:border-cinema-cyan"
             >
               <option value="ollama">Ollama (local)</option>
-              <option value="openai_compatible">OpenAI-compatible URL</option>
+              <option value="openai_compatible">
+                OpenAI-compatible {canCloud ? "(local or cloud)" : "(local free / cloud Pro)"}
+              </option>
             </select>
           </label>
           <label className="block space-y-1">
@@ -234,6 +291,11 @@ export function VlmSettingsPanel() {
           </div>
         ) : (
           <div className="grid gap-3">
+            {!canCloud && (
+              <p className="text-[11px] text-cinema-muted">
+                Free allows local URLs only (localhost / LM Studio). Cloud hosts need Pro.
+              </p>
+            )}
             <label className="block space-y-1">
               <span className="text-[10px] uppercase tracking-widest text-cinema-muted">
                 Base URL (…/v1)
@@ -241,7 +303,11 @@ export function VlmSettingsPanel() {
               <input
                 value={openaiUrl}
                 onChange={(e) => setOpenaiUrl(e.target.value)}
-                placeholder="https://openrouter.ai/api/v1"
+                placeholder={
+                  canCloud
+                    ? "https://openrouter.ai/api/v1"
+                    : "http://host.docker.internal:1234/v1"
+                }
                 className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 font-mono text-xs text-white outline-none focus:border-cinema-cyan"
               />
             </label>

@@ -20,12 +20,15 @@ from fastapi import HTTPException
 
 from cinearchive.config import Settings
 
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.5.1"
 
 PRO_FEATURES: tuple[str, ...] = (
     "archive_mirrors",
     "continuous_enrich",
+    "cloud_vlm",
     "batch_export",
+    "board_export",
+    "folder_watcher",
     "share_tunnel",
     "global_dedupe",
     "agent_api",

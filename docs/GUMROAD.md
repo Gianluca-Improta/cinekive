@@ -25,7 +25,10 @@ Pro unlocks studio workflow on the same installer:
 
 - Archive mirror sync tools
 - Continuous craft enrich + cloud VLM settings
+- Bring-your-own cloud VLM: OpenRouter, ChatGPT/OpenAI, Claude (via OpenRouter), Kimi
 - Batch export (multi-shot ZIP / EDL)
+- Board export (PNG / PDF lookbooks)
+- Folder watcher (auto-ingest)
 - Share tunnel (public browse link)
 - Global dedupe + inspiration seek / Agent API
 - Unlimited projects

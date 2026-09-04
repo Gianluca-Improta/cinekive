@@ -136,12 +136,15 @@ async def put_enrich_config(
 ) -> dict:
     """Update live VLM provider / model / continuous enrich (no container restart)."""
     from cinearchive.services import vlm_config as vc
+    from cinearchive.services.entitlements import has_feature, require_feature
 
     update = vc.VlmConfigUpdate.model_validate(body or {})
     patch: dict = {}
 
     if update.preset and update.preset in {p["id"] for p in vc.presets_payload()}:
         preset = next(p for p in vc.presets_payload() if p["id"] == update.preset)
+        if preset.get("cloud"):
+            require_feature("cloud_vlm", settings)
         patch["provider"] = preset["provider"]
         if preset["provider"] == "ollama":
             patch["ollama_url"] = preset.get("ollama_url")
@@ -159,14 +162,26 @@ async def put_enrich_config(
         data.pop("openai_api_key", None)
     patch.update(data)
 
+    # Cloud OpenAI-compatible endpoints (OpenRouter, OpenAI, Claude, Kimi…) are Pro.
+    next_provider = patch.get("provider") or vc.effective_provider(settings)
+    next_url = patch.get("openai_base_url")
+    if next_url is None:
+        next_url = vc.effective_openai(settings).get("base_url")
+    if vc.is_cloud_vlm_request(
+        provider=str(next_provider),
+        openai_base_url=str(next_url or ""),
+        preset_id=update.preset,
+    ):
+        require_feature("cloud_vlm", settings)
+
     cfg = vc.merge_runtime(settings, patch)
     # Kick a drip if enabling continuous (Pro only)
-    if patch.get("continuous") is True or (
-        "continuous" not in patch and vc.effective_continuous(settings)
+    if patch.get("enrich_continuous") is True or patch.get("continuous") is True or (
+        "enrich_continuous" not in patch
+        and "continuous" not in patch
+        and vc.effective_continuous(settings)
     ):
-        from cinearchive.services.entitlements import has_feature, require_feature
-
-        if patch.get("continuous") is True:
+        if patch.get("enrich_continuous") is True or patch.get("continuous") is True:
             require_feature("continuous_enrich", settings)
         if has_feature("continuous_enrich", settings) and vc.effective_continuous(settings):
             from cinearchive.jobs.enrich_scheduler import schedule_enrich_pass

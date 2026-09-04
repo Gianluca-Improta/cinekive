@@ -86,6 +86,8 @@ UI packs: English, Chinese, Spanish, French, German, Japanese. Shot/craft taxono
 |--|------|---------------------|
 | Search, ingest, canvas, single export, LAN | Yes | Yes |
 | Archive mirrors, batch export, share tunnel | Soft / locked | Unlocked |
+| Board PNG/PDF export, folder watcher | — | Unlocked |
+| Cloud VLM (OpenRouter / ChatGPT / Claude) | Local Ollama | Bring your key |
 | Continuous enrich, Agent API, unlimited projects | Soft / locked | Unlocked |
 | Support | GitHub | Email hello@gianlucaimprota.com |
 

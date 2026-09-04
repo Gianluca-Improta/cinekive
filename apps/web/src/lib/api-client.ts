@@ -144,6 +144,7 @@ export const api = {
         label: string;
         provider: string;
         hint?: string;
+        cloud?: boolean;
         ollama_url?: string;
         openai_base_url?: string;
         openai_model?: string;

@@ -49,36 +49,91 @@ _PRESETS: dict[str, dict[str, Any]] = {
         "provider": "ollama",
         "ollama_url": "http://host.docker.internal:11434",
         "hint": "Local vision models — qwen3-vl, qwen2.5vl, gemma3…",
+        "cloud": False,
     },
     "openrouter": {
         "label": "OpenRouter",
         "provider": "openai_compatible",
         "openai_base_url": "https://openrouter.ai/api/v1",
         "openai_model": "google/gemini-2.5-flash",
-        "hint": "Any OpenRouter vision model — paste API key",
+        "hint": "Any OpenRouter vision model — paste API key (Pro)",
+        "cloud": True,
+    },
+    "claude": {
+        "label": "Claude (via OpenRouter)",
+        "provider": "openai_compatible",
+        "openai_base_url": "https://openrouter.ai/api/v1",
+        "openai_model": "anthropic/claude-sonnet-4",
+        "hint": "Claude vision through OpenRouter — paste OpenRouter key (Pro)",
+        "cloud": True,
+    },
+    "openai": {
+        "label": "ChatGPT / OpenAI",
+        "provider": "openai_compatible",
+        "openai_base_url": "https://api.openai.com/v1",
+        "openai_model": "gpt-4o-mini",
+        "hint": "Official OpenAI vision models — paste OpenAI key (Pro)",
+        "cloud": True,
     },
     "kimi": {
         "label": "Kimi / Moonshot",
         "provider": "openai_compatible",
         "openai_base_url": "https://api.moonshot.cn/v1",
         "openai_model": "moonshot-v1-8k-vision-preview",
-        "hint": "Moonshot vision — use your Kimi API key",
+        "hint": "Moonshot vision — use your Kimi API key (Pro)",
+        "cloud": True,
     },
-    "openai": {
-        "label": "OpenAI",
+    "lmstudio": {
+        "label": "LM Studio (local)",
         "provider": "openai_compatible",
-        "openai_base_url": "https://api.openai.com/v1",
-        "openai_model": "gpt-4o-mini",
-        "hint": "Official OpenAI vision models",
+        "openai_base_url": "http://host.docker.internal:1234/v1",
+        "openai_model": "",
+        "hint": "Local OpenAI-compatible server on your machine",
+        "cloud": False,
     },
     "custom": {
         "label": "Custom OpenAI-compatible",
         "provider": "openai_compatible",
         "openai_base_url": "http://host.docker.internal:1234/v1",
         "openai_model": "",
-        "hint": "LM Studio, vLLM, OpenClaw, any /v1/chat/completions endpoint",
+        "hint": "LM Studio, vLLM, OpenClaw, any /v1/chat/completions — cloud URLs need Pro",
+        "cloud": False,
     },
 }
+
+
+_LOCAL_HOST_MARKERS = (
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "::1",
+    "host.docker.internal",
+)
+
+
+def is_local_openai_url(url: str | None) -> bool:
+    """True for loopback / docker-host URLs (Free). Remote hosts need Pro cloud_vlm."""
+    raw = (url or "").strip().lower()
+    if not raw:
+        return True
+    return any(m in raw for m in _LOCAL_HOST_MARKERS)
+
+
+def is_cloud_vlm_request(
+    *,
+    provider: str | None,
+    openai_base_url: str | None,
+    preset_id: str | None = None,
+) -> bool:
+    """Whether this config change targets a cloud (Pro) VLM endpoint."""
+    if preset_id:
+        preset = _PRESETS.get(preset_id) or {}
+        if preset.get("cloud"):
+            return True
+    if (provider or "") == "openai_compatible" and not is_local_openai_url(openai_base_url):
+        return True
+    return False
+
 
 
 def runtime_path(settings: Settings) -> Path:
@@ -118,7 +173,16 @@ def merge_runtime(settings: Settings, patch: dict[str, Any]) -> VlmRuntimeConfig
 
 def effective_provider(settings: Settings) -> VlmProvider:
     rt = load_runtime(settings)
-    return rt.provider or "ollama"
+    provider: VlmProvider = rt.provider or "ollama"
+    if provider == "openai_compatible" and not is_local_openai_url(rt.openai_base_url):
+        try:
+            from cinearchive.services.entitlements import has_feature
+
+            if not has_feature("cloud_vlm", settings):
+                return "ollama"
+        except Exception:
+            return "ollama"
+    return provider
 
 
 def effective_enabled(settings: Settings) -> bool:

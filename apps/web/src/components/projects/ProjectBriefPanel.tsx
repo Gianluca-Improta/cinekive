@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, Save, Settings2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Crown, FolderOpen, Save, Settings2 } from "lucide-react";
+import { ProGateBanner } from "@/components/pro/ProGateBanner";
+import { PRO_UPGRADE_URL, useHasFeature } from "@/hooks/useEntitlements";
 import { api } from "@/lib/api-client";
 import type { Project } from "@/lib/types";
 
@@ -12,12 +14,15 @@ type Props = {
 
 export function ProjectBriefPanel({ project }: Props) {
   const qc = useQueryClient();
+  const canWatch = useHasFeature("folder_watcher");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(project.name);
   const [feeling, setFeeling] = useState(project.feeling || "");
   const [brief, setBrief] = useState(project.brief || "");
   const [refs, setRefs] = useState(project.references_text || "");
   const [sampling, setSampling] = useState(project.sampling_mode || "heroes");
+  const [watchEnabled, setWatchEnabled] = useState(Boolean(project.watch_enabled));
+  const [watchFolder, setWatchFolder] = useState(project.watch_folder || "");
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -26,6 +31,8 @@ export function ProjectBriefPanel({ project }: Props) {
     setBrief(project.brief || "");
     setRefs(project.references_text || "");
     setSampling(project.sampling_mode || "heroes");
+    setWatchEnabled(Boolean(project.watch_enabled));
+    setWatchFolder(project.watch_folder || "");
   }, [project]);
 
   const save = useMutation({
@@ -36,6 +43,8 @@ export function ProjectBriefPanel({ project }: Props) {
         brief: brief.trim() || null,
         references_text: refs.trim() || null,
         sampling_mode: sampling as "fast" | "full" | "heroes" | "moments",
+        watch_enabled: canWatch ? watchEnabled : false,
+        watch_folder: watchFolder.trim() || null,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["project", project.id] });
@@ -60,6 +69,11 @@ export function ProjectBriefPanel({ project }: Props) {
           {hasBrief && !open && (
             <span className="rounded bg-cinema-cyan/15 px-1.5 py-0.5 font-mono text-[9px] text-cinema-cyan">
               brief set
+            </span>
+          )}
+          {project.watch_enabled && !open && (
+            <span className="rounded bg-cinema-cyan/15 px-1.5 py-0.5 font-mono text-[9px] text-cinema-cyan">
+              watching
             </span>
           )}
         </span>
@@ -131,6 +145,59 @@ export function ProjectBriefPanel({ project }: Props) {
               <option value="fast">Fast — sparse sample</option>
             </select>
           </label>
+
+          <div className="space-y-2 rounded-lg border border-cinema-border/70 bg-cinema-black/40 p-3">
+            <div className="flex items-center gap-2 text-xs text-white">
+              <FolderOpen className="h-3.5 w-3.5 text-cinema-cyan" />
+              Folder watcher
+              {!canWatch && (
+                <span className="rounded border border-cinema-cyan/30 px-1 text-[9px] text-cinema-cyan">
+                  Pro
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-cinema-muted">
+              Drop stills or clips into a folder; Cinekive auto-ingests new files. Default path is
+              this project&apos;s inbox on disk.
+            </p>
+            {!canWatch ? (
+              <ProGateBanner
+                feature="folder_watcher"
+                title="Folder watcher is Pro"
+                detail="Manual drop stays free. Auto-ingest unlocks with a one-time Pro license."
+                compact
+              />
+            ) : (
+              <>
+                <label className="inline-flex items-center gap-2 text-xs text-cinema-muted">
+                  <input
+                    type="checkbox"
+                    checked={watchEnabled}
+                    onChange={(e) => setWatchEnabled(e.target.checked)}
+                    className="accent-cinema-cyan"
+                  />
+                  <span className="text-white">Watch folder for new files</span>
+                </label>
+                <input
+                  value={watchFolder}
+                  onChange={(e) => setWatchFolder(e.target.value)}
+                  placeholder="Absolute path to watch (or leave blank for project inbox)"
+                  className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 font-mono text-[11px] text-white outline-none focus:border-cinema-cyan"
+                />
+              </>
+            )}
+            {!canWatch && (
+              <a
+                href={PRO_UPGRADE_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] text-cinema-cyan hover:underline"
+              >
+                <Crown className="h-3 w-3" /> Unlock Pro
+              </a>
+            )}
+          </div>
+
           <div className="flex items-center gap-2">
             <button
               type="button"

@@ -28,9 +28,13 @@ Engine data: `%APPDATA%\Cinekive\data` (Windows) / `~/Library/Application Suppor
 
 ### Free vs Pro
 
-The installer is the same binary. **Free** includes search, ingest, canvas, single-shot export, and LAN phone URL. **Pro** ($19 one-time on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro)) unlocks archive mirrors, continuous enrich, batch export, share tunnel, Agent API, and unlimited projects.
+The installer is the same binary. **Free** includes search, ingest, canvas, single-shot export, LAN phone URL, and **local Ollama**. **Pro** ($19 one-time on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro)) unlocks archive mirrors, continuous enrich, **cloud VLM** (OpenRouter / ChatGPT / Claude / Kimi), batch export, **board PNG/PDF**, **folder watcher**, share tunnel, Agent API, and unlimited projects.
 
 Activate: in-app **Settings → Cinekive Pro** (or paste your license key). License file: `%APPDATA%\Cinekive\license.json` (Mac/Linux under Application Support / `.config`).
+
+**Folder watcher (Pro):** Project brief panel → enable watch on the project inbox (or any absolute path). New stills/clips dropped there auto-ingest.
+
+**Board export (Pro):** Moodboard toolbar → PNG or PDF.
 
 Pro support: hello@gianlucaimprota.com. Seller / env setup: [GUMROAD.md](GUMROAD.md).
 

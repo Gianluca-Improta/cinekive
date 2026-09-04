@@ -158,9 +158,9 @@ async def lifespan(app: FastAPI):
 
     from cinearchive.services.watcher import get_watcher
 
+    # Poller always runs; it only ingests when a project has watch_enabled (Pro).
     watcher = get_watcher(settings)
-    if settings.watcher_enabled:
-        watcher.start()
+    watcher.start()
     app.state.watcher = watcher
 
     from cinearchive.jobs.dedupe_scheduler import start_dedupe_scheduler, stop_dedupe_scheduler

@@ -25,6 +25,8 @@ async def create_project(
     from cinearchive.services import entitlements as ent
 
     service = ProjectService(session, settings)
+    if body.watch_enabled:
+        ent.require_feature("folder_watcher", settings)
     payload = ent.entitlements_payload(settings)
     max_projects = payload.get("limits", {}).get("max_projects")
     if max_projects is not None:
@@ -72,10 +74,33 @@ async def update_project(
     session: AsyncSession = Depends(get_db_session),
     settings: Settings = Depends(get_settings),
 ) -> ProjectRead:
+    from cinearchive.services.entitlements import require_feature
+    from cinearchive.services.watcher import get_watcher
+    from cinearchive.utils.paths import project_video_dir
+
+    # Enabling folder watch is Pro — Free keeps manual ingest.
+    if body.watch_enabled is True:
+        require_feature("folder_watcher", settings)
+
     service = ProjectService(session, settings)
+
+    # Default watch path to project inbox when enabling without a folder.
+    if body.watch_enabled is True and not (body.watch_folder or "").strip():
+        existing = await service.get(project_id)
+        if existing and not (existing.watch_folder or "").strip():
+            inbox = project_video_dir(settings, existing.slug) / "inbox"
+            inbox.mkdir(parents=True, exist_ok=True)
+            body.watch_folder = str(inbox)
+
     project = await service.update(project_id, body)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    if project.watch_enabled and project.watch_folder:
+        watcher = get_watcher(settings)
+        if not watcher.running:
+            watcher.start()
+
     return project
 
 

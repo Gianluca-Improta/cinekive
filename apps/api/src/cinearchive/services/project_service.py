@@ -67,9 +67,12 @@ class ProjectService:
         await self.repo.create(project)
         project_video_dir(self.settings, slug)
         project_shots_dir(self.settings, slug)
-        # Default watch inbox for auto-ingest
+        # Default watch inbox for auto-ingest (off until Pro enables watch)
         inbox = project_video_dir(self.settings, slug) / "inbox"
         inbox.mkdir(parents=True, exist_ok=True)
+        if not project.watch_folder:
+            project.watch_folder = str(inbox)
+            await self.session.flush()
         await self.session.commit()
         return await self.to_read(project)
 

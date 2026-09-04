@@ -27,7 +27,7 @@ Living document. Prefer [Discussions](https://github.com/Gianluca-Improta/cineki
 
 | Theme | Ideas |
 |-------|--------|
-| **Canvas** | Resize, video loops on board, PDF/ref cards, export board as PDF/PNG |
+| **Canvas** | Resize, video loops on board, PDF/ref cards | **Board PNG/PDF export (Pro)** shipped |
 | **Brief → board** | Pitch / logline → ranked shots auto-layout |
 | **Craft graph** | Stronger shape / lighting / genre connections across library |
 | **Team box** | Multi-seat on one self-hosted GPU machine |

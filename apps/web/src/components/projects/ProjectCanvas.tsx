@@ -17,6 +17,10 @@ import {
   Type,
   ZoomIn,
   ZoomOut,
+  Download,
+  FileImage,
+  FileText,
+  Crown,
 } from "lucide-react";
 import { api, artifactUrl } from "@/lib/api-client";
 import type { Shot } from "@/lib/types";
@@ -33,6 +37,8 @@ import {
 } from "@/lib/canvas-types";
 import { cn } from "@/lib/utils";
 import { CanvasShotRail } from "@/components/projects/CanvasShotRail";
+import { exportBoardPdf, exportBoardPng } from "@/lib/board-export";
+import { PRO_UPGRADE_URL, useHasFeature } from "@/hooks/useEntitlements";
 
 type Props = {
   projectId: string;
@@ -98,7 +104,10 @@ export function ProjectCanvas({
   initialCollectionId,
 }: Props) {
   const qc = useQueryClient();
+  const canBoardExport = useHasFeature("board_export");
   const viewportRef = useRef<HTMLDivElement>(null);
+  const [exportBusy, setExportBusy] = useState<"png" | "pdf" | null>(null);
+  const [exportErr, setExportErr] = useState<string | null>(null);
   const [doc, setDoc] = useState<CanvasDoc>(emptyCanvasDoc());
   const [activeCanvasId, setActiveCanvasId] = useState<string | null>(
     initialCollectionId || null
@@ -819,6 +828,65 @@ export function ProjectCanvas({
             <Scan className="h-3.5 w-3.5" />
           </button>
         </div>
+        <div className="flex overflow-hidden rounded border border-cinema-border">
+          <button
+            type="button"
+            title={canBoardExport ? "Export board PNG" : "Board export is Pro"}
+            disabled={Boolean(exportBusy)}
+            onClick={async () => {
+              if (!canBoardExport) {
+                window.open(PRO_UPGRADE_URL, "_blank", "noopener,noreferrer");
+                return;
+              }
+              setExportErr(null);
+              setExportBusy("png");
+              try {
+                await exportBoardPng(doc, shots, canvas.name);
+              } catch (e) {
+                setExportErr((e as Error).message || "PNG export failed");
+              } finally {
+                setExportBusy(null);
+              }
+            }}
+            className="inline-flex items-center gap-1 px-2 py-1.5 text-[11px] text-cinema-muted hover:text-cinema-cyan disabled:opacity-40"
+          >
+            {canBoardExport ? (
+              <FileImage className="h-3.5 w-3.5" />
+            ) : (
+              <Crown className="h-3.5 w-3.5 text-cinema-cyan" />
+            )}
+            {exportBusy === "png" ? "…" : "PNG"}
+          </button>
+          <button
+            type="button"
+            title={canBoardExport ? "Export board PDF" : "Board export is Pro"}
+            disabled={Boolean(exportBusy)}
+            onClick={async () => {
+              if (!canBoardExport) {
+                window.open(PRO_UPGRADE_URL, "_blank", "noopener,noreferrer");
+                return;
+              }
+              setExportErr(null);
+              setExportBusy("pdf");
+              try {
+                await exportBoardPdf(doc, shots, canvas.name);
+              } catch (e) {
+                setExportErr((e as Error).message || "PDF export failed");
+              } finally {
+                setExportBusy(null);
+              }
+            }}
+            className="inline-flex items-center gap-1 border-l border-cinema-border px-2 py-1.5 text-[11px] text-cinema-muted hover:text-cinema-cyan disabled:opacity-40"
+          >
+            {canBoardExport ? (
+              <FileText className="h-3.5 w-3.5" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            {exportBusy === "pdf" ? "…" : "PDF"}
+          </button>
+        </div>
+        {exportErr && <span className="text-[11px] text-cinema-magenta">{exportErr}</span>}
         <button
           type="button"
           onClick={() => addText("title")}

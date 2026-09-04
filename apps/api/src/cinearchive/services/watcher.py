@@ -73,6 +73,11 @@ class FolderWatcher:
             await asyncio.sleep(self.settings.watcher_poll_sec)
 
     async def _tick(self) -> None:
+        from cinearchive.services.entitlements import has_feature
+
+        if not has_feature("folder_watcher", self.settings):
+            return
+
         async with SessionLocal() as session:
             repo = ProjectRepository(session)
             projects = [p for p in await repo.list() if p.watch_enabled and p.watch_folder]

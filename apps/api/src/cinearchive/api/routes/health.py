@@ -70,6 +70,6 @@ async def health(
         "vlm_reachable": vlm_ok,
         "enrich": enrich_info,
         "watcher_enabled": settings.watcher_enabled,
-        "version": "0.5.0",
+        "version": "0.5.1",
         "lan_web_url": os.environ.get("CINEKIVE_LAN_WEB_URL") or None,
     }

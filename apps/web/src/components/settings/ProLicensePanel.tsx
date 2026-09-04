@@ -76,8 +76,8 @@ export function ProLicensePanel() {
         )}
       </div>
       <p className="text-xs text-cinema-muted">
-        One-time ${price}. Archive mirrors, batch export, continuous craft enrich, share tunnel,
-        unlimited projects. No ads. Local forever.
+        One-time ${price}. Archive mirrors, cloud VLM (OpenRouter / ChatGPT / Claude),
+        batch + board export, folder watcher, continuous enrich, share tunnel. No ads.
       </p>
 
       {isLoading ? (
