@@ -151,8 +151,9 @@ Then open http://localhost:3000
 
 ---
 
-## What you get (v0.4.4)
+## What you get (v0.4.5)
 
+- **Mac first-run fix** — creates `Application Support/Cinekive/runtime/.env` before setup so the wizard no longer hits ENOENT
 - **One-click desktop install** — Windows `.exe` / Mac `.dmg`; native engine by default (no Docker or terminal)
 - **Phone on same WiFi** — browse your library from a phone browser on your LAN
 - **Faster craft enrich** — continuous VLM drip with live Activity status; quicker Ollama calls

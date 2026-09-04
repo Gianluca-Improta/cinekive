@@ -36,6 +36,7 @@ const {
   defaultLibraryDir,
   defaultDataDir,
   ensureDataDirs,
+  ensureRuntimeSynced,
   userDataRoot,
 } = require("./paths");
 
@@ -537,6 +538,7 @@ ipcMain.handle("complete-first-run", async (_e, opts) => {
   const libraryPath = (typeof opts === "string" ? opts : opts?.libraryPath) || defaultLibraryDir();
   const engineMode = (typeof opts === "object" && opts?.engineMode) || "auto";
   const dataDir = defaultDataDir();
+  ensureRuntimeSynced();
   ensureDataDirs(dataDir, libraryPath);
   setLibraryHostPath(libraryPath);
   writeConfig({
@@ -563,6 +565,8 @@ ipcMain.handle("quit-app", async () => {
 
 app.whenReady().then(async () => {
   buildMenu();
+  // Create Application Support/Cinekive/runtime (+ blank .env) before any setup IO.
+  ensureRuntimeSynced();
   const cfg = readConfig();
   if (!cfg.firstRunComplete) {
     // Seed defaults so wizard shows a sensible path

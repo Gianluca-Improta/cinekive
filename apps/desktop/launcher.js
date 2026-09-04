@@ -28,7 +28,7 @@ function appVersion() {
   try {
     return JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")).version;
   } catch {
-    return "0.4.4";
+    return "0.4.5";
   }
 }
 
@@ -145,9 +145,12 @@ function nativePackPlatform() {
 }
 
 function writeEnvFile({ dataDir, libraryPath }) {
-  const root = stackRoot();
+  // Packaged apps write to ~/Library/Application Support/Cinekive/runtime/.env
+  // (or %APPDATA%\Cinekive\runtime\.env). Ensure that folder exists first.
+  const root = ensureRuntimeSynced();
   const example = path.join(root, ".env.example");
   const dest = envPath();
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
   let base = "";
   if (fs.existsSync(dest)) {
     base = fs.readFileSync(dest, "utf8");
@@ -186,6 +189,7 @@ function writeEnvFile({ dataDir, libraryPath }) {
 }
 
 function setLibraryHostPath(hostPath) {
+  ensureRuntimeSynced();
   const cfg = readConfig();
   const dataDir = cfg.dataDir || defaultDataDir();
   const dirs = ensureDataDirs(dataDir, hostPath);

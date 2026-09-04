@@ -37,9 +37,11 @@ function stackRoot() {
 }
 
 function ensureRuntimeSynced() {
-  if (!isPackaged()) return stackRoot();
-  const src = bundledStackRoot();
   const dest = stackRoot();
+  // Always create writable runtime before any .env / config IO (macOS first-run ENOENT).
+  fs.mkdirSync(dest, { recursive: true });
+  if (!isPackaged()) return dest;
+  const src = bundledStackRoot();
   const ver = app.getVersion();
   const marker = path.join(dest, ".bundle-version");
   const needsCopy =
@@ -48,9 +50,13 @@ function ensureRuntimeSynced() {
     fs.readFileSync(marker, "utf8").trim() !== ver;
 
   if (needsCopy) {
-    fs.mkdirSync(dest, { recursive: true });
     fs.cpSync(src, dest, { recursive: true, force: true });
     fs.writeFileSync(marker, ver, "utf8");
+  }
+  // Seed a blank .env so later writers never hit ENOENT on a missing parent.
+  const env = path.join(dest, ".env");
+  if (!fs.existsSync(env)) {
+    fs.writeFileSync(env, "# Cinekive desktop\n", "utf8");
   }
   return dest;
 }
