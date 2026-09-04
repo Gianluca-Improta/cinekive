@@ -54,11 +54,24 @@ function qdrantBin(root) {
 }
 
 function pythonBin(root) {
-  return path.join(
-    root,
-    "python",
-    process.platform === "win32" ? "Scripts/python.exe" : "bin/python"
-  );
+  if (process.platform === "win32") {
+    const candidates = [
+      path.join(root, "python", "Scripts", "python.exe"),
+      path.join(root, "python", "python.exe"),
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
+    return candidates[0];
+  }
+  const candidates = [
+    path.join(root, "python", "bin", "python3"),
+    path.join(root, "python", "bin", "python"),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return candidates[0];
 }
 
 function webServerPath(root) {
@@ -226,6 +239,40 @@ async function startStack({ onStatus } = {}) {
     nodeBin = process.env.CINEKIVE_NODE || "node";
   }
 
+  // If a previous launch already brought everything up, reuse it.
+  if ((await ping(API_HEALTH)) && (await ping(WEB_URL))) {
+    onStatus?.("Engine already running.");
+    return { webUrl: WEB_URL, mode: "native", lan: getLanUrls(cfg.lanAccess !== false) };
+  }
+
+  if (!fs.existsSync(qBin)) {
+    throw new Error("Qdrant binary missing from engine pack. Reinstall Cinekive or re-download the engine.");
+  }
+  if (!fs.existsSync(python)) {
+    throw new Error("Python missing from engine pack. Reinstall Cinekive or re-download the engine.");
+  }
+  if (!fs.existsSync(webServer)) {
+    throw new Error("Web server missing from engine pack. Reinstall Cinekive or re-download the engine.");
+  }
+
+  // Fail fast if the pack was built with a non-relocatable CI venv.
+  try {
+    execSync(`"${python}" -c "import sys; print(sys.version)"`, {
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 15000,
+    });
+  } catch (e) {
+    const detail = String(e.stderr || e.message || e);
+    throw new Error(
+      "Engine Python failed to start (broken pack).\n\n" +
+        "Download the latest Cinekive release and delete:\n" +
+        `  ${root}\n` +
+        "then reopen the app so it re-downloads the engine.\n\n" +
+        detail.slice(0, 400)
+    );
+  }
+
   const lanAccess = cfg.lanAccess !== false;
   const bindHost = getBindHost(lanAccess);
   const lan = getLanUrls(lanAccess);
@@ -238,59 +285,81 @@ async function startStack({ onStatus } = {}) {
     onStatus?.("Ollama not running — search still works; install Ollama for craft AI tags");
   }
 
-  onStatus?.("Starting Qdrant…");
-  spawnTracked(
-    qBin,
-    [],
-    {
-      cwd: path.join(root, "qdrant"),
-      env: {
-        ...process.env,
-        QDRANT__STORAGE__STORAGE_PATH: path.join(dataDir, "qdrant"),
-      },
-    },
-    "qdrant"
-  );
-
-  const qdrantOk = await waitForService(QDRANT_HEALTH, "Qdrant", { onStatus, tries: 45 });
+  let qdrantOk = await ping(QDRANT_HEALTH);
   if (!qdrantOk) {
-    throw new Error("Qdrant did not start. Open engine logs in Help → Open engine logs.");
-  }
-
-  onStatus?.("Starting API…");
-  const pyEnv = buildPythonEnv(root, dataDir, libraryPath, { lanAccess, vlmEnabled: ollamaOk });
-  spawnTracked(
-    python,
-    ["-m", "uvicorn", "cinearchive.main:app", "--host", bindHost, "--port", "8000"],
-    {
-      cwd: path.join(root, "python"),
-      env: pyEnv,
-    },
-    "api"
-  );
-
-  const apiOk = await waitForService(API_HEALTH, "API", { onStatus, tries: 90, intervalMs: 2000 });
-  if (!apiOk) {
-    throw new Error("API did not become healthy. Check engine/logs/api.log");
-  }
-
-  onStatus?.("Starting web…");
-  spawnTracked(
-    nodeBin,
-    [webServer],
-    {
-      cwd: path.join(root, "web"),
-      env: {
-        ...process.env,
-        PORT: "3000",
-        HOSTNAME: bindHost,
-        NEXT_PUBLIC_API_URL: "http://localhost:8000",
+    onStatus?.("Starting Qdrant…");
+    spawnTracked(
+      qBin,
+      [],
+      {
+        cwd: path.join(root, "qdrant"),
+        env: {
+          ...process.env,
+          QDRANT__STORAGE__STORAGE_PATH: path.join(dataDir, "qdrant"),
+        },
       },
-    },
-    "web"
-  );
+      "qdrant"
+    );
+    qdrantOk = await waitForService(QDRANT_HEALTH, "Qdrant", { onStatus, tries: 45 });
+  } else {
+    onStatus?.("Qdrant already running");
+  }
+  if (!qdrantOk) {
+    throw new Error(
+      "Qdrant did not start.\n\n" +
+        "Another app may be using port 6333, or the vector DB is locked.\n" +
+        "Quit other Cinekive / Docker instances, then try again.\n" +
+        "Logs: Help → Open engine logs → qdrant.log"
+    );
+  }
 
-  const webOk = await waitForService(WEB_URL, "web UI", { onStatus, tries: 60 });
+  let apiOk = await ping(API_HEALTH);
+  if (!apiOk) {
+    onStatus?.("Starting API…");
+    const pyEnv = buildPythonEnv(root, dataDir, libraryPath, { lanAccess, vlmEnabled: ollamaOk });
+    spawnTracked(
+      python,
+      ["-m", "uvicorn", "cinearchive.main:app", "--host", bindHost, "--port", "8000"],
+      {
+        cwd: path.dirname(python),
+        env: pyEnv,
+      },
+      "api"
+    );
+    apiOk = await waitForService(API_HEALTH, "API", { onStatus, tries: 90, intervalMs: 2000 });
+  } else {
+    onStatus?.("API already running");
+  }
+  if (!apiOk) {
+    throw new Error(
+      "API did not become healthy.\n\n" +
+        "Usually a broken engine Python pack. Delete the engine folder and reopen Cinekive:\n" +
+        `  ${root}\n` +
+        "Check engine/logs/api.log for details."
+    );
+  }
+
+  let webOk = await ping(WEB_URL);
+  if (!webOk) {
+    onStatus?.("Starting web…");
+    spawnTracked(
+      nodeBin,
+      [webServer],
+      {
+        cwd: path.join(root, "web"),
+        env: {
+          ...process.env,
+          PORT: "3000",
+          HOSTNAME: bindHost,
+          NEXT_PUBLIC_API_URL: "http://localhost:8000",
+        },
+      },
+      "web"
+    );
+    webOk = await waitForService(WEB_URL, "web UI", { onStatus, tries: 60 });
+  } else {
+    onStatus?.("Web UI already running");
+  }
   if (!webOk) {
     throw new Error("Web UI did not start. Check engine/logs/web.log");
   }

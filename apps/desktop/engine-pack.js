@@ -30,6 +30,52 @@ function installedVersion() {
   return fs.readFileSync(marker, "utf8").trim();
 }
 
+function appVersion() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")).version;
+  } catch {
+    return "0.4.6";
+  }
+}
+
+/** True when pack is missing, outdated, or built with a non-relocatable CI venv. */
+function needsEngineRefresh() {
+  if (!nativeReady()) return true;
+  const installed = installedVersion();
+  const wanted = appVersion();
+  if (installed && wanted && installed !== wanted) return true;
+
+  // Broken Windows/macOS venv from CI: pyvenv.cfg / python points at hostedtoolcache
+  const root = engineRoot();
+  const cfgPath = path.join(root, "python", "pyvenv.cfg");
+  if (fs.existsSync(cfgPath)) {
+    const cfg = fs.readFileSync(cfgPath, "utf8");
+    if (/hostedtoolcache|\/Users\/runner|D:\\a\\|\/home\/runner/i.test(cfg)) return true;
+  }
+  try {
+    const { execSync } = require("child_process");
+    const py =
+      process.platform === "win32"
+        ? [
+            path.join(root, "python", "Scripts", "python.exe"),
+            path.join(root, "python", "python.exe"),
+          ].find((p) => fs.existsSync(p))
+        : [
+            path.join(root, "python", "bin", "python3"),
+            path.join(root, "python", "bin", "python"),
+          ].find((p) => fs.existsSync(p));
+    if (!py) return true;
+    execSync(`"${py}" -c "import sys"`, {
+      windowsHide: true,
+      stdio: "ignore",
+      timeout: 12000,
+    });
+  } catch {
+    return true;
+  }
+  return false;
+}
+
 function releaseDownloadUrl(version) {
   const tag = version.startsWith("v") ? version : `v${version}`;
   const asset = packAssetName();
@@ -198,4 +244,6 @@ module.exports = {
   releaseDownloadUrl,
   ensureEnginePack,
   nativeReady,
+  needsEngineRefresh,
+  appVersion,
 };

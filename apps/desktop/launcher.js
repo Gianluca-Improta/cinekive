@@ -28,7 +28,7 @@ function appVersion() {
   try {
     return JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")).version;
   } catch {
-    return "0.4.5";
+    return "0.4.6";
   }
 }
 
@@ -278,8 +278,21 @@ async function ensureNativeStack({ onStatus, onProgress } = {}) {
   const native = require("./engine-native");
   const pack = require("./engine-pack");
 
-  if (!native.nativeReady()) {
-    onStatus?.("Installing native engine (one-time download)…");
+  const needsPack = !native.nativeReady() || pack.needsEngineRefresh?.();
+  if (needsPack) {
+    if (native.nativeReady() && pack.needsEngineRefresh?.()) {
+      onStatus?.("Updating native engine (broken or outdated pack)…");
+      try {
+        const root = native.engineRoot();
+        if (fs.existsSync(root)) {
+          fs.rmSync(root, { recursive: true, force: true });
+        }
+      } catch (e) {
+        onStatus?.(`Could not clear old engine: ${e.message || e}`);
+      }
+    } else {
+      onStatus?.("Installing native engine (one-time download)…");
+    }
     await pack.ensureEnginePack({ onStatus, onProgress });
   }
 

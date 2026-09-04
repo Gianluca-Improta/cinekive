@@ -54,15 +54,15 @@ If this saves you time, a [GitHub star](https://github.com/Gianluca-Improta/cine
 
 ## Downloads
 
-**[→ Download Cinekive v0.4.5](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.4.5)** — no Docker or terminal needed on Windows / Mac.
+**[→ Download Cinekive v0.4.6](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.4.6)** — no Docker or terminal needed on Windows / Mac.
 
 | Your computer | Download this | Then |
 |---------------|---------------|------|
-| **Windows** | [`Cinekive-0.4.5-win-x64.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.5/Cinekive-0.4.5-win-x64.exe) | Double-click → Start menu shortcut appears |
-| **Windows (no install)** | [`Cinekive-0.4.5-portable.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.5/Cinekive-0.4.5-portable.exe) | Double-click and run |
-| **Mac (Apple Silicon M1/M2/M3/M4)** | [`Cinekive-0.4.5-mac-arm64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.5/Cinekive-0.4.5-mac-arm64.dmg) | Open DMG → drag to Applications |
-| **Mac (Intel)** | [`Cinekive-0.4.5-mac-x64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.5/Cinekive-0.4.5-mac-x64.dmg) | Open DMG → drag to Applications |
-| **Linux** | [`.AppImage` / `.deb`](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.4.5) | Needs Docker Desktop for now |
+| **Windows** | [`Cinekive-0.4.6-win-x64.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.6/Cinekive-0.4.6-win-x64.exe) | Double-click → Start menu shortcut appears |
+| **Windows (no install)** | [`Cinekive-0.4.6-portable.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.6/Cinekive-0.4.6-portable.exe) | Double-click and run |
+| **Mac (Apple Silicon M1/M2/M3/M4)** | [`Cinekive-0.4.6-mac-arm64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.6/Cinekive-0.4.6-mac-arm64.dmg) | Open DMG → drag to Applications |
+| **Mac (Intel)** | [`Cinekive-0.4.6-mac-x64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.6/Cinekive-0.4.6-mac-x64.dmg) | Open DMG → drag to Applications |
+| **Linux** | [`.AppImage` / `.deb`](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.4.6) | Needs Docker Desktop for now |
 
 ### Install in 3 steps
 
@@ -151,8 +151,9 @@ Then open http://localhost:3000
 
 ---
 
-## What you get (v0.4.5)
+## What you get (v0.4.6)
 
+- **Native engine fix** — relocatable Python in the engine pack (v0.4.5 packs pointed at the CI runner and could not start)
 - **Mac first-run fix** — creates `Application Support/Cinekive/runtime/.env` before setup so the wizard no longer hits ENOENT
 - **One-click desktop install** — Windows `.exe` / Mac `.dmg`; native engine by default (no Docker or terminal)
 - **Phone on same WiFi** — browse your library from a phone browser on your LAN
