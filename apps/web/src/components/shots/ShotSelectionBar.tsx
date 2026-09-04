@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, FolderInput, Trash2, X } from "lucide-react";
+import { Copy, FolderInput, Trash2, X, Crown } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { SendToBoardMenu } from "@/components/shots/SendToBoardMenu";
+import { useEntitlements, PRO_UPGRADE_URL } from "@/hooks/useEntitlements";
 
 type Props = {
   selectedIds: Set<string>;
@@ -15,9 +16,11 @@ type Props = {
 
 export function ShotSelectionBar({ selectedIds, currentProjectId, onClear, onDone }: Props) {
   const qc = useQueryClient();
+  const { data: entitlements } = useEntitlements();
   const [targetProject, setTargetProject] = useState("");
   const [error, setError] = useState<string | null>(null);
   const ids = useMemo(() => [...selectedIds], [selectedIds]);
+  const canBatchExport = Boolean(entitlements?.is_pro) || ids.length <= 1;
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
@@ -71,9 +74,17 @@ export function ShotSelectionBar({ selectedIds, currentProjectId, onClear, onDon
       <span className="font-medium text-cinema-cyan">{ids.length} selected</span>
       <button
         type="button"
-        onClick={() => api.exportShots(ids, "zip")}
-        className="rounded border border-cinema-border px-2 py-1 text-cinema-muted hover:text-white"
+        onClick={() => {
+          if (!canBatchExport) {
+            window.open(entitlements?.upgrade_url || PRO_UPGRADE_URL, "_blank");
+            return;
+          }
+          api.exportShots(ids, "zip").catch((e: Error) => setError(e.message));
+        }}
+        title={canBatchExport ? "Export ZIP" : "Batch export requires Pro"}
+        className="inline-flex items-center gap-1 rounded border border-cinema-border px-2 py-1 text-cinema-muted hover:text-white"
       >
+        {!canBatchExport && <Crown className="h-3 w-3 text-cinema-cyan" />}
         Export
       </button>
       <SendToBoardMenu shotIds={ids} projectId={currentProjectId} label="Send to board" />

@@ -15,10 +15,13 @@ router = APIRouter(prefix="/system", tags=["system"])
 
 @router.get("")
 async def system_info(settings: Settings = Depends(get_settings)) -> dict:
+    from cinearchive.services import entitlements as ent
+
     lib = library_root(settings)
     return {
         "app": "Cinekive",
-        "version": "0.4.6",
+        "version": "0.5.0",
+        "entitlements": ent.entitlements_payload(settings),
         "library_dir": str(lib.resolve()),
         "videos_dir": str(Path(settings.videos_dir).resolve()),
         "artifacts_dir": str(Path(settings.artifacts_dir).resolve()),
@@ -59,6 +62,7 @@ async def system_info(settings: Settings = Depends(get_settings)) -> dict:
                     "id": "export-zip",
                     "label": "Export ZIP",
                     "summary": "Select shots → Export. Share the zip privately.",
+                    "pro": True,
                 },
                 {
                     "id": "tunnel",
@@ -68,6 +72,7 @@ async def system_info(settings: Settings = Depends(get_settings)) -> dict:
                         "cloudflared tunnel --url http://localhost:3000",
                         "npx localtunnel --port 3000",
                     ],
+                    "pro": True,
                 },
                 {
                     "id": "static-gallery",

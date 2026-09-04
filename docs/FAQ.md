@@ -78,4 +78,21 @@ UI packs: English, Chinese, Spanish, French, German, Japanese. Shot/craft taxono
 
 ## Where do donations go?
 
-[GitHub Sponsors](https://github.com/sponsors/Gianluca-Improta) — keeps Cinekive local-first and moving.
+[GitHub Sponsors](https://github.com/sponsors/Gianluca-Improta) — keeps the free edition local-first and moving.
+
+## Free vs Pro?
+
+| | Free | Pro ($19 one-time) |
+|--|------|---------------------|
+| Search, ingest, canvas, single export, LAN | Yes | Yes |
+| Archive mirrors, batch export, share tunnel | Soft / locked | Unlocked |
+| Continuous enrich, Agent API, unlimited projects | Soft / locked | Unlocked |
+| Support | GitHub | Email hello@gianlucaimprota.com |
+
+Same desktop installer. Buy on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro), then **Settings → Cinekive Pro → Activate**. Early-bird $12 for the first 100 buyers when offered.
+
+Self-built from source: no license checks (honor system). Packaged desktop enforces Free until you activate.
+
+## How do I activate Pro offline?
+
+Activate once while online (Gumroad verify). After that, a signed `license.json` keeps Pro working offline. After ~30 days you may be asked to re-verify when connected; you are not locked out immediately.

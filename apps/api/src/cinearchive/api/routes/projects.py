@@ -22,7 +22,23 @@ async def create_project(
     session: AsyncSession = Depends(get_db_session),
     settings: Settings = Depends(get_settings),
 ) -> ProjectRead:
+    from cinearchive.services import entitlements as ent
+
     service = ProjectService(session, settings)
+    payload = ent.entitlements_payload(settings)
+    max_projects = payload.get("limits", {}).get("max_projects")
+    if max_projects is not None:
+        existing = await service.list()
+        if len(existing) >= int(max_projects):
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "error": "pro_required",
+                    "feature": "unlimited_projects",
+                    "message": f"Free tier includes up to {max_projects} projects. Upgrade to Pro for unlimited.",
+                    "upgrade_url": payload["upgrade_url"],
+                },
+            )
     return await service.create(body)
 
 

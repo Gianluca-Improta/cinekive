@@ -249,7 +249,7 @@ export function DropZone({
             className={cn("h-3.5 w-3.5 shrink-0", over ? "text-cinema-cyan" : "text-cinema-muted")}
           />
           <span className="text-[11px] text-cinema-muted">
-            {onFiles ? "Drop files / folders" : "Drop or paste URL"}
+            {onFiles ? t("ingest.dropHintShort") : "Drop or paste URL"}
           </span>
           {onFiles && (
             <>
@@ -355,10 +355,11 @@ export function DropZone({
     >
       <Upload className="h-5 w-5 text-cinema-cyan" />
       <div className="text-sm text-white">
-        {onFiles ? "Drop files, folders, or a URL" : "Paste or drop a URL"}
+        {onFiles ? t("ingest.dropHint") : "Paste or drop a URL"}
       </div>
       <div className="max-w-md text-center text-[11px] text-cinema-muted">
-        Stills folders keep path titles. Videos · GIFs · any yt-dlp URL (YouTube, Vimeo, TikTok, Instagram, direct links…).
+        JPG · PNG · WebP · GIF · folders of stills · video · any yt-dlp URL. Drop and it loads into
+        the library automatically.
       </div>
       {status && <div className="text-[11px] text-cinema-cyan">{status}</div>}
 

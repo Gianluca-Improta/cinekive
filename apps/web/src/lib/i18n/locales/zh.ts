@@ -1,4 +1,4 @@
-﻿import type { MessageTree } from "../types";
+import type { MessageTree } from "../types";
 
 const zh: MessageTree = {
   brand: {
@@ -193,8 +193,9 @@ const zh: MessageTree = {
     cols: "{n} 列",
   },
   ingest: {
-    pasteUrl: "粘贴任意视频链接…",
-    dropHint: "拖入文件或粘贴链接",
+    pasteUrl: "粘贴视频或图片链接…",
+    dropHint: "拖入视频、静帧、GIF 或粘贴链接",
+    dropHintShort: "拖入图片、GIF、视频或文件夹",
   },
   craft: {
     type: "类型",

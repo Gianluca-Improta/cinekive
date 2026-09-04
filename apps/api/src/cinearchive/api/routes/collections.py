@@ -143,6 +143,11 @@ async def export_shots(
     session: AsyncSession = Depends(get_db_session),
     settings: Settings = Depends(get_settings),
 ) -> FileResponse:
+    # Multi-shot ZIP/EDL is Pro; single-shot export stays free.
+    if len(body.shot_ids) > 1:
+        from cinearchive.services.entitlements import require_feature
+
+        require_feature("batch_export", settings)
     try:
         path = await ExportService(session, settings).export(
             body.shot_ids,

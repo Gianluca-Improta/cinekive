@@ -37,6 +37,8 @@
 
 **[→ 下载 Windows / Mac / Linux 桌面版](https://github.com/Gianluca-Improta/cinekive/releases/latest)**
 
+同一安装包。**免费版**可搜、导入、画板、单帧导出；**Pro**（[Gumroad 一次性 $19](https://gianlucaimprota.gumroad.com/l/cinekive-pro)）解锁档案镜像同步、批量导出、分享隧道、持续标注等。在 **设置 → Cinekive Pro** 粘贴许可证密钥激活。详见英文 README 的 Free vs Pro 表。
+
 | 平台 | 下载哪个文件 |
 |------|----------------|
 | **Windows** | `Cinekive-*-win-x64.exe`（安装包）或 `*-portable.exe`（绿色版） |

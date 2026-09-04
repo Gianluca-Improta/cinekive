@@ -19,6 +19,8 @@ import {
 import { useMemo, useState } from "react";
 import { JobProgressBanner } from "@/components/jobs/JobProgressBanner";
 import { DropZone } from "@/components/ingest/DropZone";
+import { ProGateBanner } from "@/components/pro/ProGateBanner";
+import { useHasFeature } from "@/hooks/useEntitlements";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { FALLBACK_IDEAS } from "./_fallback_ideas";
@@ -48,6 +50,7 @@ export default function ArchivesPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
   const router = useRouter();
+  const canMirror = useHasFeature("archive_mirrors");
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -347,6 +350,13 @@ export default function ArchivesPage() {
               Pull stills to disk, then ingest into an archive project. Subscription sources need
               login once — stored locally only.
             </p>
+            {!canMirror && (
+              <ProGateBanner
+                feature="archive_mirrors"
+                title="Archive mirrors are Pro"
+                detail="Browse Discover free. Sync / credentialed mirror tools unlock with a one-time Pro license."
+              />
+            )}
             {allMirrors.length === 0 && statusQuery.isFetching ? (
               <p className="text-xs text-cinema-muted">Loading sources…</p>
             ) : allMirrors.length === 0 ? (
@@ -462,6 +472,7 @@ export default function ArchivesPage() {
                             <button
                               type="button"
                               disabled={
+                                !canMirror ||
                                 mirrorMutation.isPending ||
                                 running ||
                                 (gated && !configured && !form.user && !form.password)
@@ -481,7 +492,11 @@ export default function ArchivesPage() {
                               )}
                             >
                               <Play className="h-3.5 w-3.5" />
-                              {running ? "Mirroring…" : "Start mirror"}
+                              {running
+                                ? "Mirroring…"
+                                : canMirror
+                                  ? "Start mirror"
+                                  : "Start mirror (Pro)"}
                             </button>
                             <button
                               type="button"

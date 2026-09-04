@@ -197,8 +197,9 @@ const en: MessageTree = {
     cols: "{n} cols",
   },
   ingest: {
-    pasteUrl: "Paste any video URL…",
-    dropHint: "Drop files or paste a URL",
+    pasteUrl: "Paste any video or image URL…",
+    dropHint: "Drop videos, stills, GIFs, or paste a URL",
+    dropHintShort: "Drop images, GIFs, videos, or folders",
   },
   craft: {
     type: "Type",

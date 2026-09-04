@@ -154,8 +154,9 @@ const es: MessageTree = {
     cols: "{n} cols",
   },
   ingest: {
-    pasteUrl: "Pega cualquier URL de video…",
-    dropHint: "Suelta archivos o pega una URL",
+    pasteUrl: "Pega cualquier URL de video o imagen…",
+    dropHint: "Suelta videos, stills, GIFs o pega una URL",
+    dropHintShort: "Suelta imágenes, GIFs, videos o carpetas",
   },
   craft: {
     type: "Tipo",

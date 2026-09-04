@@ -209,6 +209,13 @@ function buildPythonEnv(root, dataDir, libraryPath, { lanAccess = true, vlmEnabl
     DEVICE: process.env.DEVICE || "cpu",
     SEEK_ENABLED: "true",
     LOG_LEVEL: process.env.LOG_LEVEL || "INFO",
+    CINEKIVE_LICENSE_ENFORCE: "true",
+    CINEKIVE_LICENSE_PATH: path.join(require("./paths").userDataRoot(), "license.json"),
+    CINEKIVE_USER_DATA: require("./paths").userDataRoot(),
+    CINEKIVE_PRO_URL:
+      process.env.CINEKIVE_PRO_URL || "https://gianlucaimprota.gumroad.com/l/cinekive-pro",
+    GUMROAD_PRODUCT_ID: process.env.GUMROAD_PRODUCT_ID || "",
+    APPDATA: process.env.APPDATA || require("./paths").userDataRoot(),
   };
 }
 

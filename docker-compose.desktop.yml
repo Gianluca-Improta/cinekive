@@ -38,6 +38,7 @@ services:
       - ${CINEKIVE_DATA_DIR:-./data}/artifacts:/data/artifacts
       - ${CINEKIVE_DATA_DIR:-./data}/db:/data/db
       - ${CINEKIVE_DATA_DIR:-./data}/models:/data/models
+      - ${CINEKIVE_LICENSE_PATH:-./data/license.json}:/data/license.json
     env_file:
       - .env
     environment:
@@ -48,6 +49,8 @@ services:
       - ARTIFACTS_DIR=/data/artifacts
       - LIBRARY_DIR=/data/library
       - MODELS_DIR=/data/models
+      - CINEKIVE_LICENSE_PATH=/data/license.json
+      - CINEKIVE_LICENSE_ENFORCE=${CINEKIVE_LICENSE_ENFORCE:-false}
       - HF_HOME=/data/models/huggingface
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-google/siglip-so400m-patch14-384}
       - EMBEDDING_BATCH_SIZE=${EMBEDDING_BATCH_SIZE:-8}

@@ -11,12 +11,14 @@ import {
   Smartphone,
   Star,
   Trash2,
+  Crown,
 } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api-client";
 import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { PRO_UPGRADE_URL, useEntitlements } from "@/hooks/useEntitlements";
 
 type CreateKind = "commercial" | "social" | "narrative";
 
@@ -36,6 +38,9 @@ export function Sidebar() {
   const router = useRouter();
   const qc = useQueryClient();
   const { t } = useI18n();
+  const { data: entitlements } = useEntitlements();
+  const isPro = Boolean(entitlements?.is_pro);
+  const upgradeUrl = entitlements?.upgrade_url || PRO_UPGRADE_URL;
   const [creatingKind, setCreatingKind] = useState<CreateKind | null>(null);
   const [name, setName] = useState("");
   const [formFactor, setFormFactor] = useState<"long_form" | "short_form" | "mixed" | "">("");
@@ -102,6 +107,10 @@ export function Sidebar() {
       setFormFactor("");
       setAspect("");
       router.push(`/projects/${project.id}`);
+    },
+    onError: () => {
+      // 402 pro_required for project cap — send user to Settings / upgrade
+      window.open(upgradeUrl, "_blank", "noopener,noreferrer");
     },
   });
 
@@ -474,7 +483,17 @@ export function Sidebar() {
             <Settings className="h-3.5 w-3.5 shrink-0" />
             {t("nav.settings")}
           </Link>
+          {!isPro && (
           <div className="mt-3 space-y-1 border-t border-cinema-border/60 pt-3">
+            <a
+              href={upgradeUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mb-1 flex items-center gap-2 rounded px-3 py-2 text-sm text-cinema-cyan hover:bg-cinema-cyan/10"
+            >
+              <Crown className="h-3.5 w-3.5 shrink-0" />
+              Upgrade to Pro
+            </a>
             <a
               href="https://framechain.ai"
               target="_blank"
@@ -508,6 +527,14 @@ export function Sidebar() {
               Donate / sponsor
             </a>
           </div>
+          )}
+          {isPro && (
+            <div className="mt-3 border-t border-cinema-border/60 pt-3 px-3">
+              <span className="inline-flex items-center gap-1 rounded border border-cinema-cyan/30 px-1.5 py-0.5 text-[10px] text-cinema-cyan">
+                <Crown className="h-3 w-3" /> Pro
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </aside>

@@ -119,4 +119,7 @@ async def agent_query(
     Example prompt:
     \"return 5 low-angle tracking shots with melancholic teal-dominant palette matching this logline\"
     """
+    from cinearchive.services.entitlements import require_feature
+
+    require_feature("agent_api", settings)
     return await _service(session, settings, vector_repo, embedder).agent_query(body)

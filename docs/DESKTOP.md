@@ -26,6 +26,14 @@ Double-click app. No terminal required. **Docker is optional** on Windows and Ma
 
 Engine data: `%APPDATA%\Cinekive\data` (Windows) / `~/Library/Application Support/Cinekive` (Mac) / `~/.config/Cinekive` (Linux). Stills stay in the folder you chose.
 
+### Free vs Pro
+
+The installer is the same binary. **Free** includes search, ingest, canvas, single-shot export, and LAN phone URL. **Pro** ($19 one-time on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro)) unlocks archive mirrors, continuous enrich, batch export, share tunnel, Agent API, and unlimited projects.
+
+Activate: in-app **Settings → Cinekive Pro** (or paste your license key). License file: `%APPDATA%\Cinekive\license.json` (Mac/Linux under Application Support / `.config`).
+
+Pro support: hello@gianlucaimprota.com. Seller / env setup: [GUMROAD.md](GUMROAD.md).
+
 ## For developers
 
 ```powershell

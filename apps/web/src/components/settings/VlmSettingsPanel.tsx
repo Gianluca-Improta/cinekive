@@ -5,6 +5,8 @@ import { Cpu, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { useHasFeature } from "@/hooks/useEntitlements";
+import { ProGateBanner } from "@/components/pro/ProGateBanner";
 
 /**
  * Settings → VLM / craft AI — pick local Ollama or any OpenAI-compatible
@@ -12,6 +14,7 @@ import { cn } from "@/lib/utils";
  */
 export function VlmSettingsPanel() {
   const qc = useQueryClient();
+  const canContinuous = useHasFeature("continuous_enrich");
   const cfgQuery = useQuery({
     queryKey: ["enrich-config"],
     queryFn: () => api.enrichConfig(),
@@ -60,7 +63,7 @@ export function VlmSettingsPanel() {
       const body: Record<string, unknown> = {
         enabled,
         provider,
-        enrich_continuous: continuous,
+        enrich_continuous: canContinuous ? continuous : false,
         enrich_tier: tier,
         ollama_url: ollamaUrl,
         ollama_model: ollamaModel,
@@ -112,6 +115,14 @@ export function VlmSettingsPanel() {
         Tags shots with craft DNA. Use local Ollama, or paste any OpenAI-compatible URL
         (OpenRouter, Kimi/Moonshot, LM Studio, OpenClaw, vLLM…). Changes apply live.
       </p>
+      {!canContinuous && (
+        <ProGateBanner
+          feature="continuous_enrich"
+          title="Always-on enrich is Pro"
+          detail="Manual enrich stays free. Continuous drip + cloud VLM settings unlock with Pro."
+          compact
+        />
+      )}
 
       <div className="rounded-xl border border-cinema-border bg-cinema-surface/50 p-4 space-y-4">
         <div className="flex flex-wrap items-center gap-3 text-[11px]">
@@ -128,10 +139,19 @@ export function VlmSettingsPanel() {
             <input
               type="checkbox"
               checked={continuous}
-              onChange={(e) => setContinuous(e.target.checked)}
+              onChange={(e) => {
+                if (!canContinuous && e.target.checked) return;
+                setContinuous(e.target.checked);
+              }}
+              disabled={!canContinuous && !continuous}
               className="accent-cinema-cyan"
             />
             <span className="text-white">Always-on drip</span>
+            {!canContinuous && (
+              <span className="rounded border border-cinema-cyan/30 px-1 text-[9px] text-cinema-cyan">
+                Pro
+              </span>
+            )}
           </label>
           <span
             className={cn(

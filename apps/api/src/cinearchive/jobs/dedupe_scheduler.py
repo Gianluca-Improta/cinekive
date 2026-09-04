@@ -33,6 +33,10 @@ async def dedupe_scheduler_loop(settings: Settings) -> None:
         await asyncio.sleep(10)
         if not settings.dedupe_global:
             continue
+        from cinearchive.services.entitlements import has_feature
+
+        if not has_feature("global_dedupe", settings):
+            continue
         now = time.time()
         due_debounce = _wake_at > 0 and now >= _wake_at
         due_interval = (now - last_completed_at()) >= settings.dedupe_interval_sec

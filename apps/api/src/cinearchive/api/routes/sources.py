@@ -324,6 +324,9 @@ async def run_mirror(
     body: MirrorRunRequest,
     settings: Settings = Depends(get_settings),
 ) -> dict:
+    from cinearchive.services.entitlements import require_feature
+
+    require_feature("archive_mirrors", settings)
     try:
         return start_mirror(
             settings,

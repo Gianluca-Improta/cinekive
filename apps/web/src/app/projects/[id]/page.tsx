@@ -12,6 +12,7 @@ import { ViewControls, type ViewMode } from "@/components/grid/ViewControls";
 import { ShotDetailSheet } from "@/components/shots/ShotDetailSheet";
 import { ShotSelectionBar } from "@/components/shots/ShotSelectionBar";
 import { openIngestPanel } from "@/components/ingest/IngestPanel";
+import { DropZone } from "@/components/ingest/DropZone";
 import { ProjectBriefPanel } from "@/components/projects/ProjectBriefPanel";
 import { ProjectCanvas } from "@/components/projects/ProjectCanvas";
 import { JobProgressBanner } from "@/components/jobs/JobProgressBanner";
@@ -107,6 +108,41 @@ export default function ProjectPage() {
     queryFn: () => api.getProject(projectId),
     enabled: !!projectId,
   });
+
+  const dropIngest = useMutation({
+    mutationFn: async ({
+      files,
+      kind,
+    }: {
+      files: File[];
+      kind: "video" | "image";
+    }) => {
+      const isArchive = (project?.kind || "").toLowerCase() === "archive";
+      if (kind === "image" && isArchive) return api.uploadToArchive(projectId, files);
+      if (kind === "video") return api.ingestVideos(projectId, files);
+      return api.ingestImages(projectId, files);
+    },
+    onSuccess: (res) => {
+      setError(null);
+      if (res.job?.id) setActiveJobId(res.job.id);
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+      qc.invalidateQueries({ queryKey: ["shots", projectId] });
+      qc.invalidateQueries({ queryKey: ["search"] });
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+  const dropBusy = dropIngest.isPending;
+
+  useEffect(() => {
+    const onJob = (e: Event) => {
+      const detail = (e as CustomEvent<{ projectId?: string; jobId?: string }>).detail;
+      if (!detail?.jobId) return;
+      if (detail.projectId && detail.projectId !== projectId) return;
+      setActiveJobId(detail.jobId);
+    };
+    window.addEventListener("cinekive:ingest-job", onJob);
+    return () => window.removeEventListener("cinekive:ingest-job", onJob);
+  }, [projectId]);
 
   const searching =
     query.trim().length > 0 ||
@@ -423,7 +459,7 @@ export default function ProjectPage() {
             type="button"
             onClick={() => openIngestPanel(projectId)}
             className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2.5 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/50 hover:text-cinema-cyan"
-            title="Open ingest panel — pick destination, drop files or URL"
+            title="Open ingest panel — drop images, GIFs, videos, or paste a URL"
           >
             <Upload className="h-3.5 w-3.5" />
             Add media
@@ -434,6 +470,18 @@ export default function ProjectPage() {
             </span>
           )}
         </div>
+        <DropZone
+          compact
+          disabled={dropBusy}
+          onFiles={(files, kind) => dropIngest.mutate({ files, kind })}
+          onImportUrl={async (url) => {
+            const res = await api.importLink({ url, project_id: projectId, ingest: true });
+            const m = res.message?.match(/\(([0-9a-f-]{36})\)/i);
+            if (m?.[1]) setActiveJobId(m[1]);
+            qc.invalidateQueries({ queryKey: ["jobs"] });
+          }}
+          className="w-full"
+        />
         {error && (
           <p className="rounded border border-cinema-magenta/40 bg-cinema-magenta/10 px-3 py-2 text-xs text-cinema-magenta">
             {error}
@@ -446,6 +494,11 @@ export default function ProjectPage() {
             qc.invalidateQueries({ queryKey: ["project", projectId] });
             qc.invalidateQueries({ queryKey: ["projects"] });
             qc.invalidateQueries({ queryKey: ["search"] });
+            // Keep polling briefly so new stills show up as soon as they land
+            window.setTimeout(() => {
+              qc.invalidateQueries({ queryKey: ["shots", projectId] });
+              qc.invalidateQueries({ queryKey: ["search"] });
+            }, 1500);
           }}
         />
       </header>

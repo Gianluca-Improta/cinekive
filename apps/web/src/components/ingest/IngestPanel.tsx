@@ -108,7 +108,7 @@ export function IngestPanel() {
     },
     onSuccess: (res) => {
       setError(null);
-      setStatus(res.message || "Ingest queued — watch Activity for progress");
+      setStatus(res.message || "Ingest queued — loading into library…");
       qc.invalidateQueries({ queryKey: ["jobs"] });
       qc.invalidateQueries({ queryKey: ["shots"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
@@ -116,6 +116,16 @@ export function IngestPanel() {
       if (targetId) {
         qc.invalidateQueries({ queryKey: ["project", targetId] });
         qc.invalidateQueries({ queryKey: ["shots", targetId] });
+        if (res.job?.id) {
+          window.dispatchEvent(
+            new CustomEvent("cinekive:ingest-job", {
+              detail: { projectId: targetId, jobId: res.job.id },
+            })
+          );
+        }
+        // Jump to the project so stills appear as soon as ingest finishes
+        router.push(`/projects/${targetId}`);
+        window.setTimeout(() => setOpen(false), 600);
       }
     },
     onError: (err: Error) => setError(err.message),
@@ -167,7 +177,7 @@ export function IngestPanel() {
             <div>
               <div className="text-base font-medium text-white">Ingest</div>
               <div className="text-[11px] text-cinema-muted">
-                Drop files, folders, or paste any video URL
+                Drop images, GIFs, videos, folders — or paste a URL
               </div>
             </div>
           </div>
@@ -243,7 +253,8 @@ export function IngestPanel() {
           )}
 
           <p className="text-[11px] leading-relaxed text-cinema-muted">
-            Progress appears in Activity. Re-ingest skips files already in that library.
+            Stills and GIFs ingest straight into the grid. Progress shows in Activity; the project
+            refreshes when the job finishes. Re-ingest skips files already in that library.
           </p>
         </div>
 

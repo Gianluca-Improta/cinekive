@@ -364,6 +364,13 @@ async def enrich_scheduler_loop(settings: Settings) -> None:
                 await asyncio.sleep(10)
                 continue
 
+            from cinearchive.services.entitlements import has_feature
+
+            if not has_feature("continuous_enrich", settings):
+                _status["current_step"] = "Continuous enrich requires Pro"
+                await asyncio.sleep(30)
+                continue
+
             if not vc.effective_enabled(settings):
                 _status["current_step"] = "VLM off — enable in Settings"
                 await asyncio.sleep(10)

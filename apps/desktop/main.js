@@ -381,6 +381,24 @@ function buildMenu() {
 }
 
 function startShareTunnel() {
+  const lic = require("./license");
+  if (!lic.isPro()) {
+    dialog
+      .showMessageBox({
+        type: "info",
+        buttons: ["Get Pro — $19", "Cancel"],
+        defaultId: 0,
+        cancelId: 1,
+        title: "Cinekive Pro",
+        message: "Public view links are a Pro feature",
+        detail:
+          "Phone-on-WiFi (LAN) stays free. Temporary public tunnels are included with Cinekive Pro ($19 one-time).",
+      })
+      .then((r) => {
+        if (r.response === 0) shell.openExternal(lic.PRO_URL);
+      });
+    return;
+  }
   if (shareProc) {
     dialog.showMessageBox({
       type: "info",
@@ -490,7 +508,23 @@ ipcMain.handle("get-info", async () => ({
   version: app.getVersion(),
   engineMode: readConfig().engineMode || "auto",
   resolvedEngine: await resolveEngineMode().catch(() => "unknown"),
+  license: require("./license").publicStatus(),
 }));
+
+ipcMain.handle("get-license-status", async () => require("./license").publicStatus());
+
+ipcMain.handle("activate-license", async (_e, opts) => {
+  const key = typeof opts === "string" ? opts : opts?.licenseKey;
+  const email = typeof opts === "object" ? opts?.email : undefined;
+  if (!key || !String(key).trim()) throw new Error("License key required");
+  return require("./license").activateViaApi(String(key).trim(), email);
+});
+
+ipcMain.handle("deactivate-license", async () => require("./license").deactivateLocal());
+
+ipcMain.handle("open-pro-upgrade", async () => {
+  await shell.openExternal(require("./license").PRO_URL);
+});
 
 ipcMain.handle("get-health-status", async () => require("./health").getHealthStatus());
 

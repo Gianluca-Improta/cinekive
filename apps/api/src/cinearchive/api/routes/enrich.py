@@ -160,12 +160,19 @@ async def put_enrich_config(
     patch.update(data)
 
     cfg = vc.merge_runtime(settings, patch)
-    # Kick a drip if enabling continuous
-    if vc.effective_continuous(settings):
-        from cinearchive.jobs.enrich_scheduler import schedule_enrich_pass
+    # Kick a drip if enabling continuous (Pro only)
+    if patch.get("continuous") is True or (
+        "continuous" not in patch and vc.effective_continuous(settings)
+    ):
+        from cinearchive.services.entitlements import has_feature, require_feature
 
-        schedule_enrich_pass(delay_sec=2.0)
-        background.add_task(run_enrich_pass, settings)
+        if patch.get("continuous") is True:
+            require_feature("continuous_enrich", settings)
+        if has_feature("continuous_enrich", settings) and vc.effective_continuous(settings):
+            from cinearchive.jobs.enrich_scheduler import schedule_enrich_pass
+
+            schedule_enrich_pass(delay_sec=2.0)
+            background.add_task(run_enrich_pass, settings)
     return {
         "ok": True,
         "config": vc.public_config(settings),

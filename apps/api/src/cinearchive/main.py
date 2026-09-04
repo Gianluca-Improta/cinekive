@@ -17,6 +17,7 @@ from cinearchive.api.routes import (
     ingest,
     jobs,
     language,
+    license,
     projects,
     search,
     seek,
@@ -212,6 +213,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(system.router)
+    app.include_router(license.router)
     app.include_router(projects.router)
     app.include_router(ingest.router)
     app.include_router(jobs.router)

@@ -146,6 +146,9 @@ async def seek_search(
     body: SeekSearchRequest,
     settings: Settings = Depends(get_settings),
 ) -> SeekSearchResponse:
+    from cinearchive.services.entitlements import require_feature
+
+    require_feature("agent_api", settings)  # inspiration seek is a Pro power tool
     seek = InspirationSeek(settings)
     if not seek.enabled:
         return SeekSearchResponse(enabled=False, results=[])

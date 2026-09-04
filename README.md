@@ -54,15 +54,35 @@ If this saves you time, a [GitHub star](https://github.com/Gianluca-Improta/cine
 
 ## Downloads
 
-**[→ Download Cinekive v0.4.6](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.4.6)** — no Docker or terminal needed on Windows / Mac.
+**[→ Download Cinekive v0.5.0](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.5.0)** — no Docker or terminal needed on Windows / Mac.
 
 | Your computer | Download this | Then |
 |---------------|---------------|------|
-| **Windows** | [`Cinekive-0.4.6-win-x64.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.6/Cinekive-0.4.6-win-x64.exe) | Double-click → Start menu shortcut appears |
-| **Windows (no install)** | [`Cinekive-0.4.6-portable.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.6/Cinekive-0.4.6-portable.exe) | Double-click and run |
-| **Mac (Apple Silicon M1/M2/M3/M4)** | [`Cinekive-0.4.6-mac-arm64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.6/Cinekive-0.4.6-mac-arm64.dmg) | Open DMG → drag to Applications |
-| **Mac (Intel)** | [`Cinekive-0.4.6-mac-x64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.6/Cinekive-0.4.6-mac-x64.dmg) | Open DMG → drag to Applications |
-| **Linux** | [`.AppImage` / `.deb`](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.4.6) | Needs Docker Desktop for now |
+| **Windows** | [`Cinekive-0.5.0-win-x64.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.0/Cinekive-0.5.0-win-x64.exe) | Double-click → Start menu shortcut appears |
+| **Windows (no install)** | [`Cinekive-0.5.0-portable.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.0/Cinekive-0.5.0-portable.exe) | Double-click and run |
+| **Mac (Apple Silicon M1/M2/M3/M4)** | [`Cinekive-0.5.0-mac-arm64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.0/Cinekive-0.5.0-mac-arm64.dmg) | Open DMG → drag to Applications |
+| **Mac (Intel)** | [`Cinekive-0.5.0-mac-x64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.0/Cinekive-0.5.0-mac-x64.dmg) | Open DMG → drag to Applications |
+| **Linux** | [`.AppImage` / `.deb`](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.5.0) | Needs Docker Desktop for now |
+
+### Free vs Pro
+
+Same installer. Pro is a **one-time** [Gumroad license](https://gianlucaimprota.gumroad.com/l/cinekive-pro) ($19, early-bird $12).
+
+| | Free (Community) | Pro ($19 once) |
+|--|------------------|----------------|
+| Promise | Your local cinematic archive | Studio workflow unlocked |
+| Search + ingest + canvas | Yes | Yes |
+| Single-shot export | Yes | Yes |
+| LAN phone URL | Yes | Yes |
+| Projects | Soft cap (3) | Unlimited |
+| Archive mirror sync | Browse only | Sync tools |
+| Continuous craft enrich | Manual only | Always-on drip |
+| Batch export / share tunnel | — | Yes |
+| Agent / inspiration seek | — | Yes |
+| Promo / upgrade links | Small Settings / Sidebar | Removed |
+| Support | GitHub Issues / Discussions | Email (~48h) |
+
+Activate in **Settings → Cinekive Pro**. Self-built from source has no license checks — Pro supports the project and unlocks packaged entitlements. Seller notes: [docs/GUMROAD.md](docs/GUMROAD.md).
 
 ### Install in 3 steps
 
@@ -151,9 +171,11 @@ Then open http://localhost:3000
 
 ---
 
-## What you get (v0.4.6)
+## What you get (v0.5.0)
 
-- **Native engine fix** — relocatable Python in the engine pack (v0.4.5 packs pointed at the CI runner and could not start)
+- **Cinekive Pro** — open-core: Free stays useful; $19 one-time unlocks mirrors, batch export, tunnel, continuous enrich, Agent API
+- **Native engine** — relocatable Python in the engine pack (fixed broken CI venv paths from older packs)
+- **License activate** — Settings → paste Gumroad key; offline grace after verify
 - **Mac first-run fix** — creates `Application Support/Cinekive/runtime/.env` before setup so the wizard no longer hits ENOENT
 - **One-click desktop install** — Windows `.exe` / Mac `.dmg`; native engine by default (no Docker or terminal)
 - **Phone on same WiFi** — browse your library from a phone browser on your LAN
@@ -310,12 +332,15 @@ Built by **[Gianluca Improta](https://gianlucaimprota.com)**.
 
 | Link | For |
 |------|-----|
+| [Cinekive Pro on Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro) | **$19 one-time** — mirrors, batch export, tunnel, continuous enrich |
 | [framechain.ai](https://framechain.ai) | Cheap canvas AI video generation |
 | [gianlucaimprota.com](https://gianlucaimprota.com) | Director / maker portfolio |
 | [gemimedia.cn](https://gemimedia.cn) | Video production |
-| [GitHub Sponsors](https://github.com/sponsors/Gianluca-Improta) | **Donations welcome** — keeps Cinekive local-first and moving |
+| [GitHub Sponsors](https://github.com/sponsors/Gianluca-Improta) | Donations — keeps the free edition moving |
 
-Same links live in the app under **Settings → Creator & support** and in the sidebar.
+Pro buyers: activate in **Settings → Cinekive Pro**. Support: hello@gianlucaimprota.com.
+
+Free builds may show creator links in Settings / Sidebar; Pro removes them.
 
 ---
 

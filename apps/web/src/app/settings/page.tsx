@@ -16,7 +16,10 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { ProLicensePanel } from "@/components/settings/ProLicensePanel";
 import { VlmSettingsPanel } from "@/components/settings/VlmSettingsPanel";
+import { ProGateBanner } from "@/components/pro/ProGateBanner";
+import { useEntitlements } from "@/hooks/useEntitlements";
 import { api } from "@/lib/api-client";
 import { useAppearance, type AppearanceTheme } from "@/lib/appearance";
 import { CREATOR_LINKS } from "@/lib/creator-links";
@@ -54,6 +57,8 @@ function discoverLanWebUrl(): Promise<string | null> {
 export default function SettingsPage() {
   const { theme, setTheme } = useAppearance();
   const { t } = useI18n();
+  const { data: entitlements } = useEntitlements();
+  const isPro = Boolean(entitlements?.is_pro);
   const [copied, setCopied] = useState<string | null>(null);
   const [lanUrl, setLanUrl] = useState<string | null>(null);
 
@@ -199,6 +204,8 @@ export default function SettingsPage() {
 
         <VlmSettingsPanel />
 
+        <ProLicensePanel />
+
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <Share2 className="h-4 w-4 text-cinema-cyan" />
@@ -249,31 +256,45 @@ export default function SettingsPage() {
             <p className="text-sm text-white">Locally host a live browse link</p>
             <p className="mt-1 text-xs leading-relaxed text-cinema-muted">
               Temporary public URL while Cinekive runs on your machine. No cloud upload.
+              {!isPro ? " Pro unlocks the share tunnel." : ""}
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => copy(tunnelCmd, "tunnel")}
-                className="inline-flex items-center gap-1.5 rounded border border-cinema-cyan/40 bg-cinema-cyan/10 px-3 py-2 text-xs text-cinema-cyan hover:bg-cinema-cyan/20"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                {copied === "tunnel" ? "Copied" : "Copy tunnel command"}
-              </button>
-              <a
-                href="https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] text-cinema-muted hover:text-white"
-              >
-                Install cloudflared <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-            <div className="mt-3 flex items-center gap-2 rounded border border-cinema-border bg-cinema-black/50 px-2 py-1.5">
-              <Terminal className="h-3 w-3 shrink-0 text-cinema-muted" />
-              <code className="min-w-0 flex-1 truncate font-mono text-[10px] text-cinema-cyan">
-                {tunnelCmd}
-              </code>
-            </div>
+            {!isPro ? (
+              <div className="mt-4">
+                <ProGateBanner
+                  feature="share_tunnel"
+                  title="Share tunnel is Pro"
+                  detail="LAN phone URL stays free. Public tunnel unlocks with a one-time Pro license."
+                  compact
+                />
+              </div>
+            ) : (
+              <>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => copy(tunnelCmd, "tunnel")}
+                    className="inline-flex items-center gap-1.5 rounded border border-cinema-cyan/40 bg-cinema-cyan/10 px-3 py-2 text-xs text-cinema-cyan hover:bg-cinema-cyan/20"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    {copied === "tunnel" ? "Copied" : "Copy tunnel command"}
+                  </button>
+                  <a
+                    href="https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] text-cinema-muted hover:text-white"
+                  >
+                    Install cloudflared <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <div className="mt-3 flex items-center gap-2 rounded border border-cinema-border bg-cinema-black/50 px-2 py-1.5">
+                  <Terminal className="h-3 w-3 shrink-0 text-cinema-muted" />
+                  <code className="min-w-0 flex-1 truncate font-mono text-[10px] text-cinema-cyan">
+                    {tunnelCmd}
+                  </code>
+                </div>
+              </>
+            )}
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="rounded-xl border border-cinema-border/70 bg-cinema-surface/40 px-4 py-3">
@@ -363,8 +384,10 @@ export default function SettingsPage() {
         <p className="pb-2 text-[10px] text-cinema-muted">
           Cinekive {data?.version || "…"} · local-first — media stays on your machine unless you
           share a view link or export.
+          {isPro ? " · Pro" : " · Free"}
         </p>
 
+        {!isPro && (
         <section className="space-y-3 pb-10">
           <h2 className="text-sm font-medium text-white">{t("settings.creator")}</h2>
           <p className="text-xs text-cinema-muted">
@@ -392,6 +415,8 @@ export default function SettingsPage() {
             })}
           </div>
         </section>
+        )}
+        {isPro && <div className="pb-10" />}
       </div>
     </div>
   );

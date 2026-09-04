@@ -15,6 +15,7 @@ const {
   writeConfig,
   ensureDataDirs,
   ensureRuntimeSynced,
+  userDataRoot,
 } = require("./paths");
 const { buildCorsOrigins, getPrimaryLanIp, getLanUrls } = require("./network");
 
@@ -28,7 +29,7 @@ function appVersion() {
   try {
     return JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")).version;
   } catch {
-    return "0.4.6";
+    return "0.5.0";
   }
 }
 
@@ -181,6 +182,17 @@ function writeEnvFile({ dataDir, libraryPath }) {
   text = setLine(text, "CORS_ORIGINS", cors);
   text = setLine(text, "CINEKIVE_LAN_WEB_URL", lan.webUrl || "");
   text = setLine(text, "CINEKIVE_IMAGE_TAG", ghcrTag());
+  // Packaged desktop enforces Free vs Pro; self-built Docker leaves this unset (unlocked).
+  try {
+    const { app } = require("electron");
+    if (app?.isPackaged) {
+      text = setLine(text, "CINEKIVE_LICENSE_ENFORCE", "true");
+      text = setLine(text, "CINEKIVE_LICENSE_PATH", toPosix(path.join(userDataRoot(), "license.json")));
+      text = setLine(text, "CINEKIVE_USER_DATA", toPosix(userDataRoot()));
+    }
+  } catch {
+    /* not in Electron */
+  }
   if (/^SHOTDECK_LIBRARY_HOST=.*/m.test(text)) {
     text = text.replace(/^SHOTDECK_LIBRARY_HOST=.*/m, "SHOTDECK_LIBRARY_HOST=");
   }
