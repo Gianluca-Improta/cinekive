@@ -54,31 +54,31 @@ If this saves you time, a [GitHub star](https://github.com/Gianluca-Improta/cine
 
 ## Downloads
 
-**[→ Get Cinekive for Windows, Mac, or Linux](https://github.com/Gianluca-Improta/cinekive/releases/latest)**
+**[→ Download Cinekive v0.4.5](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.4.5)** — no Docker or terminal needed on Windows / Mac.
 
-| Platform | What to download |
-|----------|------------------|
-| **Windows** | `Cinekive-*-win-x64.exe` (installer) or `*-portable.exe` |
-| **macOS** | `Cinekive-*-mac-arm64.dmg` (Apple Silicon) or `*-mac-x64.dmg` (Intel) |
-| **Linux** | `Cinekive-*.AppImage` (run directly) or `.deb` |
+| Your computer | Download this | Then |
+|---------------|---------------|------|
+| **Windows** | [`Cinekive-0.4.5-win-x64.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.5/Cinekive-0.4.5-win-x64.exe) | Double-click → Start menu shortcut appears |
+| **Windows (no install)** | [`Cinekive-0.4.5-portable.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.5/Cinekive-0.4.5-portable.exe) | Double-click and run |
+| **Mac (Apple Silicon M1/M2/M3/M4)** | [`Cinekive-0.4.5-mac-arm64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.5/Cinekive-0.4.5-mac-arm64.dmg) | Open DMG → drag to Applications |
+| **Mac (Intel)** | [`Cinekive-0.4.5-mac-x64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.4.5/Cinekive-0.4.5-mac-x64.dmg) | Open DMG → drag to Applications |
+| **Linux** | [`.AppImage` / `.deb`](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.4.5) | Needs Docker Desktop for now |
 
 ### Install in 3 steps
 
-1. Download the app for your OS from the [release page](https://github.com/Gianluca-Improta/cinekive/releases/latest)  
-2. Open Cinekive → pick your library folder → **Start**  
-3. **Without Docker (Windows / Mac):** the app downloads a native engine pack once (~2 GB). **With Docker:** install [Docker Desktop](https://www.docker.com/products/docker-desktop/) first for faster setup.
+1. Download the file for your OS (links above)  
+2. Open **Cinekive** → pick a folder for your stills → click **Start Cinekive**  
+3. Wait while the native engine downloads once (~550 MB). Next launches are instant.
 
-That’s it. No terminal required for normal use.
+That’s it. No Docker. No terminal. No `npm` / `docker compose`.
 
-> **Linux:** Docker Desktop is still required today. Native engine packs for Linux are planned.  
-> **macOS:** first open may need right-click → Open (unsigned build). Native engine works on Apple Silicon and Intel.  
-> **Linux AppImage:** `chmod +x Cinekive-*.AppImage && ./Cinekive-*.AppImage`
-
-**Windows / Mac:** Docker is **optional**. Auto mode uses Docker if installed, otherwise downloads the native engine.
+> **macOS Gatekeeper:** right-click the app → **Open** the first time (unsigned build).  
+> **Windows SmartScreen:** click **More info** → **Run anyway** if prompted.  
+> **Linux AppImage:** `chmod +x Cinekive-*.AppImage && ./Cinekive-*.AppImage` (Docker still required).
 
 **Phone on WiFi:** Settings shows a LAN URL — open it on your phone while Cinekive runs on your computer (same network).
 
-A fully bundled installer (no separate engine download) is on the [roadmap](docs/ROADMAP.md).
+A fully offline installer (engine baked in) is on the [roadmap](docs/ROADMAP.md).
 
 ### Prefer the browser?
 

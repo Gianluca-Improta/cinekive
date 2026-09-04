@@ -48,6 +48,6 @@ Optional: browser → Install Cinekive (PWA). Theme chrome is black/neutral, not
 
 ## Requirements
 
-- Docker Desktop running  
-- ~10 GB free for images + models  
-- Optional: GPU + Ollama for VLM (`VLM_ENABLED=true`)
+- ~2 GB free for the native engine pack (first launch)  
+- Optional: [Docker Desktop](https://www.docker.com/products/docker-desktop/) if you prefer Docker mode  
+- Optional: GPU + Ollama for VLM craft tags (`VLM_ENABLED=true`)
