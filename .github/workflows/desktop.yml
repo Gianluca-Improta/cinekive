@@ -120,7 +120,7 @@ jobs:
           CINEKIVE_LICENSE_SECRET: ${{ secrets.CINEKIVE_LICENSE_SECRET }}
         run: |
           npm ci
-          npx electron-builder --mac dmg zip --x64 --arm64
+          npx electron-builder --mac dmg zip --x64 --arm64 --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: cinekive-mac
