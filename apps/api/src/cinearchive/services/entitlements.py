@@ -1,9 +1,15 @@
 """Cinekive Free vs Pro entitlements.
 
 Open-core model:
-- Default tier is ``free`` with soft feature gates.
-- Pro unlocks via ``license.json`` (Gumroad activation) or ``CINEKIVE_TIER=pro``.
-- Self-built installs can set ``CINEKIVE_TIER=pro`` (honor system).
+- Default tier is ``free`` with soft feature gates — including source builds.
+- Pro unlocks only via ``license.json``: a Gumroad activation or a signed
+  14-day trial key. There is no environment-variable path to Pro.
+- ``CINEKIVE_TIER=pro`` is honoured only when ``CINEKIVE_ALLOW_DEV_LICENSE`` is
+  explicitly enabled, which packaged builds hard-set to ``false``.
+
+Gating is client-side by nature: anyone can patch a local checkout. The point is
+that a plain ``git clone && build`` yields Free, so Pro is a deliberate act
+rather than the default.
 """
 
 from __future__ import annotations
@@ -145,8 +151,24 @@ def _read_license_doc(settings: Settings | None = None) -> dict[str, Any] | None
     return None
 
 
+def _dev_license_allowed() -> bool:
+    """Env-var Pro is opt-in for local development only.
+
+    Packaged builds set this to "false" (see desktop launcher/engine-native), so
+    a released installer can never be unlocked with CINEKIVE_TIER=pro.
+    """
+    return (os.environ.get("CINEKIVE_ALLOW_DEV_LICENSE") or "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
 def _env_tier() -> str | None:
     raw = (os.environ.get("CINEKIVE_TIER") or "").strip().lower()
+    if raw == "pro" and not _dev_license_allowed():
+        # Downgrading a repo checkout to Free is the whole point of the gate.
+        return "free"
     if raw in ("pro", "free"):
         return raw
     return None
@@ -238,15 +260,12 @@ def resolve_tier(settings: Settings | None = None) -> tuple[str, dict[str, Any]]
                     "device_limit": int(doc.get("deviceLimit") or DEVICE_LIMIT),
                 }
 
-    # Packaged desktop sets CINEKIVE_LICENSE_ENFORCE=true → free until activated.
-    # Self-built / plain Docker leave it unset → unlocked (honor system).
-    enforce = (os.environ.get("CINEKIVE_LICENSE_ENFORCE") or "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-    )
-    if not enforce:
-        return "pro", {"source": "self_built", "features": list(PRO_FEATURES)}
+    # Free is the default everywhere, including source builds and plain Docker.
+    # Pro requires a real license.json (Gumroad activation or signed trial key);
+    # the previous "unset enforce flag means unlocked" path gave the public repo
+    # Pro for free, so it is gone. Local dev opts in via CINEKIVE_ALLOW_DEV_LICENSE.
+    if _dev_license_allowed() and (os.environ.get("CINEKIVE_TIER") or "").strip().lower() == "pro":
+        return "pro", {"source": "dev_override", "features": list(PRO_FEATURES)}
 
     return "free", {"source": "default", "features": list(FREE_FEATURES)}
 
