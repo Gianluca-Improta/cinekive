@@ -9,6 +9,7 @@ import { shotArtifactFilename } from "@/lib/download";
 import { formatTimecode } from "@/lib/utils";
 import { AddToProjectMenu } from "@/components/shots/AddToProjectMenu";
 import { ArtifactDownloadButton } from "@/components/shots/ArtifactDownloadButton";
+import { applyShotDragData, prefetchShotDragFile } from "@/lib/shot-drag";
 
 type Props = {
   shot: Shot;
@@ -20,8 +21,12 @@ type Props = {
   showAddTo?: boolean;
 };
 
+/** Cursor dwell before a preview auto-plays — long enough to ignore pass-through motion. */
+const HOVER_PLAY_DELAY_MS = 1000;
+
 function isVideoUrl(url: string): boolean {
-  return url.endsWith(".mp4") || url.endsWith(".webm");
+  const path = url.split("?")[0]?.toLowerCase() || "";
+  return path.endsWith(".mp4") || path.endsWith(".webm") || path.endsWith(".mov");
 }
 
 export function ShotCard({
@@ -34,19 +39,50 @@ export function ShotCard({
   showAddTo = true,
 }: Props) {
   const qc = useQueryClient();
-  const [hover, setHover] = useState(false);
-  const [playing, setPlaying] = useState(false);
+  /** User pinned preview via play — survives mouse leave */
+  const [pinned, setPinned] = useState(false);
+  /** After pause while hovering, don't auto-resume until mouse leaves */
+  const [hoverMuted, setHoverMuted] = useState(false);
+  /** Dwell-triggered playback: only after the cursor rests, so scrubbing the grid stays calm */
+  const [hoverPlay, setHoverPlay] = useState(false);
   const [fav, setFav] = useState(shot.is_favorite);
   const videoRef = useRef<HTMLVideoElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const dragFileRef = useRef<File | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const thumb = artifactUrl(shot.thumb_md_url || shot.thumb_url);
   const preview = shot.preview_url ? artifactUrl(shot.preview_url) : null;
   const videoPreview = Boolean(preview && isVideoUrl(preview));
-  const showLoop = Boolean(preview && (playing || hover));
+  const showLoop = Boolean(preview && (pinned || (hoverPlay && !hoverMuted)));
 
   useEffect(() => {
     setFav(shot.is_favorite);
   }, [shot.is_favorite, shot.id]);
+
+  useEffect(() => {
+    setPinned(false);
+    setHoverMuted(false);
+    setHoverPlay(false);
+    dragFileRef.current = null;
+  }, [shot.id]);
+
+  // Clear any pending dwell timer on unmount so a scrolled-away card can't start playing
+  useEffect(() => {
+    return () => {
+      if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    };
+  }, []);
+
+  // Mount / pin: ensure video actually plays (ref may be null on first paint)
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !videoPreview || !showLoop) return;
+    if (pinned || (hoverPlay && !hoverMuted)) {
+      void v.play().catch(() => {});
+    } else {
+      v.pause();
+    }
+  }, [showLoop, pinned, hoverPlay, hoverMuted, videoPreview, preview]);
 
   const favMutation = useMutation({
     mutationFn: (is_favorite: boolean) => api.updateShot(shot.id, { is_favorite }),
@@ -58,21 +94,24 @@ export function ShotCard({
     onError: () => setFav(shot.is_favorite),
   });
 
+  const togglePlayback = () => {
+    if (!preview) return;
+    if (pinned || hoverPlay) {
+      setPinned(false);
+      setHoverPlay(false);
+      setHoverMuted(true);
+      videoRef.current?.pause();
+    } else {
+      setPinned(true);
+      setHoverMuted(false);
+      void videoRef.current?.play().catch(() => {});
+    }
+  };
+
   const togglePlay = (e: MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (!preview) return;
-    if (videoPreview && videoRef.current) {
-      if (playing) {
-        videoRef.current.pause();
-        setPlaying(false);
-      } else {
-        void videoRef.current.play();
-        setPlaying(true);
-      }
-      return;
-    }
-    setPlaying((p) => !p);
+    togglePlayback();
   };
 
   return (
@@ -80,23 +119,49 @@ export function ShotCard({
       ref={cardRef}
       role="button"
       tabIndex={0}
+      draggable
+      title="Drag to PowerPoint, Finder, or Explorer"
+      onDragStart={(e) => {
+        applyShotDragData(e, shot, dragFileRef.current);
+      }}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        // Space = play/pause the preview; Enter stays "open".
+        if (e.key === " " || e.key === "Spacebar") {
+          if (preview) {
+            e.preventDefault();
+            e.stopPropagation();
+            togglePlayback();
+            return;
+          }
+        }
+        if (e.key === "Enter") {
           e.preventDefault();
           onClick(e as unknown as MouseEvent);
         }
       }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => {
-        setHover(false);
-        if (!playing && videoRef.current) videoRef.current.pause();
+      onMouseEnter={() => {
+        if (preview && !hoverMuted) {
+          if (hoverTimer.current) clearTimeout(hoverTimer.current);
+          hoverTimer.current = setTimeout(() => setHoverPlay(true), HOVER_PLAY_DELAY_MS);
+        }
+        void prefetchShotDragFile(shot).then((f) => {
+          dragFileRef.current = f;
+        });
       }}
-      className={`group relative w-full cursor-pointer overflow-hidden rounded-md border bg-cinema-panel text-left transition hover:border-cinema-cyan/40 hover:shadow-glow ${
+      onMouseLeave={() => {
+        setHoverMuted(false);
+        if (hoverTimer.current) {
+          clearTimeout(hoverTimer.current);
+          hoverTimer.current = null;
+        }
+        setHoverPlay(false);
+        if (!pinned && videoRef.current) videoRef.current.pause();
+      }}
+      className={`group relative h-full w-full cursor-pointer overflow-hidden rounded-md border bg-cinema-panel text-left transition hover:border-cinema-cyan/40 hover:shadow-glow ${
         selected ? "border-cinema-cyan shadow-glow" : "border-cinema-border"
       }`}
-      style={{ aspectRatio: `${shot.width || 3} / ${shot.height || 2}` }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -114,7 +179,6 @@ export function ShotCard({
           <video
             ref={videoRef}
             src={preview}
-            autoPlay={playing || hover}
             loop
             muted
             playsInline
@@ -126,12 +190,26 @@ export function ShotCard({
         ))}
 
       {shot.is_moving && !showLoop && (
-        <span className="pointer-events-none absolute bottom-2 right-2 rounded bg-black/70 px-1 py-0.5 font-mono text-[9px] uppercase tracking-wide text-white/80">
+        <span className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/70 px-1 py-0.5 font-mono text-[9px] uppercase tracking-wide text-white/80">
           gif
         </span>
       )}
       {fav && (
         <Star className="absolute left-2 top-2 h-3.5 w-3.5 fill-cinema-cyan text-cinema-cyan" />
+      )}
+
+      {preview && (
+        <button
+          type="button"
+          title={showLoop ? "Pause preview (space)" : "Play preview (space)"}
+          aria-label={showLoop ? "Pause preview" : "Play preview"}
+          onClick={togglePlay}
+          className={`absolute bottom-2 right-2 z-10 rounded border border-cinema-border bg-black/75 p-1.5 text-white opacity-0 transition hover:border-cinema-cyan/50 hover:text-cinema-cyan group-hover:opacity-100 ${
+            showLoop ? "opacity-100 border-cinema-cyan/50 text-cinema-cyan" : ""
+          }`}
+        >
+          {showLoop ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+        </button>
       )}
 
       <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
@@ -181,23 +259,6 @@ export function ShotCard({
           </span>
         )}
         {preview && (
-          <span
-            role="button"
-            tabIndex={0}
-            title={playing ? "Pause preview" : "Play preview"}
-            onClick={togglePlay}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                togglePlay(e as unknown as MouseEvent);
-              }
-            }}
-            className="rounded border border-cinema-border bg-black/75 p-1 text-white hover:border-cinema-cyan/50 hover:text-cinema-cyan"
-          >
-            {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-          </span>
-        )}
-        {preview && (
           <ArtifactDownloadButton
             url={preview}
             filename={shotArtifactFilename(shot, "loop", preview)}
@@ -216,7 +277,7 @@ export function ShotCard({
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 transition group-hover:opacity-100">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 pr-10">
           <span className="truncate font-mono text-[10px] text-cinema-muted">
             {(shot.techniques && shot.techniques[0]) ||
               shot.theme ||

@@ -33,11 +33,13 @@ class SearchRequest(BaseModel):
     theme: str | None = None
     genre: str | None = None
     shape: str | None = None
+    camera_angle: str | None = None
+    lens_look: str | None = None
     color_hex: str | None = Field(default=None, pattern=r"^#[0-9A-Fa-f]{6}$")
     randomize: bool = False
     group_sequences: bool | None = None
     is_moving: bool | None = None
-    limit: int = Field(default=48, ge=1, le=200)
+    limit: int = Field(default=48, ge=1, le=2000)
     offset: int = Field(default=0, ge=0)
 
 

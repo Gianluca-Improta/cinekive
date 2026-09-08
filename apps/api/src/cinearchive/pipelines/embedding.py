@@ -164,9 +164,23 @@ _embedding_singleton: EmbeddingPipeline | None = None
 
 
 def get_embedding_pipeline(settings: Settings | None = None) -> EmbeddingPipeline:
+    """Return process-wide embedder.
+
+    `settings.embedding_runtime`:
+      - ``python`` (default) — torch / transformers SigLIP
+      - ``onnx-js`` — reserved for Electron WebGPU / onnxruntime-web harness
+        (falls back to python until the JS path is wired and validated)
+    """
     global _embedding_singleton
+    cfg = settings or get_settings()
+    runtime = (getattr(cfg, "embedding_runtime", None) or "python").strip().lower()
+    if runtime == "onnx-js":
+        logger.warning(
+            "embedding_runtime=onnx-js is not active yet — using python SigLIP. "
+            "Set ENRICH / packaging harness when ONNX WebGPU path ships."
+        )
     if _embedding_singleton is None:
-        _embedding_singleton = EmbeddingPipeline(settings)
+        _embedding_singleton = EmbeddingPipeline(cfg)
     return _embedding_singleton
 
 

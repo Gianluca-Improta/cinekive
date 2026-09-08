@@ -10,6 +10,7 @@ import type {
   Taxonomy,
 } from "./types";
 import { downloadBlob } from "./download";
+import { BUILTIN_SHELVES, shelfKeyOf } from "./project-shelves";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -157,6 +158,70 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  getLibraryConfig: () =>
+    request<{
+      config: {
+        max_edge: number;
+        jpeg_quality: number;
+        export_upscale: number;
+        realesrgan_enabled: boolean;
+        realesrgan_bin: string | null;
+        dedupe_on_ingest?: boolean;
+        dedupe_global?: boolean;
+        dedupe_prefs_initialized?: boolean;
+        archives: Record<
+          string,
+          { max_edge?: number; jpeg_quality?: number; export_upscale?: number }
+        >;
+      };
+      realesrgan_available: boolean;
+      realesrgan_path: string | null;
+      presets: {
+        max_edge: { value: number; label: string }[];
+        export_upscale: { value: number; label: string }[];
+      };
+    }>("/system/library"),
+
+  updateLibraryConfig: (body: Record<string, unknown>) =>
+    request<{
+      ok: boolean;
+      config: Record<string, unknown>;
+      realesrgan_available: boolean;
+      realesrgan_path: string | null;
+    }>("/system/library", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+
+  verifyLibrary: () =>
+    request<{
+      ok: boolean;
+      sqlite: {
+        projects: number;
+        shots_active: number;
+        shots_trashed: number;
+        ids_sampled: number;
+      };
+      qdrant: {
+        collection: string;
+        points: number;
+        vector_size: number | null;
+        expected_dim: number;
+        embedding_model: string;
+        ids_sampled: number;
+      };
+      issues: { code: string; severity: string; message: string }[];
+      warnings: { code: string; severity: string; message: string }[];
+    }>("/system/verify-library"),
+
+  rebuildIndex: () =>
+    request<{
+      ok: boolean;
+      projects: number;
+      job_ids: string[];
+      message: string;
+    }>("/system/rebuild-index", { method: "POST" }),
+
   enrichModels: () =>
     request<{
       provider: string;
@@ -190,7 +255,18 @@ export const api = {
   createProject: (body: {
     name: string;
     description?: string;
-    kind?: "commercial" | "social" | "archive" | "general" | "narrative";
+    kind?:
+      | "commercial"
+      | "social"
+      | "archive"
+      | "general"
+      | "narrative"
+      | "stills"
+      | "video"
+      | "mixed"
+      | "props"
+      | "locations"
+      | "wardrobe";
     form_factor?: "long_form" | "short_form" | "mixed";
     aspect_ratio?: string;
     brief?: string;
@@ -210,7 +286,18 @@ export const api = {
     body: Partial<{
       name: string;
       description: string | null;
-      kind: "commercial" | "social" | "archive" | "general" | "narrative";
+      kind:
+        | "commercial"
+        | "social"
+        | "archive"
+        | "general"
+        | "narrative"
+        | "stills"
+        | "video"
+        | "mixed"
+        | "props"
+        | "locations"
+        | "wardrobe";
       form_factor: "long_form" | "short_form" | "mixed" | null;
       aspect_ratio: string | null;
       brief: string | null;
@@ -283,7 +370,61 @@ export const api = {
     );
   },
 
+  /** Page through /shots until every matching still is loaded (for Infinite / Living). */
+  listAllShots: async (params?: {
+    project_id?: string;
+    has_preview?: boolean;
+    is_favorite?: boolean;
+    is_hero?: boolean;
+    is_moving?: boolean;
+    hide_duplicates?: boolean;
+    group_sequences?: boolean;
+    shot_type?: string;
+    content_format?: string;
+    emotion?: string;
+    technique?: string;
+    randomize?: boolean;
+    pageSize?: number;
+  }) => {
+    const pageSize = Math.min(Math.max(params?.pageSize ?? 1000, 1), 2000);
+    const { pageSize: _ps, ...rest } = params || {};
+    const items: Shot[] = [];
+    let offset = 0;
+    let total = Infinity;
+    while (offset < total) {
+      const page = await api.listShots({
+        ...rest,
+        group_sequences: rest.group_sequences ?? false,
+        hide_duplicates: rest.hide_duplicates ?? true,
+        offset,
+        limit: pageSize,
+      });
+      items.push(...page.items);
+      total = page.total;
+      if (!page.items.length) break;
+      offset += page.items.length;
+      if (page.items.length < pageSize) break;
+    }
+    return { items, total: items.length };
+  },
+
   getShot: (id: string) => request<Shot>(`/shots/${id}`),
+
+  generateFromShot: (
+    id: string,
+    body?: {
+      prompt?: string;
+      model?: string;
+      backend?: string;
+      strength?: number;
+      size?: number;
+      family?: string;
+    }
+  ) =>
+    request<{ job: { id: string }; message: string }>(`/shots/${id}/generate`, {
+      method: "POST",
+      body: JSON.stringify(body || {}),
+    }),
 
   getTaxonomy: () => request<Taxonomy>("/taxonomy"),
 
@@ -369,6 +510,7 @@ export const api = {
       enabled: boolean;
       download_dir: string;
       providers: string[];
+      brave_configured?: boolean;
       yt_dlp?: boolean;
       note: string;
     }>("/seek/status"),
@@ -402,6 +544,34 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  /** Page through /search until every matching still is loaded (for Infinite / Living). */
+  searchAll: async (body: SearchFilters & { pageSize?: number }) => {
+    const pageSize = Math.min(Math.max(body.pageSize ?? 1000, 1), 2000);
+    const { pageSize: _ps, ...rest } = body;
+    const results: SearchResponse["results"] = [];
+    let offset = 0;
+    let total = Infinity;
+    while (offset < total) {
+      const page = await api.search({
+        ...rest,
+        group_sequences: rest.group_sequences ?? false,
+        hide_duplicates: rest.hide_duplicates ?? true,
+        offset,
+        limit: pageSize,
+      });
+      results.push(...page.results);
+      total = page.total;
+      if (!page.results.length) break;
+      offset += page.results.length;
+      if (page.results.length < pageSize) break;
+    }
+    return {
+      results,
+      total: results.length,
+      query: body.query ?? null,
+    } satisfies SearchResponse;
+  },
 
   searchPalette: (body: { shot_id?: string; colors?: string[]; project_id?: string; limit?: number }) =>
     request<SearchResponse>("/search/palette", {
@@ -471,6 +641,33 @@ export const api = {
       results: { shot: Shot; score: number }[];
       message: string;
     }>("/agent/query", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  agentChat: (body: {
+    message: string;
+    project_id?: string;
+    history?: { role: "user" | "assistant" | "system"; content: string }[];
+    create_board?: boolean;
+  }) =>
+    request<{
+      reply: string;
+      intent: string;
+      actions: {
+        type: string;
+        label: string;
+        href?: string | null;
+        query?: string | null;
+        prompt?: string | null;
+        collection_id?: string | null;
+        project_id?: string | null;
+        shot_ids?: string[];
+      }[];
+      shot_ids: string[];
+      used_vlm: boolean;
+      model_online?: boolean;
+    }>("/agent/chat", {
       method: "POST",
       body: JSON.stringify(body),
     }),
@@ -587,6 +784,7 @@ export const api = {
         description?: string;
         site_url?: string;
         access?: string;
+        requires_pro?: boolean;
         credentials_configured?: boolean;
         db_stats?: { tasks?: Record<string, number>; shots?: Record<string, number> };
       }[];
@@ -673,12 +871,64 @@ export const api = {
     limit_films?: number;
     limit_per_tech?: number;
     max_clips?: number;
+    films?: string;
     discover_only?: boolean;
+    login_browser?: boolean;
   }) =>
     request<{ message: string; pid?: number; running?: boolean }>("/sources/mirror/run", {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  importBoardDocument: async (projectId: string, boardId: string, file: File, maxPages = 40) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("max_pages", String(maxPages));
+    return request<{
+      board_id: string;
+      pages: Array<{ page: number; filename: string; url: string; width: number; height: number }>;
+      message: string;
+    }>(`/projects/${projectId}/boards/${boardId}/import-document`, {
+      method: "POST",
+      body: form,
+    });
+  },
+
+  exportBoardBundle: async (
+    projectId: string,
+    boardId: string,
+    body: { canvas: unknown; board_name: string; media_urls: string[] }
+  ) => {
+    const res = await fetch(`${getApiUrl()}/projects/${projectId}/boards/${boardId}/export-bundle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      let detail = res.statusText;
+      try {
+        const data = await res.json();
+        detail = data.detail || JSON.stringify(data);
+      } catch {
+        /* ignore */
+      }
+      throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    }
+    return res.blob();
+  },
+
+  importBoardBundle: async (projectId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{
+      board_id: string;
+      canvas: Record<string, unknown>;
+      message: string;
+    }>(`/projects/${projectId}/boards/import-bundle`, {
+      method: "POST",
+      body: form,
+    });
+  },
 
   listCollections: (params?: { project_id?: string; kind?: string }) => {
     const q = new URLSearchParams();
@@ -704,6 +954,43 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  /** Department shelves inside a project (built-ins + any custom). */
+  ensureProjectShelves: async (projectId: string) => {
+    const existing = await api.listCollections({ project_id: projectId, kind: "shelf" });
+    const byKey = new Map<string, Collection>();
+    for (const c of existing) {
+      byKey.set(shelfKeyOf(c), c);
+    }
+    for (const w of BUILTIN_SHELVES) {
+      if (byKey.has(w.key)) continue;
+      const created = await api.createCollection({
+        name: w.label,
+        project_id: projectId,
+        kind: "shelf",
+        description: w.hint
+          ? `${w.label} — ${w.hint}`
+          : `${w.label} shelf — department refs inside this project`,
+        meta: { shelf: w.key, builtin: true },
+      });
+      byKey.set(w.key, created);
+    }
+    return Object.fromEntries(byKey.entries()) as Record<string, Collection>;
+  },
+
+  /** Create a user-named shelf tab for a project. */
+  createProjectShelf: async (projectId: string, name: string) => {
+    const label = name.trim().slice(0, 48);
+    if (!label) throw new Error("Name required");
+    const created = await api.createCollection({
+      name: label,
+      project_id: projectId,
+      kind: "shelf",
+      description: `${label} — custom project shelf`,
+      meta: { shelf: "custom", custom: true },
+    });
+    return { collection: created, key: shelfKeyOf(created) };
+  },
 
   updateCollection: (
     id: string,
@@ -765,6 +1052,30 @@ export const api = {
     const blob = await res.blob();
     const ext = format === "zip" ? "zip" : format === "edl" ? "edl" : "json";
     downloadBlob(blob, `cinearchive_export.${ext}`);
+  },
+
+  exportProject: async (
+    projectId: string,
+    format: "gallery" | "zip" | "pptx" = "gallery",
+    opts?: { include_previews?: boolean }
+  ) => {
+    const res = await fetch(`${getApiUrl()}/projects/${projectId}/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        format,
+        include_previews: Boolean(opts?.include_previews),
+      }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || "Project export failed");
+    }
+    const blob = await res.blob();
+    const ext = format === "pptx" ? "pptx" : "zip";
+    const cd = res.headers.get("content-disposition") || "";
+    const match = /filename="?([^";]+)"?/i.exec(cd);
+    downloadBlob(blob, match?.[1] || `cinekive_project.${ext}`);
   },
 };
 

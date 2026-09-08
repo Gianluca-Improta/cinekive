@@ -41,6 +41,12 @@ class VlmRuntimeConfig(BaseModel):
     enrich_interval_sec: float | None = None
     enrich_batch_size: int | None = None
     vlm_timeout_sec: float | None = None
+    # Image generation — local Free (A1111/Forge/Comfy), cloud Pro BYO key
+    image_backend: Literal["auto", "cloud", "a1111", "comfyui"] | None = None
+    image_local_url: str | None = None
+    image_api_base_url: str | None = None
+    image_api_key: str | None = None
+    image_model: str | None = None
 
 
 _PRESETS: dict[str, dict[str, Any]] = {
@@ -263,6 +269,16 @@ def public_config(settings: Settings) -> dict[str, Any]:
         if rt.enrich_batch_size is not None
         else settings.enrich_batch_size,
         "vlm_timeout_sec": effective_timeout(settings),
+        "image_backend": rt.image_backend or "auto",
+        "image_local_url": rt.image_local_url or "http://127.0.0.1:7860",
+        "image_api_base_url": rt.image_api_base_url or "",
+        "image_api_key_set": bool(rt.image_api_key),
+        "image_api_key_masked": (
+            ("••••" + rt.image_api_key[-4:])
+            if rt.image_api_key and len(rt.image_api_key) > 4
+            else ("••••" if rt.image_api_key else "")
+        ),
+        "image_model": rt.image_model or "",
         "env_defaults": {
             "vlm_enabled": settings.vlm_enabled,
             "ollama_url": settings.ollama_url,
@@ -289,4 +305,9 @@ class VlmConfigUpdate(BaseModel):
     enrich_interval_sec: float | None = None
     enrich_batch_size: int | None = None
     vlm_timeout_sec: float | None = None
+    image_backend: Literal["auto", "cloud", "a1111", "comfyui"] | None = None
+    image_local_url: str | None = None
+    image_api_base_url: str | None = None
+    image_api_key: str | None = Field(default=None, description="Omit to keep; empty string clears")
+    image_model: str | None = None
     preset: str | None = None

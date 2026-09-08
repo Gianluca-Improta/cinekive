@@ -67,6 +67,8 @@ async def run_reindex_job(
 
         batch_size = max(1, settings.embedding_batch_size)
         processed = 0
+        missing = 0
+        degenerate = 0
 
         for i in range(0, len(work), batch_size):
             batch = work[i : i + batch_size]
@@ -78,6 +80,7 @@ async def run_reindex_job(
                     kf = legacy / item["keyframe_path"]
                 if not kf.is_file():
                     logger.warning("Missing keyframe %s", item["id"])
+                    missing += 1
                     continue
                 paths.append(kf)
                 valid.append(item)
@@ -94,6 +97,11 @@ async def run_reindex_job(
             )
 
             vectors = embedder.embed_images(paths)
+            # A zero vector scores 0 against every query, so writing one is worse than
+            # skipping: the shot silently disappears from semantic search.
+            for vec in vectors:
+                if not any(vec):
+                    degenerate += 1
 
             async with SessionLocal() as session:
                 repo = ShotRepository(session)
@@ -115,14 +123,26 @@ async def run_reindex_job(
 
             processed += len(batch)
 
+        notes: list[str] = []
+        if missing:
+            notes.append(f"{missing} shot(s) had no keyframe on disk")
+        if degenerate:
+            notes.append(f"{degenerate} shot(s) embedded to an empty vector")
         await update_job(
             job_id,
             status="completed",
-            current_step="Reindex done",
+            current_step="Reindex done" if not notes else f"Reindex done — {notes[0]}",
             progress_pct=100.0,
             processed_items=processed,
+            error_message="; ".join(notes)[:2000] if notes else None,
         )
-        logger.info("Reindex job %s completed (%d shots)", job_id, processed)
+        logger.info(
+            "Reindex job %s completed (%d shots, %d missing, %d degenerate)",
+            job_id,
+            processed,
+            missing,
+            degenerate,
+        )
 
     except Exception as exc:
         logger.error("Reindex job %s failed: %s\n%s", job_id, exc, traceback.format_exc())

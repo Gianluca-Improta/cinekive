@@ -226,6 +226,8 @@ class ShotRepository:
         theme: str | None = None,
         genre: str | None = None,
         shape: str | None = None,
+        camera_angle: str | None = None,
+        lens_look: str | None = None,
         color_hex: str | None = None,
         randomize: bool = False,
         offset: int = 0,
@@ -254,6 +256,10 @@ class ShotRepository:
             filters.append(Shot.composition == composition)
         if lighting_style:
             filters.append(Shot.lighting_style == lighting_style)
+        if camera_angle:
+            filters.append(Shot.camera_angle == camera_angle)
+        if lens_look:
+            filters.append(Shot.lens_look == lens_look)
         if content_format:
             filters.append(Shot.content_format == content_format)
         if emotion:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -73,6 +74,37 @@ def is_stream_url(url: str) -> bool:
     return False
 
 
+def _cookie_args() -> list[str]:
+    """User-login path for bot-walled sites (YouTube etc.).
+
+    Prefer an exported cookies file, else a browser profile yt-dlp can read.
+    Env:
+      YTDLP_COOKIES — path to Netscape cookies.txt
+      YTDLP_COOKIES_FROM_BROWSER — chrome|edge|firefox|brave|… (optional :profile)
+    """
+    cookie_file = (os.environ.get("YTDLP_COOKIES") or "").strip()
+    if cookie_file and Path(cookie_file).is_file():
+        return ["--cookies", cookie_file]
+    browser = (os.environ.get("YTDLP_COOKIES_FROM_BROWSER") or "").strip()
+    if browser:
+        return ["--cookies-from-browser", browser]
+    return []
+
+
+def _cookie_opts() -> dict:
+    cookie_file = (os.environ.get("YTDLP_COOKIES") or "").strip()
+    if cookie_file and Path(cookie_file).is_file():
+        return {"cookiefile": cookie_file}
+    browser = (os.environ.get("YTDLP_COOKIES_FROM_BROWSER") or "").strip()
+    if browser:
+        # "chrome" or "chrome:Profile 1"
+        parts = browser.split(":", 1)
+        if len(parts) == 2:
+            return {"cookiesfrombrowser": (parts[0], parts[1])}
+        return {"cookiesfrombrowser": (parts[0],)}
+    return {}
+
+
 def download_stream(
     url: str,
     dest_dir: Path,
@@ -83,6 +115,7 @@ def download_stream(
     dest_dir.mkdir(parents=True, exist_ok=True)
     bin_name = shutil.which("yt-dlp") or shutil.which("youtube-dl")
     out_tmpl = str(dest_dir / "%(title).180B [%(id)s].%(ext)s")
+    cookie_cli = _cookie_args()
     if bin_name:
         args = [
             bin_name,
@@ -94,12 +127,20 @@ def download_stream(
             "-o",
             out_tmpl,
             "--restrict-filenames",
+            *cookie_cli,
             url,
         ]
-        logger.info("yt-dlp download: %s", url)
+        logger.info("yt-dlp download: %s cookies=%s", url, bool(cookie_cli))
         result = subprocess.run(args, capture_output=True, text=True, timeout=1800, check=False)
         if result.returncode != 0:
-            raise RuntimeError((result.stderr or result.stdout or "yt-dlp failed")[:800])
+            err = (result.stderr or result.stdout or "yt-dlp failed")[:800]
+            if "Sign in to confirm" in err or "not a bot" in err.lower():
+                raise RuntimeError(
+                    f"{err}\n\nYouTube needs your login cookies. Set YTDLP_COOKIES_FROM_BROWSER=chrome "
+                    "(or edge/firefox) in Settings/.env, or export cookies to YTDLP_COOKIES=path/to/cookies.txt, "
+                    "then retry."
+                )
+            raise RuntimeError(err)
     else:
         try:
             import yt_dlp
@@ -111,10 +152,21 @@ def download_stream(
             "merge_output_format": "mp4",
             "outtmpl": out_tmpl,
             "restrictfilenames": True,
+            **_cookie_opts(),
         }
-        logger.info("yt-dlp module download: %s", url)
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            ydl.download([url])
+        logger.info("yt-dlp module download: %s cookies=%s", url, bool(_cookie_opts()))
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                ydl.download([url])
+        except Exception as exc:
+            msg = str(exc)
+            if "Sign in to confirm" in msg or "not a bot" in msg.lower():
+                raise RuntimeError(
+                    f"{msg}\n\nYouTube needs your login cookies. Set YTDLP_COOKIES_FROM_BROWSER=chrome "
+                    "(or edge/firefox) in Settings/.env, or export cookies to YTDLP_COOKIES=path/to/cookies.txt, "
+                    "then retry."
+                ) from exc
+            raise RuntimeError(msg[:800]) from exc
 
     candidates = sorted(
         [

@@ -9,7 +9,20 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
-ProjectKind = Literal["commercial", "social", "archive", "general", "narrative"]
+ProjectKind = Literal[
+    "commercial",
+    "social",
+    "archive",
+    "general",
+    "narrative",
+    "stills",
+    "video",
+    "mixed",
+    # Legacy department projects (prefer in-project shelves)
+    "props",
+    "locations",
+    "wardrobe",
+]
 FormFactor = Literal["long_form", "short_form", "mixed"]
 
 

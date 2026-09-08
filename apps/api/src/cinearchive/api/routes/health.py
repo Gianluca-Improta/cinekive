@@ -2,62 +2,96 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from cinearchive.api.deps import get_db_session, get_embedder, get_settings, get_vector_repo
+from cinearchive.api.deps import get_embedder, get_settings, get_vector_repo
 from cinearchive.config import Settings
+from cinearchive.db.session import SessionLocal
 from cinearchive.pipelines.embedding import EmbeddingPipeline
-from cinearchive.pipelines.vlm_enrichment import VLMEnricher
 from cinearchive.repositories.vector_repo import VectorRepository
 
 router = APIRouter(tags=["health"])
 
 
+async def _sqlite_ping(*, timeout_sec: float = 1.5) -> bool:
+    """Liveness DB check that must not wait forever on a saturated pool."""
+
+    async def _run() -> bool:
+        async with SessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+        return True
+
+    try:
+        return bool(await asyncio.wait_for(_run(), timeout=timeout_sec))
+    except Exception:
+        return False
+
+
 @router.get("/health")
 async def health(
-    session: AsyncSession = Depends(get_db_session),
     vector_repo: VectorRepository = Depends(get_vector_repo),
     embedder: EmbeddingPipeline = Depends(get_embedder),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    db_ok = False
-    try:
-        await session.execute(text("SELECT 1"))
-        db_ok = True
-    except Exception:
-        db_ok = False
+    # Do not Depends(get_db_session) — pool exhaustion from startup dedupe/enrich
+    # was hanging /health and making the desktop splash think the API was dead.
+    db_ok = await _sqlite_ping()
 
-    qdrant_ok = vector_repo.health()
+    qdrant_ok = False
+    try:
+        qdrant_ok = bool(vector_repo.health())
+    except Exception:
+        qdrant_ok = False
+
     from cinearchive.services import vlm_config as vc
 
     vlm_enabled = vc.effective_enabled(settings)
+    # Skip live VLM probe on /health — Ollama timeouts blocked splash readiness.
     vlm_ok = False
-    if vlm_enabled:
-        vlm_ok = await VLMEnricher(settings).health()
 
     enrich_info: dict = {}
     try:
-        from cinearchive.jobs.enrich_runner import resolve_enrich_model
-        from cinearchive.jobs.enrich_scheduler import count_pending_enrich, last_enrich_pass_at
+        from cinearchive.jobs.enrich_scheduler import last_enrich_pass_at
 
-        model, tier, vram = await resolve_enrich_model(settings)
-        pending = await count_pending_enrich(settings)
         enrich_info = {
-            "tier": tier,
-            "model": model,
+            "tier": None,
+            "model": vc.effective_model(settings) if hasattr(vc, "effective_model") else None,
             "provider": vc.effective_provider(settings),
-            "vram_gb": round(vram, 1) if vram is not None else None,
+            "vram_gb": None,
             "continuous": vc.effective_continuous(settings),
             "last_pass_at": last_enrich_pass_at() or None,
-            "pending_shots": pending,
-            "gpu": "RTX 5060 Ti 16GB → balanced (qwen3-vl:8b)"
-            if vram and 14 <= vram <= 18
-            else None,
+            "pending_shots": None,
+            "gpu": None,
         }
+        # Best-effort extras; never block liveness on these.
+        async def _enrich_extras() -> None:
+            from cinearchive.jobs.enrich_runner import resolve_enrich_model
+            from cinearchive.jobs.enrich_scheduler import count_pending_enrich
+
+            model, tier, vram = await resolve_enrich_model(settings)
+            pending = await count_pending_enrich(settings)
+            enrich_info.update(
+                {
+                    "tier": tier,
+                    "model": model,
+                    "vram_gb": round(vram, 1) if vram is not None else None,
+                    "pending_shots": pending,
+                    "gpu": (
+                        "RTX 5060 Ti 16GB → balanced (qwen3-vl:8b)"
+                        if vram and 14 <= vram <= 18
+                        else None
+                    ),
+                }
+            )
+
+        try:
+            await asyncio.wait_for(_enrich_extras(), timeout=1.0)
+        except Exception:
+            pass
     except Exception:
         enrich_info = {}
 

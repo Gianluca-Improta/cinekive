@@ -4,14 +4,16 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cinearchive.api.deps import get_db_session, get_settings, get_vector_repo
 from cinearchive.config import Settings
 from cinearchive.repositories.shot_repo import ShotRepository
 from cinearchive.repositories.vector_repo import VectorRepository
+from cinearchive.schemas.ingest import IngestResponse
 from cinearchive.schemas.shot import (
     ShotBulkCollectionRequest,
     ShotBulkMoveRequest,
@@ -21,11 +23,45 @@ from cinearchive.schemas.shot import (
     ShotRead,
 )
 from cinearchive.services.artifact_service import resolve_artifact
+from cinearchive.services.image_generate import generate_from_shot
 from cinearchive.services.search_service import SearchService
 from cinearchive.services.shot_management import ShotManagementService
 from cinearchive.services.shot_mapper import shot_to_read
 
 router = APIRouter(tags=["shots"])
+
+
+class GenerateFromShotRequest(BaseModel):
+    prompt: str | None = Field(
+        default=None,
+        max_length=2000,
+        description="Optional direction on top of craft tags from the reference still",
+    )
+    model: str | None = Field(
+        default=None,
+        max_length=128,
+        description="Optional image model id / family (auto|sd|flux1|qwen-image)",
+    )
+    backend: str | None = Field(
+        default=None,
+        max_length=32,
+        description="auto | a1111 | comfyui | cloud",
+    )
+    strength: float | None = Field(
+        default=None,
+        ge=0.05,
+        le=1.0,
+        description="Img2img denoise / how close to the reference",
+    )
+    size: int | None = Field(
+        default=None,
+        description="Output edge size: 1024 | 1280 | 1536",
+    )
+    family: str | None = Field(
+        default=None,
+        max_length=32,
+        description="auto | sd | flux1 | qwen-image",
+    )
 
 
 @router.get("/shots", response_model=ShotList)
@@ -43,7 +79,7 @@ async def list_shots(
     technique: str | None = None,
     randomize: bool = False,
     offset: int = Query(0, ge=0),
-    limit: int = Query(48, ge=1, le=200),
+    limit: int = Query(48, ge=1, le=2000),
     session: AsyncSession = Depends(get_db_session),
     settings: Settings = Depends(get_settings),
     vector_repo: VectorRepository = Depends(get_vector_repo),
@@ -103,6 +139,29 @@ async def get_shot(
         # Still readable from bin UI
         return shot_to_read(shot)
     return shot_to_read(shot)
+
+
+@router.post("/shots/{shot_id}/generate", response_model=IngestResponse)
+async def generate_shot_variant(
+    shot_id: UUID,
+    body: GenerateFromShotRequest,
+    background: BackgroundTasks,
+    session: AsyncSession = Depends(get_db_session),
+    settings: Settings = Depends(get_settings),
+) -> IngestResponse:
+    """Pro: generate a new still inspired by this reference (BYO cloud image API key)."""
+    return await generate_from_shot(
+        session,
+        settings,
+        shot_id,
+        prompt=body.prompt,
+        model=body.model,
+        backend=body.backend,
+        strength=body.strength,
+        size=body.size,
+        family=body.family,
+        background=background,
+    )
 
 
 @router.post("/shots/bulk/delete", response_model=ShotBulkResponse)

@@ -229,6 +229,14 @@ async def update_shot(
     except Exception:
         pass
 
+    # Keep portable sidecar in sync with inspector edits (tags + craft)
+    try:
+        from cinearchive.pipelines.sidecar_meta import write_shot_sidecar
+
+        write_shot_sidecar(shot)
+    except Exception:
+        pass
+
     return shot_to_read(shot)
 
 

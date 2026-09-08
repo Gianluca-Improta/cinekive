@@ -152,7 +152,7 @@ async def _create_drip_job(*, total: int, model_name: str) -> str:
             type="enrich_drip",
             status="running",
             progress_pct=0.0,
-            current_step=f"Craft AI · {model_name}",
+            current_step=f"Gemi Local AI · {model_name}",
             total_items=total,
             processed_items=0,
             payload_json={"model": model_name, "continuous": True},

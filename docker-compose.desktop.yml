@@ -3,7 +3,7 @@
 
 services:
   qdrant:
-    image: qdrant/qdrant:v1.13.2
+    image: qdrant/qdrant:v1.19.0
     container_name: cinearchive-qdrant
     ports:
       - "6333:6333"
@@ -24,7 +24,7 @@ services:
       start_period: 30s
 
   api:
-    image: ghcr.io/gianluca-improta/cinekive-api:${CINEKIVE_IMAGE_TAG:-latest}
+    image: ghcr.io/gianluca-improta/cinekive-api:${CINEKIVE_IMAGE_TAG:-0.5.3}
     build:
       context: ./apps/api
       dockerfile: Dockerfile
@@ -70,7 +70,10 @@ services:
       - WATCHER_ENABLED=${WATCHER_ENABLED:-false}
       - SEEK_ENABLED=${SEEK_ENABLED:-true}
       - MIRROR_SCRIPTS_DIR=/app/scripts
+      # Seed only — library_runtime.json freezes prefs on first boot (see library_config).
       - DEDUPE_ON_INGEST=${DEDUPE_ON_INGEST:-false}
+      - DEDUPE_GLOBAL=${DEDUPE_GLOBAL:-false}
+      - DEDUPE_INTERVAL_SEC=${DEDUPE_INTERVAL_SEC:-300}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -85,7 +88,7 @@ services:
       start_period: 90s
 
   web:
-    image: ghcr.io/gianluca-improta/cinekive-web:${CINEKIVE_IMAGE_TAG:-latest}
+    image: ghcr.io/gianluca-improta/cinekive-web:${CINEKIVE_IMAGE_TAG:-0.5.3}
     build:
       context: ./apps/web
       dockerfile: Dockerfile

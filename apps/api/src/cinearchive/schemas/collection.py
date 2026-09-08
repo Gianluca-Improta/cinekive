@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from cinearchive.schemas.shot import ShotRead
 
-CollectionKind = Literal["moodboard", "work", "reel", "lookbook", "canvas"]
+CollectionKind = Literal["moodboard", "work", "reel", "lookbook", "canvas", "shelf"]
 WorkSampling = Literal["heroes", "moments", "full"]
 
 

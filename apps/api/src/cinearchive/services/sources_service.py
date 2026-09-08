@@ -98,92 +98,105 @@ SOURCES: dict[str, SourceSpec] = {
     ),
 }
 
-# Catalog ideas (no scraper yet) — shown on Archives hub for discovery.
 # Prefer free / research-oriented still libraries. Always check each site's terms.
-CATALOG_SUGGESTIONS: list[dict[str, str]] = [
+# Curated = discover + open site / save into a custom archive (no bulk mirror unless noted).
+# ScreenMusings parked (domain placeholder as of 2026) — re-add when the gallery returns.
+CATALOG_SUGGESTIONS: list[dict[str, Any]] = [
     {
-        "key": "screenmusings",
-        "label": "ScreenMusings",
-        "site_url": "https://screenmusings.org/",
-        "blurb": "High-quality frame grabs by film — closest free cousin to FilmGrab.",
-        "fit": "Best next scraper candidate for title coverage.",
-    },
-    {
-        "key": "moviestillsdb",
-        "label": "MovieStillsDB",
-        "site_url": "https://www.moviestillsdb.com/",
-        "blurb": "1M+ community stills — also a built-in mirror (optional donator login for full-res).",
-        "fit": "Prefer Mirrors tab for pulls; or selective saves into a custom archive.",
+        "key": "movie-screencaps",
+        "label": "Movie Screencaps",
+        "site_url": "https://movie-screencaps.com/",
+        "blurb": "Large free HD screencap archive by title — Blu-ray/DVD sourced frames.",
+        "fit": "Best free bulk browse after FilmGrab; selective saves into a custom archive.",
+        "kind": "free",
     },
     {
         "key": "shotcafe",
         "label": "SHOT.CAFE",
         "site_url": "https://shot.cafe/",
-        "blurb": "Curated cinematography stills with color and composition tags.",
-        "fit": "Smaller craft-focused set; check ToS before automating.",
-    },
-    {
-        "key": "film-grab-alt",
-        "label": "Film Grab (film-grab.com)",
-        "site_url": "https://film-grab.com/",
-        "blurb": "Already mirrored in-app as FilmGrab — listed here as the reference site.",
-        "fit": "Built-in scraper on Mirrors.",
-    },
-    {
-        "key": "bluscreens",
-        "label": "Blu-ray Screen Caps / Caps-a-holic style blogs",
-        "site_url": "https://caps-a-holic.com/",
-        "blurb": "Fan screen-capture galleries (often Blu-ray sourced) organized by title.",
-        "fit": "Manual / selective; many sites are fragile or ToS-sensitive.",
+        "blurb": "Curated cinematography stills with color, composition, and crew tags.",
+        "fit": "Smaller craft-focused set; free to browse — check ToS before automating.",
+        "kind": "free",
     },
     {
         "key": "evanerichards",
-        "label": "Evan Richards (cinematography stills)",
+        "label": "Evan Richards",
         "site_url": "https://www.evanerichards.com/",
-        "blurb": "Long-running cinematography stills blog — frames by film and DP.",
-        "fit": "Great reference; scrape carefully / prefer manual saves.",
+        "blurb": "Long-running free cinematography stills blog — frames by film and DP.",
+        "fit": "Great reference (~100k+ grabs); prefer manual / selective saves.",
+        "kind": "free",
     },
     {
-        "key": "thefilmstage-stills",
-        "label": "The Film Stage / press still roundups",
-        "site_url": "https://thefilmstage.com/",
-        "blurb": "Occasional high-res stills and frame posts — not a structured archive.",
-        "fit": "Browse + save into a custom archive; not bulk-friendly.",
+        "key": "bluscreens",
+        "label": "BluScreens",
+        "site_url": "https://www.bluscreens.net/",
+        "blurb": "High-res Blu-ray screen captures organized by title.",
+        "fit": "Manual / selective; fragile fan sites — don't bulk-hammer.",
+        "kind": "free",
     },
     {
-        "key": "imdb-stills",
-        "label": "IMDb media / stills",
-        "site_url": "https://www.imdb.com/",
-        "blurb": "Official and press stills attached to titles — useful for cast/set references.",
-        "fit": "API/ToS restricted; treat as manual reference, not a mirror target.",
+        "key": "homeofthenutty",
+        "label": "Home of the Nutty",
+        "site_url": "https://www.homeofthenutty.com/",
+        "blurb": "Long-running free screencap galleries — large title coverage.",
+        "fit": "Browse + save into a custom archive; ToS-sensitive for scrapers.",
+        "kind": "free",
+    },
+    {
+        "key": "screencapped",
+        "label": "Screencapped.net",
+        "site_url": "https://screencapped.net/",
+        "blurb": "Non-profit high-quality screencaps and stills.",
+        "fit": "Free browse; selective ingest into your own archive folder.",
+        "kind": "free",
+    },
+    {
+        "key": "capsaholic",
+        "label": "Caps-a-holic",
+        "site_url": "https://caps-a-holic.com/",
+        "blurb": "Fan Blu-ray screen-capture galleries organized by title.",
+        "fit": "Manual / selective; many sister caps sites are fragile.",
+        "kind": "free",
     },
     {
         "key": "wikimedia-film",
         "label": "Wikimedia Commons (film)",
         "site_url": "https://commons.wikimedia.org/wiki/Category:Films",
         "blurb": "Public-domain and freely licensed film imagery, posters, production photos.",
-        "fit": "Truly free for many items — good for PD-era titles; license varies per file.",
+        "fit": "Truly free for many files — license varies per asset; check each file.",
+        "kind": "free",
     },
     {
         "key": "internet-archive-film",
-        "label": "Internet Archive (movies / stills)",
+        "label": "Internet Archive (movies)",
         "site_url": "https://archive.org/details/movies",
         "blurb": "Public-domain features and related media you can download legally.",
-        "fit": "Best for PD films; pair with your own frame extracts.",
-    },
-    {
-        "key": "stillslab",
-        "label": "StillsLab",
-        "site_url": "https://stillslab.com/",
-        "blurb": "Modern stills + music-video frames — also a gated mirror (email + password).",
-        "fit": "Use Mirrors tab with subscription credentials.",
+        "fit": "Best for PD films; pair with your own frame extracts via Ingest.",
+        "kind": "free",
     },
     {
         "key": "frameset",
-        "label": "Frame Set / similar lookbooks",
+        "label": "Frame Set",
         "site_url": "https://frameset.app/",
-        "blurb": "Curated frames across film, ads, and music video — often paid tiers.",
-        "fit": "Inspiration only unless you have a license; use custom archive for exports you own.",
+        "blurb": "Curated frames across film, ads, and music video — freemium search.",
+        "fit": "Inspiration / limited free searches; licensed exports only.",
+        "kind": "freemium",
+    },
+    {
+        "key": "flim",
+        "label": "Flim",
+        "site_url": "https://flim.ai/",
+        "blurb": "Large searchable movie / MV / ad shot database with AI filters.",
+        "fit": "Freemium daily searches; use custom archive for anything you license.",
+        "kind": "freemium",
+    },
+    {
+        "key": "seek-film",
+        "label": "Seek",
+        "site_url": "https://seek.film/",
+        "blurb": "1M+ stills searchable by mood, light, and composition.",
+        "fit": "Free tier + trial; not a mirror target — browse then save owned exports.",
+        "kind": "freemium",
     },
 ]
 
@@ -287,6 +300,37 @@ def _mirror_run_state(root: Path) -> dict[str, Any]:
         return {}
 
 
+def _sample_preview_relpaths(root: Path, *, limit: int = 6) -> list[str]:
+    """Pick a few image paths under a mirror folder for hub card collages."""
+    if not root.is_dir():
+        return []
+    found: list[str] = []
+    try:
+        for dirpath, dirnames, filenames in os.walk(root):
+            # Skip cache / hidden
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+            for name in filenames:
+                if Path(name).suffix.lower() not in IMAGE_EXTS:
+                    continue
+                full = Path(dirpath) / name
+                try:
+                    rel = full.relative_to(root).as_posix()
+                except ValueError:
+                    continue
+                found.append(rel)
+                if len(found) >= limit * 8:
+                    break
+            if len(found) >= limit * 8:
+                break
+    except OSError:
+        return []
+    if not found:
+        return []
+    # Spread samples across the list so we don't only get one film folder
+    step = max(1, len(found) // limit)
+    return [found[i] for i in range(0, len(found), step)][:limit]
+
+
 def scan_source(settings: Settings, key: str) -> dict[str, Any]:
     spec = SOURCES.get(key)
     if not spec:
@@ -294,6 +338,7 @@ def scan_source(settings: Settings, key: str) -> dict[str, Any]:
     root = library_root(settings) / spec.folder
     manifest = _read_manifest(root)
     db_stats = _shotdeck_db_stats(root) if key == "shotdeck" else {}
+    samples = _sample_preview_relpaths(root, limit=6)
     return {
         "key": spec.key,
         "label": spec.label,
@@ -309,9 +354,29 @@ def scan_source(settings: Settings, key: str) -> dict[str, Any]:
         "description": spec.description,
         "site_url": spec.site_url,
         "access": spec.access,
+        "requires_pro": spec.access == "gated",
         "credentials_configured": creds_configured(library_root(settings), key),
+        "preview_urls": [f"/sources/{key}/preview/{i}" for i in range(len(samples))],
+        "preview_count": len(samples),
         **({"db_stats": db_stats} if key == "shotdeck" else {}),
     }
+
+
+def resolve_preview_file(settings: Settings, key: str, index: int) -> Path | None:
+    """Resolve a sampled mirror still for hub card collage."""
+    spec = SOURCES.get(key)
+    if not spec or index < 0:
+        return None
+    root = library_root(settings) / spec.folder
+    samples = _sample_preview_relpaths(root, limit=max(6, index + 1))
+    if index >= len(samples):
+        return None
+    path = (root / samples[index]).resolve()
+    try:
+        path.relative_to(root.resolve())
+    except ValueError:
+        return None
+    return path if path.is_file() else None
 
 
 def scan_all(settings: Settings) -> list[dict[str, Any]]:
@@ -351,9 +416,11 @@ def start_mirror(
     limit_tasks: int | None = 3,
     limit_pages: int | None = 2,
     limit_shots: int | None = 30,
+    films: str | None = None,
     discover_only: bool = False,
     user: str | None = None,
     password: str | None = None,
+    login_browser: bool = False,
 ) -> dict[str, Any]:
     spec = SOURCES.get(source)
     if not spec or not spec.mirror_script:
@@ -386,11 +453,46 @@ def start_mirror(
     if not auth_user:
         auth_user, auth_pass = _resolve_credentials(settings, source)
 
+    if login_browser:
+        if source not in {"shotdeck", "stillslab"}:
+            raise ValueError(f"Browser login is not supported for {spec.label}")
+        # Headful Playwright window — user completes Cloudflare / SSO there.
+        cmd.append("--login-browser")
+        if auth_user:
+            cmd.extend(["--user", auth_user])
+        if auth_pass:
+            cmd.extend(["--password", auth_pass])
+        env[f"{source.upper()}_USER"] = auth_user
+        env[f"{source.upper()}_PASS"] = auth_pass
+        if source == "shotdeck":
+            env["SHOTDECK_USER"] = auth_user
+            env["SHOTDECK_PASS"] = auth_pass
+        log_path = root / ".cache" / "mirror_login.log"
+        log_f = open(log_path, "a", encoding="utf-8")
+        proc = subprocess.Popen(cmd, stdout=log_f, stderr=subprocess.STDOUT, env=env)
+        state = {
+            "pid": proc.pid,
+            "running": True,
+            "started_at": time.time(),
+            "source": source,
+            "log_path": str(log_path),
+            "mode": "login_browser",
+        }
+        run_state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+        return {
+            "message": (
+                f"{spec.label}: browser login window opened. "
+                "Complete Cloudflare/sign-in there, then run Mirror again."
+            ),
+            **state,
+        }
+
     if spec.access == "gated":
         if not auth_user or not auth_pass:
             raise ValueError(
                 f"Set {spec.label} credentials on the Archives page or in "
-                f"library/.cache/source_credentials.json"
+                f"library/.cache/source_credentials.json — or use Browser login "
+                f"when Cloudflare blocks password login."
             )
         cmd.extend(["--user", auth_user, "--password", auth_pass])
         env[f"{source.upper()}_USER"] = auth_user
@@ -403,6 +505,7 @@ def start_mirror(
         env[f"{source.upper()}_USER"] = auth_user
         env[f"{source.upper()}_PASS"] = auth_pass
 
+    films_arg = (films or "").strip()
     if source == "shotdeck":
         if limit_tasks is not None:
             cmd.extend(["--limit-tasks", str(limit_tasks)])
@@ -412,8 +515,13 @@ def start_mirror(
             cmd.extend(["--limit-shots", str(limit_shots)])
         if discover_only:
             cmd.append("--discover-only")
-    elif source == "filmgrab" and limit_films is not None:
-        cmd.extend(["--limit-films", str(limit_films)])
+    elif source == "filmgrab":
+        if films_arg:
+            cmd.extend(["--films", films_arg])
+        if limit_films is not None:
+            cmd.extend(["--limit-films", str(limit_films)])
+        if limit_shots is not None:
+            cmd.extend(["--limit-images", str(limit_shots)])
     elif source == "eyecandy":
         if limit_per_tech is not None:
             cmd.extend(["--limit-per-tech", str(limit_per_tech)])

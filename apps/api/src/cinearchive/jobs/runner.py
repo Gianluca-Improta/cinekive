@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import re
 import shutil
 import traceback
@@ -231,6 +233,12 @@ def _build_payload(shot: Shot, source_filename: str) -> dict:
 
 
 def _zero_vectors(n: int, dim: int) -> list[list[float]]:
+    """Placeholder vectors.
+
+    Zero vectors are unsearchable (cosine score 0), so any shot stored this way is
+    invisible to semantic search until re-indexed. Callers must surface a warning on
+    the job so the library can be repaired instead of silently degrading.
+    """
     return [[0.0] * dim for _ in range(n)]
 
 
@@ -284,6 +292,18 @@ def _stillslab_meta_from_path(media_path: Path) -> dict | None:
                 meta["movie_title"] = parts[i + 1]
                 break
     return meta
+
+
+def _cinekive_sidecar_from_path(media_path: Path) -> dict | None:
+    """Read sibling ``*.cinekive.json`` written by generate / portable tools."""
+    path = media_path.with_name(f"{media_path.stem}.cinekive.json")
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
 
 
 async def run_ingest_job(
@@ -352,13 +372,17 @@ async def run_ingest_job(
 
         await update_job(job_id, total_items=len(files), current_step=f"Processing 0/{len(files)}")
 
-        # Warm embedding model once (fail soft — shots still saved)
+        # Warm embedding model once (fail soft — shots still saved).
+        # Must not block the FastAPI event loop — load can take minutes on first run.
         embedder = get_embedding_pipeline(settings)
         embed_ok = True
+        embed_error: str | None = None
         try:
-            embedder.load()
+            await update_job(job_id, current_step="Loading embedding model…")
+            await asyncio.to_thread(embedder.load)
         except Exception as exc:
             embed_ok = False
+            embed_error = str(exc)[:300]
             logger.error("Embedding model failed to load: %s — shots will be saved without vectors", exc)
 
         qdrant = QdrantClient(url=settings.qdrant_url, timeout=60, check_compatibility=False)
@@ -371,6 +395,8 @@ async def run_ingest_job(
         processed = 0
         file_errors: list[str] = []
         created_shot_ids: list[str] = []
+        # Shots stored with zero vectors — searchable only by keyword until reindexed.
+        unsearchable = 0
 
         for file_idx, media_path in enumerate(files):
             step = f"Processing {media_path.name} ({file_idx + 1}/{len(files)})"
@@ -387,7 +413,10 @@ async def run_ingest_job(
 
                 # Project-wide + per-file hash index for near-dupe detection
                 async with SessionLocal() as session:
-                    if settings.dedupe_global:
+                    from cinearchive.services import library_config as lib_cfg
+
+                    _, dedupe_global = lib_cfg.resolve_dedupe(settings)
+                    if dedupe_global:
                         seen_hashes = await load_global_hashes(session)
                     else:
                         seen_hashes = await load_project_hashes(session, project_id)
@@ -403,13 +432,16 @@ async def run_ingest_job(
                         probe = {}
                         source_fps = None
 
-                    scenes = detect_scenes(media_path, threshold=settings.scene_detect_threshold)
+                    scenes = await asyncio.to_thread(
+                        detect_scenes, media_path, threshold=settings.scene_detect_threshold
+                    )
                     # heroes/curated/fast → top N; moments → all graded, top N marked hero; full → every scene
                     keep_all_moments = sampling_mode in ("moments", "all")
                     use_heroes = sampling_mode not in ("full",)
 
                     if use_heroes or keep_all_moments:
-                        graded = grade_sequences(
+                        graded = await asyncio.to_thread(
+                            grade_sequences,
                             media_path,
                             scenes,
                             max_heroes=settings.max_heroes_per_video,
@@ -594,7 +626,15 @@ async def run_ingest_job(
                     shot_id = str(uuid4())
                     art_dir = shot_artifact_dir(settings, slug, shot_id)
                     keyframe = art_dir / "keyframe.jpg"
-                    copy_image_as_keyframe(media_path, keyframe)
+                    from cinearchive.services import library_config as lib_cfg
+
+                    max_edge, jpeg_q, _ = lib_cfg.resolve_for_archive(settings, project_id)
+                    copy_image_as_keyframe(
+                        media_path,
+                        keyframe,
+                        max_edge=max_edge,
+                        jpeg_quality=jpeg_q,
+                    )
                     thumb_sm = art_dir / "thumb_sm.webp"
                     thumb_md = art_dir / "thumb_md.webp"
                     _, _, width, height = make_thumbnails(
@@ -624,6 +664,10 @@ async def run_ingest_job(
                     shotdeck = _shotdeck_meta_from_path(media_path)
                     msdb = _moviestillsdb_meta_from_path(media_path)
                     stillslab = _stillslab_meta_from_path(media_path)
+                    ck_side = _cinekive_sidecar_from_path(media_path)
+                    shot_origin: str | None = None
+                    if ck_side and ck_side.get("origin"):
+                        shot_origin = str(ck_side["origin"])[:64]
 
                     film_title: str | None = None
                     if filmgrab and filmgrab.get("title"):
@@ -662,6 +706,8 @@ async def run_ingest_job(
                         except Exception as exc:
                             logger.warning("GIF/WebP preview copy failed for %s: %s", media_path.name, exc)
                     tags: list[str] = []
+                    if shot_origin == "generated" and "generated" not in tags:
+                        tags.append("generated")
                     if folder_techs:
                         tags.append("eyecandy")
                     if filmgrab:
@@ -734,6 +780,14 @@ async def run_ingest_job(
                     )
                     title = str(meta.get("display_title") or title)
                     meta["title"] = title
+                    if ck_side:
+                        meta["cinekive_sidecar"] = True
+                        if ck_side.get("parent_shot_id"):
+                            meta["parent_shot_id"] = str(ck_side["parent_shot_id"])
+                        if ck_side.get("prompt"):
+                            meta["generate_prompt"] = str(ck_side["prompt"])[:2000]
+                        if ck_side.get("model"):
+                            meta["generate_model"] = str(ck_side["model"])[:128]
 
                     shot = Shot(
                         id=shot_id,
@@ -769,22 +823,21 @@ async def run_ingest_job(
                         hero_score=1.0,
                         is_hero=True,
                         is_moving=is_gif,
+                        origin=shot_origin,
                         grade_reason=(
-                            "eyecandy-gif"
+                            "generated"
+                            if shot_origin == "generated"
+                            else "eyecandy-gif"
                             if is_gif and folder_techs
-                            else (
-                                "filmgrab"
-                                if filmgrab
-                                else (
-                                    "shotdeck"
-                                    if shotdeck
-                                    else (
-                                        "stillslab"
-                                        if stillslab
-                                        else ("moviestillsdb" if msdb else "still")
-                                    )
-                                )
-                            )
+                            else "filmgrab"
+                            if filmgrab
+                            else "shotdeck"
+                            if shotdeck
+                            else "stillslab"
+                            if stillslab
+                            else "moviestillsdb"
+                            if msdb
+                            else "still"
                         ),
                         phash=phash or None,
                         is_duplicate=is_dup,
@@ -838,13 +891,15 @@ async def run_ingest_job(
                 vectors: list[list[float]]
                 if embed_ok:
                     try:
-                        vectors = embedder.embed_images(keyframe_paths)
+                        vectors = await asyncio.to_thread(embedder.embed_images, keyframe_paths)
                     except Exception as emb_exc:
                         logger.error("Embed failed for %s: %s", media_path.name, emb_exc)
                         vectors = _zero_vectors(len(pending_shots), settings.embedding_dim)
                         file_errors.append(f"{media_path.name}: embed failed")
+                        unsearchable += len(pending_shots)
                 else:
                     vectors = _zero_vectors(len(pending_shots), settings.embedding_dim)
+                    unsearchable += len(pending_shots)
 
                 payloads = [_build_payload(s, media_path.name) for s in pending_shots]
                 try:
@@ -887,13 +942,25 @@ async def run_ingest_job(
         status = "completed"
         step = "Done"
         err_msg = None
+        warnings = list(file_errors)
+        # Silent zero-vector ingest used to look like success while breaking search.
+        if unsearchable:
+            warnings.append(
+                f"{unsearchable} shot(s) stored without embeddings"
+                + (f" ({embed_error})" if embed_error else "")
+                + " — semantic search will miss them until you run Reindex."
+            )
         if file_errors and processed == 0:
             status = "failed"
             step = "All files failed"
-            err_msg = "; ".join(file_errors)[:2000]
-        elif file_errors:
-            step = f"Done with {len(file_errors)} file warning(s)"
-            err_msg = "; ".join(file_errors)[:2000]
+            err_msg = "; ".join(warnings)[:2000]
+        elif warnings:
+            step = (
+                f"Done — {unsearchable} shot(s) need reindex"
+                if unsearchable and not file_errors
+                else f"Done with {len(warnings)} warning(s)"
+            )
+            err_msg = "; ".join(warnings)[:2000]
 
         await update_job(
             job_id,
@@ -910,10 +977,14 @@ async def run_ingest_job(
             processed,
             len(files),
         )
-        if processed > 0 and settings.dedupe_on_ingest and settings.dedupe_global:
-            from cinearchive.jobs.dedupe_scheduler import schedule_global_dedupe
+        if processed > 0:
+            from cinearchive.services import library_config as lib_cfg
 
-            schedule_global_dedupe(delay_sec=45.0)
+            on_ingest, dedupe_global = lib_cfg.resolve_dedupe(settings)
+            if on_ingest and dedupe_global:
+                from cinearchive.jobs.dedupe_scheduler import schedule_global_dedupe
+
+                schedule_global_dedupe(delay_sec=45.0)
         if processed > 0:
             from cinearchive.jobs.enrich_scheduler import schedule_enrich_pass
             from cinearchive.services import vlm_config as vc

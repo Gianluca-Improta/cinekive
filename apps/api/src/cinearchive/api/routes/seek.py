@@ -49,13 +49,17 @@ class SeekDownloadResponse(BaseModel):
 @router.get("/status")
 async def seek_status(settings: Settings = Depends(get_settings)) -> dict:
     from cinearchive.pipelines.media_download import yt_dlp_available
+    from cinearchive.pipelines.inspiration_seek import InspirationSeek
 
+    seek = InspirationSeek(settings)
+    providers = [getattr(p, "name", "?") for p in seek.providers]
     return {
-        "enabled": bool(settings.seek_enabled),
+        "enabled": seek.enabled,
         "download_dir": settings.seek_download_dir,
-        "providers": ["url", "youtube", "vimeo", "tiktok", "instagram", "x", "stub"],
+        "providers": providers,
+        "brave_configured": bool((settings.brave_search_api_key or "").strip()),
         "yt_dlp": yt_dlp_available(),
-        "note": "Paste a URL in the project drop zone. Uses local yt-dlp (not Downr). One clip at a time; --no-playlist.",
+        "note": "Paste a URL or search with Brave (BRAVE_SEARCH_API_KEY). Downloads land in the seek inbox for ingest.",
     }
 
 

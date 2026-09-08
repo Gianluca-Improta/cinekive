@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from shotdeck_mirror import ShotDeckClient, SHOTID_RE, TITLE_RE
 
-out = Path("D:/library/_shotdeck")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from shotdeck_mirror import DEFAULT_OUT, SHOTID_RE, TITLE_RE, ShotDeckClient
+
+out = DEFAULT_OUT
 c = ShotDeckClient(out)
 if not c.load_session():
     raise SystemExit("no session")

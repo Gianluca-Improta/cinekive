@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Upload, Palette, RefreshCw, HelpCircle } from "lucide-react";
+import { Upload, Palette, RefreshCw, HelpCircle, Activity, Crown, UserRound } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { openIngestPanel } from "@/components/ingest/IngestPanel";
+import { toggleActivityPanel } from "@/components/jobs/ActivityLogPanel";
+import { useEntitlements } from "@/hooks/useEntitlements";
 import { useAppearance, type AppearanceTheme } from "@/lib/appearance";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { useState } from "react";
@@ -28,6 +31,8 @@ export function TopBar() {
   const qc = useQueryClient();
   const { theme, setTheme } = useAppearance();
   const { t } = useI18n();
+  const { data: entitlements } = useEntitlements();
+  const isPro = Boolean(entitlements?.is_pro);
   const [refreshing, setRefreshing] = useState(false);
 
   const themes: { id: AppearanceTheme; label: string }[] = [
@@ -50,11 +55,12 @@ export function TopBar() {
   };
 
   return (
-    <div className="flex h-10 shrink-0 items-center justify-end gap-2 border-b border-cinema-border bg-cinema-surface/80 px-4">
+    <div className="flex h-10 shrink-0 items-center justify-end gap-2 border-b border-white/[0.06] bg-cinema-surface/80 px-4">
       <button
         type="button"
+        data-tour="ingest"
         onClick={() => openIngestPanel(projectIdFromPath(pathname))}
-        className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
+        className="inline-flex items-center gap-1.5 rounded border border-white/[0.08] px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
         title={t("topbar.ingestTitle")}
       >
         <Upload className="h-3.5 w-3.5" />
@@ -62,8 +68,18 @@ export function TopBar() {
       </button>
       <button
         type="button"
+        data-tour="activity"
+        onClick={() => toggleActivityPanel()}
+        className="inline-flex items-center gap-1.5 rounded border border-white/[0.08] px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
+        title="Activity log"
+      >
+        <Activity className="h-3.5 w-3.5" />
+        Activity
+      </button>
+      <button
+        type="button"
         onClick={refresh}
-        className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
+        className="inline-flex items-center gap-1.5 rounded border border-white/[0.08] px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
         title={t("topbar.refreshTitle")}
       >
         <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
@@ -72,13 +88,13 @@ export function TopBar() {
       <button
         type="button"
         onClick={startTour}
-        className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
+        className="inline-flex items-center gap-1.5 rounded border border-white/[0.08] px-2 py-1.5 text-xs text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
         title={t("topbar.tourTitle")}
       >
         <HelpCircle className="h-3.5 w-3.5" />
         {t("topbar.tour")}
       </button>
-      <label className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2 py-1 text-xs text-cinema-muted">
+      <label className="inline-flex items-center gap-1.5 rounded border border-white/[0.08] px-2 py-1 text-xs text-cinema-muted">
         <Palette className="h-3.5 w-3.5" />
         <select
           value={theme}
@@ -94,6 +110,19 @@ export function TopBar() {
         </select>
       </label>
       <LanguageSwitcher placement="bottom" />
+      <Link
+        href="/settings?tab=license"
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded border px-2 py-1.5 text-xs",
+          isPro
+            ? "border-cinema-cyan/40 bg-cinema-cyan/10 text-cinema-cyan"
+            : "border-white/[0.08] text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
+        )}
+        title={isPro ? "Manage Pro license" : "Activate Pro license"}
+      >
+        {isPro ? <Crown className="h-3.5 w-3.5" /> : <UserRound className="h-3.5 w-3.5" />}
+        {isPro ? "Pro" : "Sign in"}
+      </Link>
     </div>
   );
 }

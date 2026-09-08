@@ -26,7 +26,11 @@ except ImportError:
 ROOT = Path(__file__).resolve().parents[1]
 TAXONOMY_PATH = Path(__file__).with_name("shotdeck_taxonomy.json")
 BASE = "https://shotdeck.com"
-DEFAULT_OUT = Path("D:/library/_shotdeck") if Path("D:/").exists() else ROOT / "data" / "library" / "_shotdeck"
+DEFAULT_OUT = ROOT / "data" / "library" / "_shotdeck"
+if os.environ.get("CINEKIVE_LIBRARY"):
+    DEFAULT_OUT = Path(os.environ["CINEKIVE_LIBRARY"]) / "_shotdeck"
+elif os.environ.get("LIBRARY_HOST_PATH"):
+    DEFAULT_OUT = Path(os.environ["LIBRARY_HOST_PATH"]) / "_shotdeck"
 BROWSE_REFERER = f"{BASE}/browse/stills"
 PAGE_SIZE = 30
 
@@ -397,10 +401,10 @@ def normalize_title_key(title: str) -> str:
 
 
 def load_filmgrab_titles() -> set[str]:
-    roots = [
-        ROOT / "data" / "library" / "_filmgrab",
-        Path("D:/library/_filmgrab"),
-    ]
+    roots = [ROOT / "data" / "library" / "_filmgrab"]
+    lib = os.environ.get("CINEKIVE_LIBRARY") or os.environ.get("LIBRARY_HOST_PATH")
+    if lib:
+        roots.insert(0, Path(lib) / "_filmgrab")
     titles: set[str] = set()
     for root in roots:
         if not root.exists():

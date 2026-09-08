@@ -26,11 +26,9 @@ def _library_root(out_dir: Path | None = None) -> Path:
             return Path(*parts[: parts.index("_stillslab")])
         if out_dir.name.startswith("_"):
             return out_dir.parent
-    env = os.environ.get("CINEKIVE_LIBRARY", "")
+    env = os.environ.get("CINEKIVE_LIBRARY", "") or os.environ.get("LIBRARY_HOST_PATH", "")
     if env:
         return Path(env)
-    if Path("D:/library").exists():
-        return Path("D:/library")
     return DEFAULT_LIBRARY
 
 

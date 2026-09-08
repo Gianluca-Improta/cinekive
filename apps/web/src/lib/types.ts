@@ -28,7 +28,19 @@ export type Project = {
   name: string;
   slug: string;
   description: string | null;
-  kind: "commercial" | "social" | "archive" | "general" | "narrative" | string;
+  kind:
+    | "commercial"
+    | "social"
+    | "archive"
+    | "general"
+    | "narrative"
+    | "stills"
+    | "video"
+    | "mixed"
+    | "props"
+    | "locations"
+    | "wardrobe"
+    | string;
   form_factor: "long_form" | "short_form" | "mixed" | string | null;
   aspect_ratio: string | null;
   brief: string | null;
@@ -167,6 +179,8 @@ export type SearchFilters = {
   theme?: string;
   genre?: string;
   shape?: string;
+  camera_angle?: string;
+  lens_look?: string;
   color_hex?: string;
   randomize?: boolean;
   limit?: number;
@@ -184,7 +198,7 @@ export type Collection = {
   project_id: string | null;
   name: string;
   description: string | null;
-  kind: "moodboard" | "work" | "reel" | "lookbook" | "canvas" | string;
+  kind: "moodboard" | "work" | "reel" | "lookbook" | "canvas" | "shelf" | string;
   year: number | null;
   content_format: string | null;
   sampling_mode: string;

@@ -33,7 +33,7 @@ export function GlobalSearchBar({ value, onChange, placeholder }: Props) {
   }, []);
 
   return (
-    <div className="relative min-w-[12rem] flex-1">
+    <div className="relative min-w-[12rem] flex-1" data-tour="search">
       <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cinema-muted" />
       <input
         id="global-search"

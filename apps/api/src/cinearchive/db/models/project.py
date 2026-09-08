@@ -23,7 +23,8 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # commercial | social | archive | general — intention bucket for the library
+    # commercial | social | archive | general | narrative | stills | video | mixed
+    # legacy: props | locations | wardrobe (prefer in-project shelves)
     kind: Mapped[str] = mapped_column(String(32), default="commercial", index=True, nullable=False)
     # Social delivery: long_form | short_form | mixed (optional)
     form_factor: Mapped[str | None] = mapped_column(String(32), nullable=True)

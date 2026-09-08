@@ -142,23 +142,39 @@ def score_enrichment(shot: Shot | dict[str, Any]) -> dict[str, Any]:
 
 
 def link_hints(shot: Shot) -> dict[str, list[str]]:
-    """Craft axes useful for connection enrichment / UI chips."""
+    """Craft axes useful for connection enrichment / UI chips (knowledge-graph lite)."""
     hints: dict[str, list[str]] = {}
     for key, attr in (
+        ("shot_type", "shot_type"),
+        ("camera_movement", "camera_movement"),
+        ("camera_angle", "camera_angle"),
         ("composition", "composition"),
         ("lighting", "lighting_style"),
+        ("lens", "lens_look"),
+        ("grade", "color_grade"),
+        ("mood", "mood_vibe"),
         ("emotion", "emotion"),
         ("visual_style", "visual_style"),
         ("theme", "theme"),
         ("era", "era"),
+        ("ism", "ism"),
+        ("genre", "genre"),
+        ("format", "content_format"),
     ):
         val = getattr(shot, attr, None)
         if isinstance(val, str) and not _is_weak(val):
             hints[key] = [val]
     techs = [t for t in (shot.techniques_json or []) if isinstance(t, str) and t.strip()]
     if techs:
-        hints["techniques"] = techs[:6]
+        hints["techniques"] = techs[:8]
     shapes = [s for s in (shot.shapes_json or []) if isinstance(s, str) and s.strip()]
     if shapes:
         hints["shapes"] = shapes[:4]
+    meta = shot.source_meta_json or {}
+    film = meta.get("film_title") or meta.get("movie_title")
+    if isinstance(film, str) and film.strip():
+        hints["film"] = [film.strip()[:96]]
+    director = meta.get("director")
+    if isinstance(director, str) and director.strip():
+        hints["director"] = [director.strip()[:96]]
     return hints

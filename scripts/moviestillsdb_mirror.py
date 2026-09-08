@@ -39,8 +39,16 @@ UA = (
     "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
 )
 MOVIE_HREF_RE = re.compile(r'href="(/movies/[^"]+)"')
+# Site moved preview CDN from cdn.moviestillsdb.com → www.moviestillsdb.com/i/500x/…
+# and often embeds JSON with HTML-escaped quotes (\&quot;).
 PREVIEW_RE = re.compile(
-    r'"code":"(?P<code>[^"]+)"[^}]*?"preview":\{[^}]*?"path":"(?P<url>https:\\/\\/cdn\.moviestillsdb\.com\\/i\\/500x\\/[^"]+)"',
+    r'"code":"(?P<code>[^"]+)"[^}]*?"preview":\{[^}]*?"path":"(?P<url>https://(?:cdn\.)?moviestillsdb\.com/i/500x/[^"]+\.jpg)"',
+    re.I,
+)
+PREVIEW_PATH_RE = re.compile(
+    r"https://(?:www\.)?moviestillsdb\.com/i/500x/[a-z0-9]+/[^\"\\\s>]+\.jpg"
+    r"|https://cdn\.moviestillsdb\.com/i/500x/[a-z0-9]+/[^\"\\\s>]+\.jpg",
+    re.I,
 )
 TITLE_RE = re.compile(r"<title>([^<]+)</title>", re.I)
 SAFE_DIR_RE = re.compile(r'[<>:"/\\|?*\x00-\x1f]+')
@@ -138,24 +146,39 @@ def movie_title_from_html(html: str, fallback: str) -> str:
     return title or fallback
 
 
+def _normalize_msdb_html(html: str) -> str:
+    """Unescape embedded JSON so preview regexes can match live markup."""
+    clean = html_lib.unescape(html)
+    clean = clean.replace("\\/", "/").replace('\\"', '"')
+    # Some pages ship literal \&quot; sequences rather than &quot;
+    clean = clean.replace("\\&quot;", '"').replace("&quot;", '"')
+    return clean
+
+
 def parse_stills(html: str) -> list[tuple[str, str]]:
-    clean = html.replace("\\/", "/")
+    clean = _normalize_msdb_html(html)
     out: list[tuple[str, str]] = []
     seen: set[str] = set()
-    for m in PREVIEW_RE.finditer(clean):
-        code, url = m.group("code"), m.group("url").replace("\\/", "/")
+
+    def add(code: str, url: str) -> None:
+        code = (code or "").strip() or Path(url.split("?", 1)[0]).stem[:12]
         if code in seen:
-            continue
+            return
         seen.add(code)
         out.append((code, url))
+
+    # Prefer direct 500x paths — host moved off cdn.*; more reliable than nested JSON order
+    for url in PREVIEW_PATH_RE.findall(clean):
+        parts = url.split("?", 1)[0].rstrip("/").split("/")
+        # .../i/500x/{code}/{file}.jpg
+        code = parts[-2] if len(parts) >= 2 else Path(parts[-1]).stem
+        add(code, url)
+
     if out:
         return out
-    # fallback: any 500x preview paths
-    for url in re.findall(r"https://cdn\.moviestillsdb\.com/i/500x/[a-z0-9]+/[^\"\\]+\.jpg", clean, re.I):
-        code = Path(url).stem.split("-")[0] or url.rsplit("/", 1)[-1][:12]
-        if code not in seen:
-            seen.add(code)
-            out.append((code, url))
+
+    for m in PREVIEW_RE.finditer(clean):
+        add(m.group("code"), m.group("url"))
     return out
 
 

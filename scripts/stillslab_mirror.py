@@ -32,10 +32,9 @@ except ImportError:
     cffi_requests = None
 
 ROOT = Path(__file__).resolve().parents[1]
+_lib = os.environ.get("CINEKIVE_LIBRARY") or os.environ.get("LIBRARY_HOST_PATH")
 DEFAULT_OUT = (
-    Path("D:/library/_stillslab")
-    if Path("D:/").exists()
-    else ROOT / "data" / "library" / "_stillslab"
+    Path(_lib) / "_stillslab" if _lib else ROOT / "data" / "library" / "_stillslab"
 )
 BASE = "https://stillslab.com"
 SAFE_DIR_RE = re.compile(r'[<>:"/\\|?*\x00-\x1f]+')

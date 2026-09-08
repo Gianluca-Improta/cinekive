@@ -29,7 +29,7 @@ function appVersion() {
   try {
     return JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")).version;
   } catch {
-    return "0.5.1";
+    return "0.5.3";
   }
 }
 
@@ -187,8 +187,23 @@ function writeEnvFile({ dataDir, libraryPath }) {
     const { app } = require("electron");
     if (app?.isPackaged) {
       text = setLine(text, "CINEKIVE_LICENSE_ENFORCE", "true");
+      text = setLine(text, "CINEKIVE_ALLOW_DEV_LICENSE", "false");
       text = setLine(text, "CINEKIVE_LICENSE_PATH", toPosix(path.join(userDataRoot(), "license.json")));
       text = setLine(text, "CINEKIVE_USER_DATA", toPosix(userDataRoot()));
+      if (process.env.CINEKIVE_TRIAL_SECRET) {
+        text = setLine(text, "CINEKIVE_TRIAL_SECRET", process.env.CINEKIVE_TRIAL_SECRET);
+      }
+      if (process.env.CINEKIVE_LICENSE_SECRET) {
+        text = setLine(text, "CINEKIVE_LICENSE_SECRET", process.env.CINEKIVE_LICENSE_SECRET);
+      }
+      if (process.env.GUMROAD_PRODUCT_ID) {
+        text = setLine(text, "GUMROAD_PRODUCT_ID", process.env.GUMROAD_PRODUCT_ID);
+      }
+      text = setLine(
+        text,
+        "GUMROAD_PRODUCT_PERMALINK",
+        process.env.GUMROAD_PRODUCT_PERMALINK || "cinekive-pro,cinekive-pro-annual"
+      );
     }
   } catch {
     /* not in Electron */
@@ -278,9 +293,15 @@ async function resolveEngineMode() {
     return "docker";
   }
 
-  // auto — Docker when available, else native on Windows / Mac
+  // auto — prefer native on Windows/Mac (Docker often "installed but slow/broken")
+  if (nativePackPlatform()) {
+    if (docker.ok) {
+      // Keep Docker available as an explicit choice; auto uses native for reliability
+      return "native";
+    }
+    return "native";
+  }
   if (docker.ok) return "docker";
-  if (nativePackPlatform()) return "native";
   throw new Error(
     `${docker.message}\n\nNative engine packs are available on Windows and Mac. Install Docker Desktop on Linux.`
   );
@@ -290,33 +311,69 @@ async function ensureNativeStack({ onStatus, onProgress } = {}) {
   const native = require("./engine-native");
   const pack = require("./engine-pack");
 
+  const refresh = async (reason) => {
+    onStatus?.(reason || "Updating native engine…");
+    try {
+      native.stopStack();
+    } catch (_) {}
+    // Give Windows a moment to release file locks
+    await new Promise((r) => setTimeout(r, 800));
+    try {
+      const root = native.engineRoot();
+      if (fs.existsSync(root)) {
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    } catch (e) {
+      onStatus?.(`Could not clear old engine: ${e.message || e}`);
+      // Retry once after another kill
+      try {
+        native.stopStack();
+        await new Promise((r) => setTimeout(r, 1200));
+        fs.rmSync(native.engineRoot(), { recursive: true, force: true });
+      } catch (e2) {
+        throw new Error(
+          `Could not replace the broken engine pack (files locked).\n\n${e2.message || e2}\n\nQuit Cinekive fully, delete:\n  ${native.engineRoot()}\nand reopen.`
+        );
+      }
+    }
+    await pack.ensureEnginePack({ force: true, onStatus, onProgress });
+  };
+
   const needsPack = !native.nativeReady() || pack.needsEngineRefresh?.();
   if (needsPack) {
     if (native.nativeReady() && pack.needsEngineRefresh?.()) {
-      onStatus?.("Updating native engine (broken or outdated pack)…");
-      try {
-        const root = native.engineRoot();
-        if (fs.existsSync(root)) {
-          fs.rmSync(root, { recursive: true, force: true });
-        }
-      } catch (e) {
-        onStatus?.(`Could not clear old engine: ${e.message || e}`);
-      }
+      await refresh("Broken or outdated engine detected — downloading fix…");
     } else {
       onStatus?.("Installing native engine (one-time download)…");
+      await pack.ensureEnginePack({ force: true, onStatus, onProgress });
     }
-    await pack.ensureEnginePack({ onStatus, onProgress });
   }
 
   writeConfig({ engineMode: "native" });
   onStatus?.("Starting native engine (no Docker)…");
-  const result = await native.startStack({ onStatus });
-  return {
-    root: native.engineRoot(),
-    web: result.webUrl,
-    alreadyRunning: false,
-    mode: "native",
-  };
+  try {
+    const result = await native.startStack({ onStatus });
+    return {
+      root: native.engineRoot(),
+      web: result.webUrl,
+      alreadyRunning: false,
+      mode: "native",
+    };
+  } catch (e) {
+    // Auto-heal once: broken CI pack that slipped past detection
+    if (e && (e.code === "BROKEN_ENGINE_PACK" || /broken pack|hostedtoolcache/i.test(String(e.message || e)))) {
+      await refresh("Engine Python broken — re-downloading pack…");
+      onStatus?.("Starting native engine…");
+      const result = await native.startStack({ onStatus });
+      return {
+        root: native.engineRoot(),
+        web: result.webUrl,
+        alreadyRunning: false,
+        mode: "native",
+      };
+    }
+    throw e;
+  }
 }
 
 async function ensureDockerStack({ onStatus, forceBuild = false } = {}) {

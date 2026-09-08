@@ -80,6 +80,9 @@ Same installer. Pro is a **one-time** [Gumroad license](https://gianlucaimprota.
 | Cloud VLM (OpenRouter / ChatGPT / Claude / Kimi) | Local Ollama only | Bring your own key |
 | Batch export / share tunnel | — | Yes |
 | Board PNG/PDF export | — | Yes |
+| Moodboard canvas | — | Yes |
+| Lookbook layout templates | — | Yes |
+| Generate still from reference (BYO image key) | — | Yes |
 | Folder watcher (auto-ingest) | Manual drop | Yes |
 | Agent / inspiration seek | — | Yes |
 | Promo / upgrade links | Small Settings / Sidebar | Removed |
@@ -196,7 +199,10 @@ Then open http://localhost:3000
 - **Moodboards** — infinite canvas, project clip rail (drag in), text, stickies, audio/media URLs, named concepts, stacks
 - **Desktop or browser** — Windows / Mac / Linux app, or web at `:3000`
 - **Local-first** — no cloud account; optional temporary share link via tunnel
-- **Agent API** — clean local HTTP API for multi-agent / automation workflows
+- Transparent **rights badges** on every still (subscription ref / study / generated / cleared)
+- **Craft graph** chips — jump archive along lighting, technique, film, director from any still
+- **Approved brief package** (Pro) — moodboard → client PDF + markdown handoff
+- Public marketing site under `landing/`
 
 Help & compare: [FAQ](docs/FAQ.md) · [vs other tools](docs/COMPARE.md) · [Support](SUPPORT.md)
 
@@ -238,7 +244,7 @@ First launch: wizard → pick archive folder → Start. Guide: [docs/DESKTOP.md]
 
 > Your media is never in the repo. `data/` is gitignored. Point `LIBRARY_HOST_PATH` at any drive.
 
-Packaging / no-Docker plans: [docs/PACKAGING.md](docs/PACKAGING.md) · Full guide: [docs/GUIDE.md](docs/GUIDE.md) · Agent API: [docs/AGENT_API.md](docs/AGENT_API.md)
+Packaging / no-Docker plans: [docs/PACKAGING.md](docs/PACKAGING.md) · Full guide: [docs/GUIDE.md](docs/GUIDE.md) · Agent API: [docs/AGENT_API.md](docs/AGENT_API.md) · MCP: [docs/MCP.md](docs/MCP.md)
 
 ---
 
@@ -342,7 +348,7 @@ Built by **[Gianluca Improta](https://gianlucaimprota.com)**.
 | [gemimedia.cn](https://gemimedia.cn) | Video production |
 | [GitHub Sponsors](https://github.com/sponsors/Gianluca-Improta) | Donations — keeps the free edition moving |
 
-Pro buyers: activate in **Settings → Cinekive Pro**. Support: hello@gianlucaimprota.com.
+Pro buyers: activate in **Settings → Cinekive Pro**. Support: cinekive@agentmail.to.
 
 Free builds may show creator links in Settings / Sidebar; Pro removes them.
 

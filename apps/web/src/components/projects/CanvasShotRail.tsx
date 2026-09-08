@@ -113,6 +113,20 @@ export function CanvasShotRail({
                     e.dataTransfer.setData(CANVAS_SHOT_MIME, shot.id);
                     e.dataTransfer.setData("text/plain", shot.id);
                     e.dataTransfer.effectAllowed = "copy";
+                    // Single-thumb ghost — Chromium otherwise often snapshots the whole grid.
+                    const img = e.currentTarget.querySelector("img");
+                    const ghost = document.createElement("div");
+                    ghost.style.cssText =
+                      "position:fixed;top:-9999px;left:-9999px;width:112px;height:63px;overflow:hidden;border-radius:6px;border:1px solid rgba(0,229,255,0.45);box-shadow:0 8px 24px rgba(0,0,0,0.55);background:#000;pointer-events:none;z-index:99999";
+                    if (img) {
+                      const clone = img.cloneNode(true) as HTMLImageElement;
+                      clone.draggable = false;
+                      clone.style.cssText = "width:100%;height:100%;object-fit:cover;display:block";
+                      ghost.appendChild(clone);
+                    }
+                    document.body.appendChild(ghost);
+                    e.dataTransfer.setDragImage(ghost, 56, 32);
+                    requestAnimationFrame(() => ghost.remove());
                   }}
                   className={cn(
                     "group relative cursor-grab overflow-hidden rounded border bg-cinema-black active:cursor-grabbing",

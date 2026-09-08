@@ -4,23 +4,45 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, FolderInput, Trash2, X, Crown } from "lucide-react";
 import { api } from "@/lib/api-client";
+import type { Collection } from "@/lib/types";
 import { SendToBoardMenu } from "@/components/shots/SendToBoardMenu";
 import { useEntitlements, PRO_UPGRADE_URL } from "@/hooks/useEntitlements";
+import { BUILTIN_SHELVES, shelfLabel } from "@/lib/project-shelves";
 
 type Props = {
   selectedIds: Set<string>;
   currentProjectId?: string;
+  /** All project shelves keyed by shelfKeyOf() */
+  shelves?: Record<string, Collection> | null;
+  /** Keys shown as quick-add buttons (visible shelf tabs) */
+  shelfKeys?: string[];
+  activeShelf?: string | null;
   onClear: () => void;
   onDone?: () => void;
+  onShelfChange?: () => void;
 };
 
-export function ShotSelectionBar({ selectedIds, currentProjectId, onClear, onDone }: Props) {
+export function ShotSelectionBar({
+  selectedIds,
+  currentProjectId,
+  shelves,
+  shelfKeys,
+  activeShelf,
+  onClear,
+  onDone,
+  onShelfChange,
+}: Props) {
   const qc = useQueryClient();
   const { data: entitlements } = useEntitlements();
   const [targetProject, setTargetProject] = useState("");
   const [error, setError] = useState<string | null>(null);
   const ids = useMemo(() => [...selectedIds], [selectedIds]);
   const canBatchExport = Boolean(entitlements?.is_pro) || ids.length <= 1;
+
+  const quickKeys = useMemo(() => {
+    if (shelfKeys?.length) return shelfKeys;
+    return BUILTIN_SHELVES.filter((s) => s.defaultVisible).map((s) => s.key);
+  }, [shelfKeys]);
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
@@ -67,6 +89,41 @@ export function ShotSelectionBar({ selectedIds, currentProjectId, onClear, onDon
     onError: (e: Error) => setError(e.message),
   });
 
+  const shelfMutation = useMutation({
+    mutationFn: async (key: string) => {
+      let shelfMap = shelves;
+      if (!shelfMap && currentProjectId) {
+        shelfMap = await api.ensureProjectShelves(currentProjectId);
+      }
+      const col = shelfMap?.[key];
+      if (!col) throw new Error("Shelf not ready");
+      await api.addToCollection(col.id, ids);
+      return col.id;
+    },
+    onSuccess: (collectionId) => {
+      qc.invalidateQueries({ queryKey: ["collection", collectionId] });
+      qc.invalidateQueries({ queryKey: ["project-shelves", currentProjectId] });
+      onShelfChange?.();
+      setError(null);
+    },
+    onError: (e: Error) => setError(e.message),
+  });
+
+  const removeShelfMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeShelf || !shelves?.[activeShelf]) throw new Error("No active shelf");
+      const col = shelves[activeShelf];
+      await api.removeFromCollection(col.id, ids);
+      return col.id;
+    },
+    onSuccess: (collectionId) => {
+      qc.invalidateQueries({ queryKey: ["collection", collectionId] });
+      onShelfChange?.();
+      onClear();
+    },
+    onError: (e: Error) => setError(e.message),
+  });
+
   if (ids.length === 0) return null;
 
   return (
@@ -88,6 +145,40 @@ export function ShotSelectionBar({ selectedIds, currentProjectId, onClear, onDon
         Export
       </button>
       <SendToBoardMenu shotIds={ids} projectId={currentProjectId} label="Send to board" />
+      {currentProjectId && quickKeys.length > 0 && (
+        <div className="flex max-w-full flex-wrap overflow-hidden rounded border border-cinema-border">
+          {quickKeys.map((key) => {
+            const col = shelves?.[key];
+            const label =
+              col ? shelfLabel(col) : BUILTIN_SHELVES.find((s) => s.key === key)?.label || key;
+            return (
+              <button
+                key={key}
+                type="button"
+                disabled={shelfMutation.isPending || !col}
+                onClick={() => shelfMutation.mutate(key)}
+                className={`px-2 py-1 text-cinema-muted hover:text-cinema-cyan disabled:opacity-40 ${
+                  activeShelf === key ? "bg-cinema-cyan/10 text-cinema-cyan" : ""
+                }`}
+                title={`Add to ${label} shelf`}
+              >
+                + {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {activeShelf && (
+        <button
+          type="button"
+          disabled={removeShelfMutation.isPending}
+          onClick={() => removeShelfMutation.mutate()}
+          className="rounded border border-cinema-border px-2 py-1 text-cinema-muted hover:text-cinema-magenta"
+          title="Remove from this shelf"
+        >
+          Remove from shelf
+        </button>
+      )}
       <select
         value={targetProject}
         onChange={(e) => setTargetProject(e.target.value)}
@@ -122,14 +213,18 @@ export function ShotSelectionBar({ selectedIds, currentProjectId, onClear, onDon
         type="button"
         disabled={deleteMutation.isPending}
         onClick={() => {
-          if (confirm(`Move ${ids.length} shots to the bin? They will be permanently deleted after 30 days.`)) {
+          if (
+            confirm(
+              `Move ${ids.length} shots to Trash? They will be permanently deleted after 30 days.`
+            )
+          ) {
             deleteMutation.mutate();
           }
         }}
         className="inline-flex items-center gap-1 rounded border border-cinema-magenta/40 px-2 py-1 text-cinema-magenta hover:bg-cinema-magenta/10"
       >
         <Trash2 className="h-3 w-3" />
-        Bin
+        Trash
       </button>
       <button
         type="button"

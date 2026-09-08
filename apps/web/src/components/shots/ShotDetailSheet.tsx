@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   X,
   Star,
@@ -10,12 +10,14 @@ import {
   PanelRight,
   Maximize2,
   Filter,
+  Sparkles,
+  Crown,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Shot } from "@/lib/types";
 import { api, artifactUrl } from "@/lib/api-client";
 import { shotArtifactFilename } from "@/lib/download";
-import { formatTimecode } from "@/lib/utils";
+import { formatTimecode, cn } from "@/lib/utils";
 import { AddToProjectMenu } from "@/components/shots/AddToProjectMenu";
 import { ArtifactDownloadButton } from "@/components/shots/ArtifactDownloadButton";
 import { SendToBoardMenu } from "@/components/shots/SendToBoardMenu";
@@ -23,8 +25,28 @@ import { ShotConnections } from "@/components/shots/ShotConnections";
 import { TranslatedText } from "@/components/i18n/TranslatedText";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { taxonomyLabel } from "@/lib/i18n/taxonomy-labels";
+import { inferRights, rightsToneClass } from "@/lib/rights";
+import { PRO_UPGRADE_URL, useHasFeature } from "@/hooks/useEntitlements";
 
 export type DetailMode = "popup" | "inspector";
+
+const EDIT_CRAFT_PREF = "cinekive.inspector.editCraft";
+
+function loadEditCraftPref(): boolean {
+  try {
+    return localStorage.getItem(EDIT_CRAFT_PREF) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function storeEditCraftPref(on: boolean) {
+  try {
+    localStorage.setItem(EDIT_CRAFT_PREF, on ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
 
 type Props = {
   shot: Shot | null;
@@ -89,18 +111,43 @@ export function ShotDetailSheet({
 }: Props) {
   const qc = useQueryClient();
   const { t, locale } = useI18n();
+  const canGenerate = useHasFeature("image_generate");
   const [notes, setNotes] = useState("");
   const [tagsInput, setTagsInput] = useState("");
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(true);
+  const [saveState, setSaveState] = useState<"idle" | "dirty" | "saving" | "saved" | "error">(
+    "idle"
+  );
   const [mode, setMode] = useState<DetailMode>(
     modeProp || (defaultExpanded ? "popup" : "inspector")
   );
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const [active, setActive] = useState<Shot | null>(shot);
   const [craft, setCraft] = useState<CraftDraft | null>(() =>
     shot ? draftFromShot(shot) : null
   );
+  const [showGenerate, setShowGenerate] = useState(false);
+  const [generatePrompt, setGeneratePrompt] = useState("");
+  const [generateMsg, setGenerateMsg] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [scrubTime, setScrubTime] = useState(0);
+  const [scrubDur, setScrubDur] = useState(0);
+  const lastSavedSnap = useRef("");
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setEditing(loadEditCraftPref());
+  }, []);
+
+  const craftSnap = useCallback(
+    (n: string, tags: string, c: CraftDraft | null) =>
+      JSON.stringify({
+        notes: n,
+        tags,
+        craft: c,
+      }),
+    []
+  );
 
   // Sync shot → panel state during render so the inspector opens on the first paint
   // (useEffect-only sync caused a blank/"choked" flash).
@@ -109,11 +156,22 @@ export function ShotDetailSheet({
     setSyncedId(shot?.id ?? null);
     setActive(shot);
     if (shot) {
-      setNotes(shot.notes || "");
-      setTagsInput((shot.tags || []).join(", "));
-      setCraft(draftFromShot(shot));
-      setEditing(false);
-      setPlaying(true);
+      const nextNotes = shot.notes || "";
+      const nextTags = (shot.tags || []).join(", ");
+      const nextCraft = draftFromShot(shot);
+      setNotes(nextNotes);
+      setTagsInput(nextTags);
+      setCraft(nextCraft);
+      lastSavedSnap.current = craftSnap(nextNotes, nextTags, nextCraft);
+      setSaveState("idle");
+      // Keep adapt/edit mode sticky across shots (user preference)
+      // Why: don't autoplay when opening a shot / popup — user presses Play
+      setPlaying(false);
+      setShowGenerate(false);
+      setGeneratePrompt("");
+      setGenerateMsg(null);
+      setScrubTime(0);
+      setScrubDur(0);
     } else {
       setCraft(null);
     }
@@ -127,6 +185,23 @@ export function ShotDetailSheet({
     setMode(next);
     onModeChange?.(next);
   };
+
+  // Narrow viewports: inspector docks fight the grid — use full panel instead
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => {
+      if (!mq.matches) return;
+      setMode((m) => {
+        if (m !== "inspector") return m;
+        onModeChange?.("popup");
+        return "popup";
+      });
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [onModeChange]);
 
   // notes/tags/craft already synced above when shot id changes
   useEffect(() => {
@@ -147,6 +222,23 @@ export function ShotDetailSheet({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shots"] });
       qc.invalidateQueries({ queryKey: ["search"] });
+    },
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: () =>
+      api.generateFromShot(active!.id, {
+        prompt: generatePrompt.trim() || undefined,
+      }),
+    onSuccess: () => {
+      setGenerateMsg(t("detail.generateQueued"));
+      setShowGenerate(false);
+      setGeneratePrompt("");
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+      qc.invalidateQueries({ queryKey: ["shots"] });
+    },
+    onError: (err: Error) => {
+      setGenerateMsg(err.message || t("detail.generateNeedPro"));
     },
   });
 
@@ -194,15 +286,37 @@ export function ShotDetailSheet({
           .map((x) => x.trim().toLowerCase().replace(/\s+/g, "-"))
           .filter(Boolean);
       }
-      return api.updateShot(active!.id, body);
+      const sentSnap = craftSnap(notes, tagsInput, craft);
+      const updated = await api.updateShot(active!.id, body);
+      return { updated, sentSnap };
     },
-    onSuccess: (updated) => {
+    onMutate: () => setSaveState("saving"),
+    onSuccess: ({ updated, sentSnap }) => {
       setActive(updated);
-      setEditing(false);
+      lastSavedSnap.current = sentSnap;
+      setSaveState("saved");
       qc.invalidateQueries({ queryKey: ["shots"] });
       qc.invalidateQueries({ queryKey: ["search"] });
     },
+    onError: () => setSaveState("error"),
   });
+
+  // Debounced autosave for tags / notes / craft
+  useEffect(() => {
+    if (!active || !craft) return;
+    const snap = craftSnap(notes, tagsInput, craft);
+    if (snap === lastSavedSnap.current) return;
+    setSaveState("dirty");
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      if (!active) return;
+      saveMutation.mutate();
+    }, 850);
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate via stable closure
+  }, [notes, tagsInput, craft, active?.id, craftSnap]);
 
   if (!active || !craft) return null;
 
@@ -235,14 +349,33 @@ export function ShotDetailSheet({
     setPlaying((p) => !p);
   };
 
+  const onVideoTimeUpdate = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    setScrubTime(v.currentTime || 0);
+    if (v.duration && Number.isFinite(v.duration)) setScrubDur(v.duration);
+  };
+
+  const onScrub = (next: number) => {
+    const v = videoRef.current;
+    setScrubTime(next);
+    if (v && Number.isFinite(next)) {
+      v.currentTime = next;
+      if (!playing) {
+        // Keep frame visible while scrubbing paused
+        setPlaying(false);
+      }
+    }
+  };
+
   const compositions = taxonomy.data?.compositions ?? [];
   const shotTypes = taxonomy.data?.shot_types ?? [];
   const emotions = taxonomy.data?.emotions ?? [];
   const formats = taxonomy.data?.content_formats ?? [];
 
   const headerBar = (
-    <div className="flex items-center justify-between border-b border-cinema-border px-3 py-2.5">
-      <div className="min-w-0">
+    <div className="flex items-start justify-between gap-2 border-b border-cinema-border px-3 py-2.5">
+      <div className="min-w-0 flex-1">
         <div className="text-sm font-medium text-white">
           {isPopup ? t("detail.stage") : t("detail.title")}
         </div>
@@ -257,7 +390,7 @@ export function ShotDetailSheet({
           {active.frame_role ? ` · ${active.frame_role}` : ""}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex max-w-[min(100%,22rem)] shrink-0 flex-wrap items-center justify-end gap-1">
         {onShiftAlike && (
           <button
             type="button"
@@ -285,10 +418,9 @@ export function ShotDetailSheet({
             type="button"
             title={t("detail.toPopup")}
             onClick={() => setDetailMode("popup")}
-            className="inline-flex items-center gap-1 rounded border border-cinema-border px-2 py-1.5 text-[11px] text-cinema-muted hover:border-cinema-cyan/50 hover:text-cinema-cyan"
+            className="rounded border border-cinema-border p-1.5 text-cinema-muted hover:border-cinema-cyan/50 hover:text-cinema-cyan"
           >
             <Maximize2 className="h-3.5 w-3.5" />
-            Full panel
           </button>
         )}
         <AddToProjectMenu
@@ -308,6 +440,26 @@ export function ShotDetailSheet({
         </button>
         <button
           type="button"
+          title={t("detail.generateTitle")}
+          onClick={() => {
+            setGenerateMsg(null);
+            if (!canGenerate) {
+              setGenerateMsg(t("detail.generateNeedPro"));
+              window.open(PRO_UPGRADE_URL, "_blank", "noopener,noreferrer");
+              return;
+            }
+            setShowGenerate((v) => !v);
+          }}
+          className="rounded border border-cinema-border p-1.5 text-cinema-muted hover:border-cinema-cyan/50 hover:text-cinema-cyan"
+        >
+          {canGenerate ? (
+            <Sparkles className="h-3.5 w-3.5" />
+          ) : (
+            <Crown className="h-3.5 w-3.5 text-amber-400/90" />
+          )}
+        </button>
+        <button
+          type="button"
           onClick={onClose}
           className="rounded border border-cinema-border p-1.5 text-cinema-muted hover:text-white"
         >
@@ -317,9 +469,46 @@ export function ShotDetailSheet({
     </div>
   );
 
+  const generatePanel =
+    showGenerate || generateMsg ? (
+      <div className="border-b border-cinema-border bg-cinema-panel/80 px-3 py-2">
+        {showGenerate ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <label className="min-w-0 flex-1 text-[11px] text-cinema-muted">
+              {t("detail.generatePrompt")}
+              <input
+                type="text"
+                value={generatePrompt}
+                onChange={(e) => setGeneratePrompt(e.target.value)}
+                placeholder="warmer practicals, rainy street…"
+                className="mt-1 w-full rounded border border-cinema-border bg-cinema-bg px-2 py-1.5 text-[12px] text-cinema-text outline-none focus:border-cinema-cyan/50"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !generateMutation.isPending) {
+                    generateMutation.mutate();
+                  }
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              disabled={generateMutation.isPending}
+              onClick={() => generateMutation.mutate()}
+              className="rounded border border-cinema-cyan/40 bg-cinema-cyan/10 px-3 py-1.5 text-[11px] text-cinema-cyan disabled:opacity-50"
+            >
+              {generateMutation.isPending ? "…" : t("detail.generateRun")}
+            </button>
+          </div>
+        ) : null}
+        {generateMsg ? (
+          <p className="mt-1 text-[11px] text-cinema-muted">{generateMsg}</p>
+        ) : null}
+      </div>
+    ) : null;
+
   const panelInner = (
     <>
       {headerBar}
+      {generatePanel}
       <div
         className={
           isPopup
@@ -327,7 +516,13 @@ export function ShotDetailSheet({
             : "flex min-h-0 flex-1 flex-col overflow-hidden"
         }
       >
-          <div className="flex min-h-0 flex-col overflow-y-auto">
+          <div
+            className={
+              isPopup
+                ? "flex min-h-0 flex-col overflow-y-auto"
+                : "shrink-0 border-b border-cinema-border"
+            }
+          >
             <div
               className={`relative bg-black ${
                 isPopup ? "min-h-[52vh] flex-1 lg:min-h-0" : "aspect-video cursor-zoom-in"
@@ -360,11 +555,16 @@ export function ShotDetailSheet({
                 <video
                   ref={videoRef}
                   src={preview!}
-                  autoPlay
-                  loop
+                  autoPlay={playing}
+                  loop={!isPopup}
                   muted
                   playsInline
-                  className="pointer-events-none h-full w-full object-contain"
+                  onTimeUpdate={onVideoTimeUpdate}
+                  onLoadedMetadata={onVideoTimeUpdate}
+                  className={cn(
+                    "h-full w-full object-contain",
+                    isPopup ? "pointer-events-auto" : "pointer-events-none"
+                  )}
                 />
               ) : isAnimPreview && !isVideoPreview && playing ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -374,12 +574,45 @@ export function ShotDetailSheet({
                 <img src={keyframe} alt="" className="pointer-events-none h-full w-full object-contain" />
               )}
 
-              <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2">
+              <div className="absolute bottom-3 left-3 right-3 flex flex-col gap-2">
+                {isPopup && isVideoPreview && scrubDur > 0 ? (
+                  <div
+                    className="flex items-center gap-2 rounded border border-white/15 bg-black/75 px-2 py-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <span className="font-mono text-[10px] text-cinema-muted tabular-nums">
+                      {scrubTime.toFixed(1)}s
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={scrubDur}
+                      step={0.05}
+                      value={Math.min(scrubTime, scrubDur)}
+                      onChange={(e) => onScrub(Number(e.target.value))}
+                      className="h-1.5 flex-1 cursor-pointer accent-cinema-cyan"
+                      aria-label="Scrub preview"
+                    />
+                    <span className="font-mono text-[10px] text-cinema-muted tabular-nums">
+                      {scrubDur.toFixed(1)}s
+                    </span>
+                  </div>
+                ) : null}
+                <div className="flex items-center gap-2">
                 {isAnimPreview && (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (isVideoPreview && !playing && videoRef.current) {
+                        // Ensure video element mounts for scrub even before first play
+                        setPlaying(true);
+                        void videoRef.current.play().then(() => {
+                          /* playing */
+                        }).catch(() => setPlaying(true));
+                        return;
+                      }
                       togglePlay();
                     }}
                     className="inline-flex items-center gap-1.5 rounded border border-cinema-border bg-black/75 px-2.5 py-1.5 text-xs text-white hover:border-cinema-cyan/50"
@@ -400,6 +633,7 @@ export function ShotDetailSheet({
                   title={t("detail.downloadFrame")}
                   className="ml-auto inline-flex items-center gap-1.5 rounded border border-cinema-cyan/40 bg-black/75 px-2.5 py-1.5 text-xs text-cinema-cyan hover:bg-cinema-cyan/10"
                 />
+                </div>
               </div>
             </div>
 
@@ -410,7 +644,13 @@ export function ShotDetailSheet({
             )}
           </div>
 
-          <div className="flex-1 space-y-5 overflow-y-auto border-l border-cinema-border/60 p-4">
+          <div
+            className={
+              isPopup
+                ? "flex-1 space-y-5 overflow-y-auto border-l border-cinema-border/60 p-4"
+                : "min-h-0 flex-1 space-y-5 overflow-y-auto p-4"
+            }
+          >
             <section>
               <h3 className="mb-2 text-[10px] uppercase tracking-widest text-cinema-muted">
                 {t("detail.palette")}
@@ -445,6 +685,59 @@ export function ShotDetailSheet({
             </section>
 
             {!isPopup && <ShotConnections shot={active} onSelect={openConnected} />}
+
+            {(() => {
+              const hints = active.link_hints || {};
+              const entries = Object.entries(hints).flatMap(([axis, vals]) =>
+                (vals || []).filter(Boolean).map((v) => ({ axis, v }))
+              );
+              if (!entries.length || !onFilterClick) return null;
+              const axisToKind: Record<string, string> = {
+                shot_type: "shot_type",
+                camera_movement: "camera_movement",
+                camera_angle: "camera_angle",
+                composition: "composition",
+                lighting: "lighting_style",
+                lens: "lens_look",
+                grade: "color_grade",
+                mood: "mood",
+                emotion: "emotion",
+                visual_style: "visual_style",
+                theme: "theme",
+                era: "era",
+                ism: "ism",
+                genre: "genre",
+                format: "contentFormat",
+                techniques: "technique",
+                shapes: "shape",
+                film: "tag",
+                director: "director",
+              };
+              return (
+                <section className="space-y-2">
+                  <h3 className="text-[10px] uppercase tracking-widest text-cinema-muted">
+                    Craft graph
+                  </h3>
+                  <p className="text-[10px] text-cinema-muted">
+                    Jump the archive along linked craft axes from this still.
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {entries.map(({ axis, v }) => (
+                      <button
+                        key={`${axis}-${v}`}
+                        type="button"
+                        title={`${axis}: ${v}`}
+                        onClick={() => onFilterClick(axisToKind[axis] || axis, v)}
+                        className="rounded border border-cinema-cyan/25 bg-cinema-cyan/5 px-1.5 py-0.5 text-[10px] text-cinema-cyan hover:border-cinema-cyan/50"
+                      >
+                        <span className="text-cinema-muted">{axis}</span>{" "}
+                        <TranslatedText text={v} as="span" className="inline" />
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              );
+            })()}
 
             {(() => {
               const qa =
@@ -486,21 +779,67 @@ export function ShotDetailSheet({
             })()}
 
             <section className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <h3 className="text-[10px] uppercase tracking-widest text-cinema-muted">
                   {t("detail.shotDna")}
                 </h3>
-                <button
-                  type="button"
-                  onClick={() => setEditing((v) => !v)}
-                  className="text-[11px] text-cinema-cyan hover:underline"
-                >
-                  {editing ? t("detail.cancelEdit") : t("detail.adaptMeta")}
-                </button>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "text-[10px]",
+                      saveState === "error"
+                        ? "text-cinema-magenta"
+                        : saveState === "saving" || saveState === "dirty"
+                          ? "text-cinema-muted"
+                          : saveState === "saved"
+                            ? "text-cinema-cyan/80"
+                            : "text-transparent"
+                    )}
+                  >
+                    {saveState === "saving"
+                      ? t("detail.saving")
+                      : saveState === "dirty"
+                        ? t("detail.unsaved")
+                        : saveState === "saved"
+                          ? t("detail.saved")
+                          : saveState === "error"
+                            ? t("detail.saveFailed")
+                            : "·"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing((v) => {
+                        const next = !v;
+                        storeEditCraftPref(next);
+                        return next;
+                      });
+                    }}
+                    className="text-[11px] text-cinema-cyan hover:underline"
+                    title={
+                      editing
+                        ? "Switch to read-only view (preference remembered)"
+                        : "Edit craft fields (stays on until you turn it off)"
+                    }
+                  >
+                    {editing ? t("detail.cancelEdit") : t("detail.adaptMeta")}
+                  </button>
+                </div>
               </div>
 
               {editing ? (
                 <div className="space-y-2">
+                  <label className="block space-y-1">
+                    <span className="text-[10px] uppercase tracking-widest text-cinema-muted">
+                      {t("detail.tagsLabel")}
+                    </span>
+                    <input
+                      value={tagsInput}
+                      onChange={(e) => setTagsInput(e.target.value)}
+                      placeholder={t("detail.tagsPlaceholder")}
+                      className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-white outline-none focus:border-cinema-cyan"
+                    />
+                  </label>
                   <Field
                     label={t("craft.subject")}
                     value={craft.subject}
@@ -582,6 +921,27 @@ export function ShotDetailSheet({
                     value={craft.techniques}
                     onChange={(v) => setCraft({ ...craft, techniques: v })}
                   />
+                  <label className="block space-y-1">
+                    <span className="text-[10px] uppercase tracking-widest text-cinema-muted">
+                      {t("detail.notes")}
+                    </span>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={2}
+                      placeholder={t("detail.notes")}
+                      className="w-full resize-none rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-white outline-none focus:border-cinema-cyan"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => saveMutation.mutate()}
+                    disabled={saveMutation.isPending || saveState === "idle" || saveState === "saved"}
+                    className="rounded bg-cinema-cyan/20 px-3 py-1.5 text-xs text-cinema-cyan hover:bg-cinema-cyan/30 disabled:opacity-40"
+                  >
+                    {saveMutation.isPending ? t("detail.saving") : t("detail.save")}
+                  </button>
+                  <p className="text-[10px] text-cinema-muted/70">{t("detail.sidecarHint")}</p>
                 </div>
               ) : (
                 <>
@@ -777,6 +1137,25 @@ export function ShotDetailSheet({
             </section>
 
             <section className="grid grid-cols-2 gap-3 text-sm">
+              <div className="col-span-2">
+                {(() => {
+                  const rights = inferRights(active);
+                  return (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        title={rights.hint}
+                        className={cn(
+                          "rounded border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+                          rightsToneClass(rights.tone)
+                        )}
+                      >
+                        {rights.label}
+                      </span>
+                      <span className="text-[10px] text-cinema-muted">{rights.hint}</span>
+                    </div>
+                  );
+                })()}
+              </div>
               <MetaTrans
                 label="Source"
                 value={active.source_title || active.source_filename || "—"}
@@ -910,35 +1289,54 @@ export function ShotDetailSheet({
               </section>
             )}
 
-            <section className="space-y-2">
-              <h3 className="text-[10px] uppercase tracking-widest text-cinema-muted">
-                {t("detail.edit")}
-              </h3>
-              <input
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder={t("detail.tagsPlaceholder")}
-                className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-white outline-none focus:border-cinema-cyan"
-              />
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                placeholder={t("detail.notes")}
-                className="w-full resize-none rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-white outline-none focus:border-cinema-cyan"
-              />
-              {notes.trim() && !editing && (
-                <TranslatedText text={notes} className="text-[11px] text-cinema-muted" />
-              )}
-              <button
-                type="button"
-                onClick={() => saveMutation.mutate()}
-                disabled={saveMutation.isPending}
-                className="rounded bg-cinema-cyan/20 px-3 py-1.5 text-xs text-cinema-cyan hover:bg-cinema-cyan/30"
-              >
-                {t("detail.save")}
-              </button>
-            </section>
+            {!editing && (
+              <section className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[10px] uppercase tracking-widest text-cinema-muted">
+                    {t("detail.edit")}
+                  </h3>
+                  <span
+                    className={cn(
+                      "text-[10px]",
+                      saveState === "saved"
+                        ? "text-cinema-cyan/80"
+                        : saveState === "saving" || saveState === "dirty"
+                          ? "text-cinema-muted"
+                          : "text-transparent"
+                    )}
+                  >
+                    {saveState === "saving"
+                      ? t("detail.saving")
+                      : saveState === "dirty"
+                        ? t("detail.unsaved")
+                        : saveState === "saved"
+                          ? t("detail.saved")
+                          : "·"}
+                  </span>
+                </div>
+                <input
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  placeholder={t("detail.tagsPlaceholder")}
+                  className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-white outline-none focus:border-cinema-cyan"
+                />
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  placeholder={t("detail.notes")}
+                  className="w-full resize-none rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-white outline-none focus:border-cinema-cyan"
+                />
+                <button
+                  type="button"
+                  onClick={() => saveMutation.mutate()}
+                  disabled={saveMutation.isPending || saveState === "idle" || saveState === "saved"}
+                  className="rounded bg-cinema-cyan/20 px-3 py-1.5 text-xs text-cinema-cyan hover:bg-cinema-cyan/30 disabled:opacity-40"
+                >
+                  {saveMutation.isPending ? t("detail.saving") : t("detail.save")}
+                </button>
+              </section>
+            )}
 
             <section className="flex flex-wrap gap-2">
               <ArtifactDownloadButton
@@ -1005,7 +1403,7 @@ export function ShotDetailSheet({
 
   // Inspector: docks on the right — grid reserves space + drops to ≤3 cols
   return (
-    <aside className="fixed bottom-0 right-0 top-10 z-[45] flex w-full max-w-md flex-col border-l border-cinema-border bg-cinema-surface shadow-[-12px_0_40px_rgba(0,0,0,0.45)]">
+    <aside className="fixed bottom-0 top-10 z-[55] hidden h-[calc(100vh-2.5rem)] w-full max-w-md flex-col overflow-hidden border-l border-white/[0.08] bg-cinema-surface shadow-[-12px_0_40px_rgba(0,0,0,0.45)] md:flex right-[var(--activity-rail,0px)]">
       {panelInner}
     </aside>
   );

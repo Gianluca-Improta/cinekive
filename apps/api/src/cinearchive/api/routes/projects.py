@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cinearchive.api.deps import get_db_session, get_settings, get_vector_repo
 from cinearchive.config import Settings
+from cinearchive.db.models.project import Project as ProjectModel
 from cinearchive.repositories.vector_repo import VectorRepository
 from cinearchive.schemas.project import ProjectCreate, ProjectList, ProjectRead, ProjectUpdate
 from cinearchive.services.project_service import ProjectService
@@ -115,3 +120,42 @@ async def delete_project(
     ok = await service.delete(project_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Project not found")
+
+
+class ProjectExportBody(BaseModel):
+    format: Literal["gallery", "zip", "pptx"] = "gallery"
+    include_previews: bool = False
+
+
+@router.post("/{project_id}/export")
+async def export_project(
+    project_id: UUID,
+    body: ProjectExportBody | None = None,
+    session: AsyncSession = Depends(get_db_session),
+    settings: Settings = Depends(get_settings),
+):
+    """Share package: browsable ZIP gallery, flat ZIP, or PowerPoint deck."""
+    from cinearchive.services.entitlements import require_feature
+    from cinearchive.services.export_service import ExportService
+
+    body = body or ProjectExportBody()
+    require_feature("batch_export", settings)
+    row = await session.execute(select(ProjectModel).where(ProjectModel.id == str(project_id)))
+    orm = row.scalar_one_or_none()
+    if not orm:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        path = await ExportService(session, settings).export_project(
+            orm,
+            fmt=body.format,
+            include_previews=body.include_previews,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    media = {
+        "gallery": "application/zip",
+        "zip": "application/zip",
+        "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    }.get(body.format, "application/octet-stream")
+    return FileResponse(path, media_type=media, filename=path.name)

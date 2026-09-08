@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     enrich_batch_size: int = 8
     enrich_quality_min: float = 55.0
     enrich_reenrich_fails: bool = True
+    # Parallel Ollama/VLM calls per enrich job (tune vs OLLAMA_NUM_PARALLEL)
+    enrich_concurrency: int = 3
+
+    # Embeddings — python (torch) is production; onnx-js is experimental harness
+    embedding_runtime: Literal["python", "onnx-js"] = "python"
 
     # Phase 2 — folder watcher
     watcher_enabled: bool = False
@@ -73,6 +78,8 @@ class Settings(BaseSettings):
     # Inspiration Seek (opt-in external)
     seek_enabled: bool = False
     seek_download_dir: str = "/data/library/_seek"
+    brave_search_api_key: str = ""  # BRAVE_SEARCH_API_KEY — Pro web stills search
+    brave_search_count: int = 12
 
     # Bootstrap mirrors (ShotDeck host capture)
     shotdeck_user: str = ""

@@ -89,6 +89,9 @@ jobs:
           cache-dependency-path: apps/desktop/package-lock.json
       - name: Build Windows
         working-directory: apps/desktop
+        env:
+          CINEKIVE_TRIAL_SECRET: ${{ secrets.CINEKIVE_TRIAL_SECRET }}
+          CINEKIVE_LICENSE_SECRET: ${{ secrets.CINEKIVE_LICENSE_SECRET }}
         run: |
           npm ci
           npm run dist:win
@@ -98,6 +101,7 @@ jobs:
           path: |
             apps/desktop/release/Cinekive-*.exe
             apps/desktop/release/*.blockmap
+            apps/desktop/release/latest.yml
           if-no-files-found: error
 
   mac:
@@ -111,6 +115,9 @@ jobs:
           cache-dependency-path: apps/desktop/package-lock.json
       - name: Build macOS
         working-directory: apps/desktop
+        env:
+          CINEKIVE_TRIAL_SECRET: ${{ secrets.CINEKIVE_TRIAL_SECRET }}
+          CINEKIVE_LICENSE_SECRET: ${{ secrets.CINEKIVE_LICENSE_SECRET }}
         run: |
           npm ci
           npx electron-builder --mac dmg zip --x64 --arm64
@@ -138,6 +145,9 @@ jobs:
           sudo apt-get install -y rpm fakeroot
       - name: Build Linux
         working-directory: apps/desktop
+        env:
+          CINEKIVE_TRIAL_SECRET: ${{ secrets.CINEKIVE_TRIAL_SECRET }}
+          CINEKIVE_LICENSE_SECRET: ${{ secrets.CINEKIVE_LICENSE_SECRET }}
         run: |
           npm ci
           npm run dist:linux
@@ -189,7 +199,11 @@ jobs:
             dist/**/Cinekive-*.zip
             dist/**/*.AppImage
             dist/**/*.deb
-          fail_on_unmatched_files: true
+            dist/**/latest.yml
+            dist/**/latest-mac.yml
+            dist/**/latest-linux.yml
+            dist/**/*.blockmap
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

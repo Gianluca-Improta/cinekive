@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, Shuffle, SlidersHorizontal } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
@@ -9,6 +10,7 @@ import {
   taxonomyMatches,
   techniqueGroupLabel,
 } from "@/lib/i18n/taxonomy-labels";
+import { cn } from "@/lib/utils";
 
 type Props = {
   shotType: string;
@@ -34,6 +36,32 @@ type Props = {
   onRandomize: () => void;
 };
 
+function Pill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-2.5 py-1 text-[11px] transition",
+        active
+          ? "border-cinema-cyan/50 bg-cinema-cyan/15 text-cinema-cyan"
+          : "border-cinema-border/70 text-cinema-muted hover:border-cinema-cyan/35 hover:text-white"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Compact quick filters — taxonomy depth lives in Dial-in; this is only browse toggles. */
 export function AdvancedFilters({
   shotType,
   composition = "",
@@ -58,6 +86,7 @@ export function AdvancedFilters({
   onRandomize,
 }: Props) {
   const { t, locale } = useI18n();
+  const [moreOpen, setMoreOpen] = useState(false);
   const [techOpen, setTechOpen] = useState(false);
   const [techQuery, setTechQuery] = useState("");
 
@@ -67,44 +96,20 @@ export function AdvancedFilters({
     staleTime: 60 * 60 * 1000,
   });
 
-  const shotTypes = taxonomy?.shot_types ?? [
-    "wide",
-    "medium",
-    "close-up",
-    "extreme-close-up",
-    "aerial",
-    "pov",
-    "insert",
-  ];
-  const compositions = taxonomy?.compositions ?? [
-    "rule-of-thirds",
-    "centered",
-    "symmetry",
-    "leading-lines",
-    "frame-within-frame",
-    "negative-space",
-    "golden-ratio",
-    "diagonal",
-  ];
-  const formats = taxonomy?.content_formats ?? [
-    "ad",
-    "commercial",
-    "film",
-    "short-film",
-    "music-video",
-    "fashion",
-    "trailer",
-  ];
-  const emotions = taxonomy?.emotions ?? [
-    "melancholic",
-    "tense",
-    "hopeful",
-    "lonely",
-    "intimate",
-    "serene",
-    "nostalgic",
-    "dreamy",
-  ];
+  const shotTypes = taxonomy?.shot_types ?? [];
+  const compositions = taxonomy?.compositions ?? [];
+  const formats = taxonomy?.content_formats ?? [];
+  const emotions = taxonomy?.emotions ?? [];
+
+  const moreCount = [
+    shotType,
+    composition,
+    contentFormat,
+    emotion,
+    technique,
+    mood,
+    hasPreviewOnly,
+  ].filter(Boolean).length;
 
   const filteredGroups = useMemo(() => {
     const groups = taxonomy?.technique_groups ?? {};
@@ -120,129 +125,128 @@ export function AdvancedFilters({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <select
-          value={shotType}
-          onChange={(e) => onShotType(e.target.value)}
-          className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-cinema-muted outline-none focus:border-cinema-cyan"
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Pill active={heroesOnly} onClick={() => onHeroesOnly(!heroesOnly)}>
+          {t("filters.heroes")}
+        </Pill>
+        <Pill active={movingOnly} onClick={() => onMovingOnly(!movingOnly)}>
+          {t("filters.movingGif")}
+        </Pill>
+        <Pill active={favoritesOnly} onClick={() => onFavoritesOnly(!favoritesOnly)}>
+          {t("filters.favoritesOnly")}
+        </Pill>
+        <button
+          type="button"
+          onClick={onRandomize}
+          className="inline-flex items-center gap-1 rounded-full border border-cinema-border/70 px-2.5 py-1 text-[11px] text-cinema-muted hover:border-cinema-cyan/35 hover:text-white"
+          title={t("filters.randomize")}
         >
-          <option value="">{t("filters.allShotTypes")}</option>
-          {shotTypes.map((slug) => (
-            <option key={slug} value={slug}>
-              {taxonomyLabel(slug, locale)}
-            </option>
-          ))}
-        </select>
-        {onComposition ? (
+          <Shuffle className="h-3 w-3" />
+          {t("filters.randomize")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMoreOpen((v) => !v)}
+          className={cn(
+            "ml-auto inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition",
+            moreOpen || moreCount
+              ? "border-cinema-cyan/50 bg-cinema-cyan/10 text-cinema-cyan"
+              : "border-cinema-border/70 text-cinema-muted hover:border-cinema-cyan/35 hover:text-white"
+          )}
+        >
+          <SlidersHorizontal className="h-3 w-3" />
+          More filters
+          {moreCount ? ` · ${moreCount}` : ""}
+          <ChevronDown className={cn("h-3 w-3 transition", moreOpen && "rotate-180")} />
+        </button>
+      </div>
+
+      {moreOpen ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-cinema-border/60 bg-cinema-black/40 px-3 py-2.5">
           <select
-            value={composition}
-            onChange={(e) => onComposition(e.target.value)}
-            className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-cinema-muted outline-none focus:border-cinema-cyan"
+            value={shotType}
+            onChange={(e) => onShotType(e.target.value)}
+            className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-[11px] text-cinema-muted outline-none focus:border-cinema-cyan"
           >
-            <option value="">{t("filters.allCompositions")}</option>
-            {compositions.map((slug) => (
+            <option value="">{t("filters.allShotTypes")}</option>
+            {shotTypes.map((slug) => (
               <option key={slug} value={slug}>
                 {taxonomyLabel(slug, locale)}
               </option>
             ))}
           </select>
-        ) : null}
-        <select
-          value={contentFormat}
-          onChange={(e) => onContentFormat(e.target.value)}
-          className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-cinema-muted outline-none focus:border-cinema-cyan"
-        >
-          <option value="">{t("filters.allFormats")}</option>
-          {formats.map((slug) => (
-            <option key={slug} value={slug}>
-              {taxonomyLabel(slug, locale)}
-            </option>
-          ))}
-        </select>
-        <select
-          value={emotion}
-          onChange={(e) => onEmotion(e.target.value)}
-          className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-cinema-muted outline-none focus:border-cinema-cyan"
-        >
-          <option value="">{t("filters.allEmotions")}</option>
-          {emotions.map((slug) => (
-            <option key={slug} value={slug}>
-              {taxonomyLabel(slug, locale)}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={() => setTechOpen((o) => !o)}
-          className={`rounded border px-2 py-1.5 outline-none ${
-            technique
-              ? "border-cinema-cyan/60 text-cinema-cyan"
-              : "border-cinema-border text-cinema-muted hover:border-cinema-cyan/50 hover:text-cinema-cyan"
-          }`}
-        >
-          {technique
-            ? t("filters.techniqueLabeled", { name: taxonomyLabel(technique, locale) })
-            : t("filters.techniquesEllipsis")}
-        </button>
-        {technique ? (
+          {onComposition ? (
+            <select
+              value={composition}
+              onChange={(e) => onComposition(e.target.value)}
+              className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-[11px] text-cinema-muted outline-none focus:border-cinema-cyan"
+            >
+              <option value="">{t("filters.allCompositions")}</option>
+              {compositions.map((slug) => (
+                <option key={slug} value={slug}>
+                  {taxonomyLabel(slug, locale)}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          <select
+            value={contentFormat}
+            onChange={(e) => onContentFormat(e.target.value)}
+            className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-[11px] text-cinema-muted outline-none focus:border-cinema-cyan"
+          >
+            <option value="">{t("filters.allFormats")}</option>
+            {formats.map((slug) => (
+              <option key={slug} value={slug}>
+                {taxonomyLabel(slug, locale)}
+              </option>
+            ))}
+          </select>
+          <select
+            value={emotion}
+            onChange={(e) => onEmotion(e.target.value)}
+            className="rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-[11px] text-cinema-muted outline-none focus:border-cinema-cyan"
+          >
+            <option value="">{t("filters.allEmotions")}</option>
+            {emotions.map((slug) => (
+              <option key={slug} value={slug}>
+                {taxonomyLabel(slug, locale)}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
-            onClick={() => onTechnique("")}
-            className="text-cinema-muted hover:text-white"
+            onClick={() => setTechOpen((o) => !o)}
+            className={cn(
+              "rounded border px-2 py-1.5 text-[11px]",
+              technique
+                ? "border-cinema-cyan/60 text-cinema-cyan"
+                : "border-cinema-border text-cinema-muted hover:text-cinema-cyan"
+            )}
           >
-            {t("filters.clearTechnique")}
+            {technique
+              ? t("filters.techniqueLabeled", { name: taxonomyLabel(technique, locale) })
+              : t("filters.techniquesEllipsis")}
           </button>
-        ) : null}
-        <input
-          value={mood}
-          onChange={(e) => onMood(e.target.value)}
-          placeholder={t("filters.moodFilterPlaceholder")}
-          className="w-36 rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-white outline-none placeholder:text-cinema-muted focus:border-cinema-cyan"
-        />
-        <label className="flex items-center gap-1.5 text-cinema-muted">
           <input
-            type="checkbox"
-            checked={heroesOnly}
-            onChange={(e) => onHeroesOnly(e.target.checked)}
-            className="accent-cinema-cyan"
+            value={mood}
+            onChange={(e) => onMood(e.target.value)}
+            placeholder={t("filters.moodFilterPlaceholder")}
+            className="w-32 rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-[11px] text-white outline-none placeholder:text-cinema-muted focus:border-cinema-cyan"
           />
-          {t("filters.heroes")}
-        </label>
-        <label className="flex items-center gap-1.5 text-cinema-muted">
-          <input
-            type="checkbox"
-            checked={movingOnly}
-            onChange={(e) => onMovingOnly(e.target.checked)}
-            className="accent-cinema-cyan"
-          />
-          {t("filters.movingGif")}
-        </label>
-        <label className="flex items-center gap-1.5 text-cinema-muted">
-          <input
-            type="checkbox"
-            checked={favoritesOnly}
-            onChange={(e) => onFavoritesOnly(e.target.checked)}
-            className="accent-cinema-cyan"
-          />
-          {t("filters.favoritesOnly")}
-        </label>
-        <label className="flex items-center gap-1.5 text-cinema-muted">
-          <input
-            type="checkbox"
-            checked={hasPreviewOnly}
-            onChange={(e) => onHasPreviewOnly(e.target.checked)}
-            className="accent-cinema-cyan"
-          />
-          {t("filters.hasPreview")}
-        </label>
-        <button
-          type="button"
-          onClick={onRandomize}
-          className="rounded border border-cinema-border px-2 py-1.5 text-cinema-muted hover:border-cinema-cyan/50 hover:text-cinema-cyan"
-        >
-          {t("filters.randomize")}
-        </button>
-      </div>
+          <Pill active={hasPreviewOnly} onClick={() => onHasPreviewOnly(!hasPreviewOnly)}>
+            {t("filters.hasPreview")}
+          </Pill>
+          {technique ? (
+            <button
+              type="button"
+              onClick={() => onTechnique("")}
+              className="text-[11px] text-cinema-muted hover:text-white"
+            >
+              {t("filters.clearTechnique")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {techOpen ? (
         <div className="rounded border border-cinema-border bg-cinema-black/80 p-3">

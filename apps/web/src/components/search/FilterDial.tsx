@@ -22,6 +22,9 @@ export type DialFilters = {
   emotion: string;
   contentFormat: string;
   mood: string;
+  cameraAngle: string;
+  lensLook: string;
+  lightingStyle: string;
 };
 
 type Props = {
@@ -77,6 +80,9 @@ export function FilterDial({ value, onChange, onOpenChange }: Props) {
     value.emotion,
     value.contentFormat,
     value.mood,
+    value.cameraAngle,
+    value.lensLook,
+    value.lightingStyle,
   ].filter(Boolean).length;
 
   const sections = useMemo(() => {
@@ -112,6 +118,21 @@ export function FilterDial({ value, onChange, onOpenChange }: Props) {
         title: t("filters.format"),
         key: "contentFormat" as const,
         items: filt(taxonomy.content_formats || []),
+      },
+      {
+        title: "Camera",
+        key: "cameraAngle" as const,
+        items: filt(taxonomy.camera_angles || []),
+      },
+      {
+        title: "Lens",
+        key: "lensLook" as const,
+        items: filt(taxonomy.lens_looks || []),
+      },
+      {
+        title: "Lighting",
+        key: "lightingStyle" as const,
+        items: filt(taxonomy.lighting_styles || []),
       },
     ].filter((s) => s.items.length > 0);
   }, [taxonomy, q, t, locale]);
@@ -153,14 +174,25 @@ export function FilterDial({ value, onChange, onOpenChange }: Props) {
           {t("filters.dialIn")}
           {activeCount ? ` · ${activeCount}` : ""}
         </button>
-        {quick.slice(0, 6).map((token) => {
-          const label = token.split(":").slice(1).join(":") || token;
+        {quick.slice(0, 4).map((token) => {
+          const [key, ...rest] = token.split(":");
+          const label = rest.join(":") || token;
+          const dialKey = key as keyof DialFilters;
+          const active = Boolean(key && label && value[dialKey] === label);
           return (
             <button
               key={token}
               type="button"
-              onClick={() => applyQuick(token)}
-              className="rounded border border-cinema-border px-2 py-1 text-[11px] text-cinema-muted hover:border-cinema-cyan/40 hover:text-white"
+              onClick={() => {
+                if (active) onChange({ [dialKey]: "" } as Partial<DialFilters>);
+                else applyQuick(token);
+              }}
+              className={
+                active
+                  ? "rounded border border-cinema-cyan/50 bg-cinema-cyan/15 px-2 py-1 text-[11px] text-cinema-cyan"
+                  : "rounded border border-white/[0.1] bg-transparent px-2 py-1 text-[11px] text-cinema-muted hover:border-cinema-cyan/40 hover:text-white"
+              }
+              title={active ? "Click to clear" : "Apply filter"}
             >
               {taxonomyLabel(label, locale)}
             </button>
@@ -185,6 +217,9 @@ export function FilterDial({ value, onChange, onOpenChange }: Props) {
                 emotion: "",
                 contentFormat: "",
                 mood: "",
+                cameraAngle: "",
+                lensLook: "",
+                lightingStyle: "",
               })
             }
             className="text-[11px] text-cinema-muted hover:text-white"

@@ -106,7 +106,8 @@ _TECH_CORE = ", ".join(
 )
 
 SYSTEM_PROMPT = f"""You are a senior cinematography analyst for a private reference archive
-inspired by EyeCandy / FilmGrab / Flim. Go deep: craft, composition, color, shape, era, style, theme.
+inspired by EyeCandy / FilmGrab / Flim. Go deep: craft, composition, color, shape, era, style, theme,
+wardrobe, location, props, texture, and graphic geometry.
 Analyze the still and return ONLY valid JSON:
 
 {{
@@ -127,10 +128,10 @@ Analyze the still and return ONLY valid JSON:
   "visual_style": "{_STYLE}",
   "theme": "{_THEME}",
   "genre": "{_GENRE}",
-  "shapes": ["1-4 geometric / graphic shape links visible in frame"],
-  "techniques": ["2-6 EyeCandy-style technique slugs visible in this frame"],
-  "creative_intent": "2-3 sentences: craft choices, storytelling, why reference-worthy",
-  "tags": ["12-20 lowercase freeform tags: subject, location, color notes, props, wardrobe, texture, brand-feel"]
+  "shapes": ["2-4 geometric / graphic shape links visible in frame"],
+  "techniques": ["3-6 EyeCandy-style technique slugs visible in this frame"],
+  "creative_intent": "2-3 sentences: craft choices, storytelling, wardrobe/location/props when relevant, why reference-worthy",
+  "tags": ["16-24 lowercase freeform tags: subject, location, props, wardrobe, materials, color notes, atmosphere, brand-feel, graphic motifs"]
 }}
 
 COMPOSITION (pick the strongest primary spatial design — one slug):
@@ -154,10 +155,24 @@ Rules:
 - composition = how the frame is designed spatially (not camera move, not lighting). Prefer specific slugs (s-curve, golden-ratio, one-point-perspective) over vague "other".
 - techniques = craft labels. theme/era/style/genre/ism/origin = cultural & aesthetic axes. shapes = geometry for linking.
 - ism = film movement or aesthetic school. origin = cinema culture when readable.
-- tags = descriptive freeform (colors, objects, places). Be specific and multi-label.
+- tags = descriptive freeform (colors, objects, places, wardrobe, props, textures). Be specific and multi-label — aim for 16–24 tags.
 - Prefer concrete slugs over "other". Multiple techniques/shapes when earned.
 - If start/mid/end of a moving sequence, describe what is unique about THIS moment.
+- Do not wrap JSON in markdown fences.
 """
+
+
+def load_vlm_system_prompt() -> str:
+    """Markdown depth guide + schema prompt — markdown is the editorial source of truth for voice."""
+    path = Path(__file__).resolve().parent.parent / "prompts" / "vlm_enrich.md"
+    guide = ""
+    try:
+        guide = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        pass
+    if guide:
+        return f"{guide}\n\n---\n\n{SYSTEM_PROMPT}"
+    return SYSTEM_PROMPT
 
 FEW_SHOT_EXAMPLES = [
     {
@@ -584,7 +599,7 @@ class VLMEnricher:
         gen_payload: dict[str, Any] = {
             "model": model or self.model,
             "prompt": user_prompt,
-            "system": SYSTEM_PROMPT + "\nReturn a single JSON object only. No markdown.",
+            "system": load_vlm_system_prompt() + "\nReturn a single JSON object only. No markdown.",
             "images": [b64],
             "stream": False,
             "format": "json",
@@ -601,7 +616,7 @@ class VLMEnricher:
                     "messages": [
                         {
                             "role": "system",
-                            "content": SYSTEM_PROMPT + "\nReturn a single JSON object only.",
+                            "content": load_vlm_system_prompt() + "\nReturn a single JSON object only.",
                         },
                         {
                             "role": "user",
@@ -662,7 +677,7 @@ class VLMEnricher:
             "model": use_model,
             "temperature": 0.25,
             "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT + "\nReturn JSON only."},
+                {"role": "system", "content": load_vlm_system_prompt() + "\nReturn JSON only."},
                 {
                     "role": "user",
                     "content": [

@@ -72,6 +72,59 @@ class StubCatalogProvider:
         return []
 
 
+class BraveSearchProvider:
+    """Brave Search API — image results for reference gathering (Pro)."""
+
+    name = "brave"
+
+    def __init__(self, api_key: str, *, count: int = 12) -> None:
+        self.api_key = api_key.strip()
+        self.count = max(1, min(count, 20))
+
+    async def search(self, query: str, *, limit: int = 12) -> list[SeekCandidate]:
+        if not self.api_key:
+            return []
+        q = query.strip()
+        if not q or q.startswith(("http://", "https://")):
+            return []
+        n = min(limit, self.count)
+        url = "https://api.search.brave.com/res/v1/images/search"
+        headers = {
+            "Accept": "application/json",
+            "X-Subscription-Token": self.api_key,
+        }
+        params = {"q": q, "count": n, "safesearch": "strict"}
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.get(url, headers=headers, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+        out: list[SeekCandidate] = []
+        for item in data.get("results") or []:
+            if not isinstance(item, dict):
+                continue
+            src = str(item.get("url") or item.get("properties", {}).get("url") or "").strip()
+            if not src:
+                continue
+            thumb = item.get("thumbnail")
+            thumb_url = None
+            if isinstance(thumb, dict):
+                thumb_url = str(thumb.get("src") or "") or None
+            elif isinstance(thumb, str):
+                thumb_url = thumb
+            title = str(item.get("title") or Path(urlparse(src).path).name or "brave result")
+            out.append(
+                SeekCandidate(
+                    title=title[:180],
+                    source=self.name,
+                    url=src,
+                    thumb_url=thumb_url,
+                    tags=["external", "brave", "web"],
+                    license_note="Web image via Brave Search — verify rights before commercial use.",
+                )
+            )
+        return out[:limit]
+
+
 def _safe_filename(name: str) -> str:
     clean = re.sub(r"[^\w.\-]+", "_", name).strip("._")
     return (clean or "seek_asset")[:180]
@@ -80,10 +133,22 @@ def _safe_filename(name: str) -> str:
 class InspirationSeek:
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
-        self.providers: list[SeekProvider] = [UrlDownloadProvider(), StubCatalogProvider()]
+        self.providers: list[SeekProvider] = [UrlDownloadProvider()]
+        brave_key = (getattr(self.settings, "brave_search_api_key", None) or "").strip()
+        if brave_key:
+            self.providers.append(
+                BraveSearchProvider(
+                    brave_key,
+                    count=int(getattr(self.settings, "brave_search_count", 12) or 12),
+                )
+            )
+        self.providers.append(StubCatalogProvider())
 
     @property
     def enabled(self) -> bool:
+        # Auto-enable when a Brave key is present so Pro search works without an extra flag.
+        if (getattr(self.settings, "brave_search_api_key", None) or "").strip():
+            return True
         return bool(self.settings.seek_enabled)
 
     def download_dir(self, project_slug: str | None = None) -> Path:

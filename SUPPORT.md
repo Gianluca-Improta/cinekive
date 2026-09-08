@@ -6,7 +6,7 @@
 |------|--------|
 | “How do I…?” / ideas / show your board | [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) |
 | Bug that breaks install or search | [Issues](https://github.com/Gianluca-Improta/cinekive/issues) |
-| **Cinekive Pro** (license, activate, billed support) | **hello@gianlucaimprota.com** (target ~48h, best-effort) |
+| **Cinekive Pro** (license, activate, billed support) | **cinekive@agentmail.to** (target ~48h, best-effort) |
 | Security | [SECURITY.md](SECURITY.md) |
 | Full walkthrough | [docs/GUIDE.md](docs/GUIDE.md) |
 | Desktop install | [docs/DESKTOP.md](docs/DESKTOP.md) · [Releases](https://github.com/Gianluca-Improta/cinekive/releases/latest) |
@@ -22,6 +22,6 @@
 ## Response expectations
 
 - **Free / Community:** Discussions and issues as time allows
-- **Pro:** email to hello@gianlucaimprota.com — best-effort within ~48h on weekdays
+- **Pro:** email to cinekive@agentmail.to — best-effort within ~48h on weekdays
 
 This is a small open-source project. Upvote and comment so important threads float up.

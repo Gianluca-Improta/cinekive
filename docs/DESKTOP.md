@@ -23,12 +23,13 @@ Double-click app. No terminal required. **Docker is optional** on Windows and Ma
 | Change archive folder | Menu → **Cinekive → Choose library folder…** |
 | Share a live view link | Menu → **Share → Create view link…** |
 | Settings | Menu or in-app sidebar |
+| Check for app updates | Menu → **Help → Check for updates…** (also nudges on launch) |
 
 Engine data: `%APPDATA%\Cinekive\data` (Windows) / `~/Library/Application Support/Cinekive` (Mac) / `~/.config/Cinekive` (Linux). Stills stay in the folder you chose.
 
 ### Free vs Pro
 
-The installer is the same binary. **Free** includes search, ingest, canvas, single-shot export, LAN phone URL, and **local Ollama**. **Pro** ($19 one-time on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro)) unlocks archive mirrors, continuous enrich, **cloud VLM** (OpenRouter / ChatGPT / Claude / Kimi), batch export, **board PNG/PDF**, **folder watcher**, share tunnel, Agent API, and unlimited projects.
+The installer is the same binary. **Free** includes search, ingest, canvas, single-shot export, LAN phone URL, and **local Ollama** (+ Craft chat in the sidebar). **Pro** ($19 one-time on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro)) unlocks archive mirrors, continuous enrich, **cloud VLM** (OpenRouter / ChatGPT / Claude / Kimi), batch export, **board PNG/PDF**, **folder watcher**, share tunnel, Agent API, **MCP server** (`cinekive-mcp`), and unlimited projects.
 
 Activate: in-app **Settings → Cinekive Pro** (or paste your license key). License file: `%APPDATA%\Cinekive\license.json` (Mac/Linux under Application Support / `.config`).
 
@@ -36,7 +37,7 @@ Activate: in-app **Settings → Cinekive Pro** (or paste your license key). Lice
 
 **Board export (Pro):** Moodboard toolbar → PNG or PDF.
 
-Pro support: hello@gianlucaimprota.com. Seller / env setup: [GUMROAD.md](GUMROAD.md).
+Pro support: cinekive@agentmail.to. Seller / env setup: [GUMROAD.md](GUMROAD.md).
 
 ## For developers
 

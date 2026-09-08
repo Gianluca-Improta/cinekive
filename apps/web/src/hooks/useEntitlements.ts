@@ -12,8 +12,19 @@ export type Entitlements = {
   early_bird_usd?: number;
   support_email?: string;
   source?: string;
-  license?: { email?: string; key_hint?: string; activated_at?: number };
+  license?: {
+    email?: string;
+    key_hint?: string;
+    activated_at?: number;
+    verified_at?: number;
+    uses_count?: number;
+    device_limit?: number;
+  };
   needs_reverify?: boolean;
+  grace_expired?: boolean;
+  grace_sec?: number;
+  reverify_interval_sec?: number;
+  device_limit?: number;
 };
 
 function apiBase(): string {

@@ -94,6 +94,6 @@ When `lanAccess` is enabled (default), the native engine and Docker stack bind t
 
 1. **Now** — Windows + Mac native engine packs, GHCR, LAN phone access  
 2. **Next** — Linux engine pack, signed builds, auto-update  
-3. **Later** — Single offline installer, ONNX embedding (smaller download)
+3. **Later** — Single offline installer; `embedding_runtime=onnx-js` WebGPU SigLIP harness (flagged; python path stays default until validated)
 
 Track progress in [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) and [ROADMAP.md](ROADMAP.md).

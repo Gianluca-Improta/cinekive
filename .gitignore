@@ -21,11 +21,18 @@ out/
 apps/desktop/release/
 apps/desktop/dist/
 apps/desktop/ci-mac/
+apps/desktop/web-ui-dist/
 
 # Env & secrets
 .env
 .env.local
 .env.*.local
+secrets/
+**/trial-mint*.json
+# Trial HMAC mint secret — must never reach the repo or a client build
+.trial-secret.local
+*.trial-secret
+trial-keys*.json
 **/.cache/accounts.json
 **/.cache/session.json
 **/credentials*.json

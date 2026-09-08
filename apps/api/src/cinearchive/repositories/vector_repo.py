@@ -35,6 +35,21 @@ class VectorRepository:
                     distance=qm.Distance.COSINE,
                 ),
             )
+        else:
+            try:
+                info = self.client.get_collection(self.collection)
+                vectors = info.config.params.vectors
+                size = getattr(vectors, "size", None)
+                if size is not None and int(size) != self.settings.embedding_dim:
+                    logger.error(
+                        "Qdrant collection %s dim=%s != embedding_dim=%s — "
+                        "run doctor / rebuild-index before search",
+                        self.collection,
+                        size,
+                        self.settings.embedding_dim,
+                    )
+            except Exception as exc:
+                logger.debug("collection dim probe failed: %s", exc)
         for field, schema in [
             ("project_id", qm.PayloadSchemaType.KEYWORD),
             ("has_preview", qm.PayloadSchemaType.BOOL),
@@ -112,6 +127,8 @@ class VectorRepository:
         shot_type: str | None = None,
         mood_vibe: str | None = None,
         camera_movement: str | None = None,
+        camera_angle: str | None = None,
+        lens_look: str | None = None,
         lighting_style: str | None = None,
         composition: str | None = None,
         content_format: str | None = None,
@@ -161,6 +178,14 @@ class VectorRepository:
                 qm.FieldCondition(
                     key="camera_movement", match=qm.MatchValue(value=camera_movement)
                 )
+            )
+        if camera_angle:
+            must.append(
+                qm.FieldCondition(key="camera_angle", match=qm.MatchValue(value=camera_angle))
+            )
+        if lens_look:
+            must.append(
+                qm.FieldCondition(key="lens_look", match=qm.MatchValue(value=lens_look))
             )
         if lighting_style:
             must.append(
@@ -255,6 +280,8 @@ class VectorRepository:
         shot_type: str | None = None,
         mood_vibe: str | None = None,
         camera_movement: str | None = None,
+        camera_angle: str | None = None,
+        lens_look: str | None = None,
         lighting_style: str | None = None,
         composition: str | None = None,
         content_format: str | None = None,
@@ -268,6 +295,9 @@ class VectorRepository:
         genre: str | None = None,
         shape: str | None = None,
         color_hex: str | None = None,
+        # Tolerate future dial additions: an unknown filter must never turn
+        # hybrid search into keyword-only (see camera_angle regression).
+        **_ignored: object,
     ) -> list[qm.ScoredPoint]:
         query_filter = self.build_filter(
             project_id=project_id,
@@ -281,6 +311,8 @@ class VectorRepository:
             shot_type=shot_type,
             mood_vibe=mood_vibe,
             camera_movement=camera_movement,
+            camera_angle=camera_angle,
+            lens_look=lens_look,
             lighting_style=lighting_style,
             composition=composition,
             content_format=content_format,

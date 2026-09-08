@@ -20,7 +20,7 @@ from fastapi import HTTPException
 
 from cinearchive.config import Settings
 
-APP_VERSION = "0.5.1"
+APP_VERSION = "0.5.3"
 
 PRO_FEATURES: tuple[str, ...] = (
     "archive_mirrors",
@@ -28,25 +28,39 @@ PRO_FEATURES: tuple[str, ...] = (
     "cloud_vlm",
     "batch_export",
     "board_export",
+    "moodboard",
     "folder_watcher",
     "share_tunnel",
     "global_dedupe",
     "agent_api",
+    "mcp_server",
     "unlimited_projects",
     "no_promo",
+    # BYO-key image generation from a reference still (not craft tagging)
+    "image_generate",
 )
 
 FREE_FEATURES: tuple[str, ...] = (
     "search",
     "ingest",
-    "canvas_basic",
     "single_export",
     "lan_access",
     "manual_enrich",
 )
 
 FREE_MAX_PROJECTS = 3
-OFFLINE_GRACE_SEC = 30 * 24 * 3600  # 30 days after last verify
+
+# Offline Pro grace / re-verify cadence — see gumroad_license.py (defaults: 14 days).
+try:
+    from cinearchive.services.gumroad_license import (
+        DEVICE_LIMIT,
+        OFFLINE_GRACE_SEC,
+        REVERIFY_INTERVAL_SEC,
+    )
+except Exception:  # pragma: no cover
+    DEVICE_LIMIT = 3
+    OFFLINE_GRACE_SEC = 14 * 24 * 3600
+    REVERIFY_INTERVAL_SEC = 14 * 24 * 3600
 
 # Not DRM — keeps casual license.json edits from flipping tier without a key.
 _SIGNING_SECRET = os.environ.get(
@@ -151,16 +165,77 @@ def resolve_tier(settings: Settings | None = None) -> tuple[str, dict[str, Any]]
         tier = str(doc.get("tier") or "free").lower()
         if tier == "pro":
             if doc.get("signature") and not verify_signature(doc):
-                pass  # fall through
+                pass  # fall through — bad signature
             else:
+                source = str(doc.get("source") or "")
+                # Trial keys: absolute expiry + trusted time (not local-clock grace alone).
+                if source == "trial":
+                    from cinearchive.services import trial_license as trial
+
+                    key = str(doc.get("licenseKey") or "")
+                    check = trial.validate_trial_key(
+                        key,
+                        settings=settings,
+                        allow_burned_same_machine=True,
+                    )
+                    public = _public_license(doc)
+                    public["expires_at"] = check.get("expires_at") or doc.get("expiresAt")
+                    public["trial"] = True
+                    if not check.get("ok"):
+                        return "free", {
+                            "source": "trial_invalid",
+                            "features": list(FREE_FEATURES),
+                            "license": public,
+                            "needs_reverify": False,
+                            "grace_expired": True,
+                            "trial_expired": True,
+                            "error": check.get("error"),
+                            "time_source": check.get("time_source"),
+                        }
+                    return "pro", {
+                        "source": "trial",
+                        "features": list(PRO_FEATURES),
+                        "license": public,
+                        "needs_reverify": False,
+                        "grace_expired": False,
+                        "trial_expires_at": check.get("expires_at"),
+                        "time_source": check.get("time_source"),
+                        "device_limit": 1,
+                    }
+
                 verified_at = float(doc.get("verifiedAt") or doc.get("activatedAt") or 0)
-                now = time.time()
-                needs_reverify = bool(verified_at and (now - verified_at) > OFFLINE_GRACE_SEC)
+                # Prefer trusted time for grace (same probes as trials) so clock rollback
+                # cannot quietly extend offline Pro.
+                try:
+                    from cinearchive.services import trial_license as trial
+
+                    now, _ts = trial.trusted_now(settings)
+                except Exception:
+                    now = time.time()
+                age = (now - verified_at) if verified_at else 0
+                public = _public_license(doc)
+                # Past offline grace without a successful online verify → Pro tools lock.
+                if verified_at and age > OFFLINE_GRACE_SEC:
+                    return "free", {
+                        "source": "license_grace_expired",
+                        "features": list(FREE_FEATURES),
+                        "license": public,
+                        "needs_reverify": True,
+                        "grace_expired": True,
+                        "grace_sec": OFFLINE_GRACE_SEC,
+                        "reverify_interval_sec": REVERIFY_INTERVAL_SEC,
+                        "device_limit": int(doc.get("deviceLimit") or DEVICE_LIMIT),
+                    }
+                needs_reverify = bool(verified_at and age >= REVERIFY_INTERVAL_SEC)
                 return "pro", {
                     "source": "license_file",
                     "features": list(PRO_FEATURES),
-                    "license": _public_license(doc),
+                    "license": public,
                     "needs_reverify": needs_reverify,
+                    "grace_expired": False,
+                    "grace_sec": OFFLINE_GRACE_SEC,
+                    "reverify_interval_sec": REVERIFY_INTERVAL_SEC,
+                    "device_limit": int(doc.get("deviceLimit") or DEVICE_LIMIT),
                 }
 
     # Packaged desktop sets CINEKIVE_LICENSE_ENFORCE=true → free until activated.
@@ -189,6 +264,8 @@ def _public_license(doc: dict[str, Any]) -> dict[str, Any]:
         "activated_at": doc.get("activatedAt"),
         "verified_at": doc.get("verifiedAt"),
         "product": doc.get("product") or "Cinekive Pro",
+        "uses_count": doc.get("usesCount"),
+        "device_limit": doc.get("deviceLimit") or DEVICE_LIMIT,
     }
 
 
@@ -208,8 +285,11 @@ def entitlements_payload(settings: Settings | None = None) -> dict[str, Any]:
         ),
         "price_usd": 19,
         "early_bird_usd": 12,
-        "support_email": os.environ.get("CINEKIVE_SUPPORT_EMAIL", "hello@gianlucaimprota.com"),
+        "support_email": os.environ.get("CINEKIVE_SUPPORT_EMAIL", "cinekive@agentmail.to"),
         "version": APP_VERSION,
+        "device_limit": DEVICE_LIMIT,
+        "grace_sec": OFFLINE_GRACE_SEC,
+        "reverify_interval_sec": REVERIFY_INTERVAL_SEC,
         **{k: v for k, v in meta.items() if k != "features"},
     }
 
@@ -230,7 +310,7 @@ def require_feature(feature: str, settings: Settings | None = None) -> None:
         detail={
             "error": "pro_required",
             "feature": feature,
-            "message": f"'{feature}' requires Cinekive Pro ($19 one-time).",
+            "message": f"'{feature}' requires Cinekive Pro. Free Desktop keeps working — only Pro tools are locked.",
             "upgrade_url": entitlements_payload(settings)["upgrade_url"],
         },
     )

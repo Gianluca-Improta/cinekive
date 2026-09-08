@@ -21,6 +21,7 @@ from cinearchive.services.sources_service import (
     CATALOG_SUGGESTIONS,
     SOURCES,
     refresh_mirror_run_state,
+    resolve_preview_file,
     scan_all,
     scan_source,
     start_mirror,
@@ -46,9 +47,13 @@ class MirrorRunRequest(BaseModel):
     limit_films: int | None = Field(default=None, ge=1, le=10_000)
     limit_per_tech: int | None = Field(default=None, ge=1, le=2000)
     max_clips: int | None = Field(default=None, ge=1, le=50_000)
+    # Comma-separated film titles/slugs (FilmGrab --films)
+    films: str | None = Field(default=None, max_length=4000)
     discover_only: bool = False
     user: str | None = Field(default=None, max_length=320)
     password: str | None = Field(default=None, max_length=512)
+    # Headful browser login for Cloudflare / SSO (ShotDeck, StillsLab)
+    login_browser: bool = False
 
 
 class SourceCredentialsRequest(BaseModel):
@@ -109,10 +114,29 @@ async def sources_status(
         "shotdeck_mirror_run": mirror_runs.get("shotdeck") or {},
         "shotdeck_credentials_configured": cred_status.get("shotdeck", {}).get("configured", False),
         "note": (
-            "Archives hub — built-in mirrors plus your own still libraries. "
-            "Never commit ./data."
+            "Archives hub — your libraries and mirrors fill the grid; "
+            "a short curated list is for seeding only."
         ),
     }
+
+
+@router.get("/sources/{source_key}/preview/{index}")
+async def source_preview(
+    source_key: str,
+    index: int,
+    settings: Settings = Depends(get_settings),
+):
+    """Serve a sampled still from an on-disk mirror for Archive of Archives cards."""
+    from fastapi.responses import FileResponse
+
+    if source_key not in SOURCES:
+        raise HTTPException(status_code=404, detail="Unknown source")
+    if index < 0 or index > 11:
+        raise HTTPException(status_code=404, detail="Preview index out of range")
+    path = resolve_preview_file(settings, source_key, index)
+    if not path:
+        raise HTTPException(status_code=404, detail="Preview not found")
+    return FileResponse(path, headers={"Cache-Control": "public, max-age=3600"})
 
 
 @router.post("/archives", response_model=ProjectRead, status_code=201)
@@ -296,9 +320,14 @@ async def save_credentials(
     body: SourceCredentialsRequest,
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    """Save subscription credentials locally for a gated archive mirror."""
+    """Save subscription credentials locally for a gated archive mirror (Pro)."""
+    from cinearchive.services.entitlements import require_feature
+
     if body.source not in SOURCES:
         raise HTTPException(status_code=400, detail=f"Unknown source: {body.source}")
+    spec = SOURCES[body.source]
+    if spec.access == "gated":
+        require_feature("archive_mirrors", settings)
     save_source_credentials(
         library_root(settings),
         body.source,
@@ -326,7 +355,12 @@ async def run_mirror(
 ) -> dict:
     from cinearchive.services.entitlements import require_feature
 
-    require_feature("archive_mirrors", settings)
+    spec = SOURCES.get(body.source)
+    if not spec:
+        raise HTTPException(status_code=400, detail=f"Unknown source: {body.source}")
+    # Subscription / login scrapers are Pro-only; public mirrors stay Free.
+    if spec.access == "gated":
+        require_feature("archive_mirrors", settings)
     try:
         return start_mirror(
             settings,
@@ -337,9 +371,11 @@ async def run_mirror(
             limit_films=body.limit_films,
             limit_per_tech=body.limit_per_tech,
             max_clips=body.max_clips,
+            films=body.films,
             discover_only=body.discover_only,
             user=body.user,
             password=body.password,
+            login_browser=body.login_browser,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -19,6 +19,7 @@ from cinearchive.schemas.search import (
     SearchResponse,
     SimilarSearchRequest,
 )
+from cinearchive.services.agent_chat import AgentChatRequest, AgentChatResponse
 from cinearchive.services.search_service import SearchService
 
 router = APIRouter(tags=["search"])
@@ -123,3 +124,17 @@ async def agent_query(
 
     require_feature("agent_api", settings)
     return await _service(session, settings, vector_repo, embedder).agent_query(body)
+
+
+@router.post("/agent/chat", response_model=AgentChatResponse)
+async def agent_chat(
+    body: AgentChatRequest,
+    session: AsyncSession = Depends(get_db_session),
+    settings: Settings = Depends(get_settings),
+    vector_repo: VectorRepository = Depends(get_vector_repo),
+    embedder: EmbeddingPipeline = Depends(get_embedder),
+) -> AgentChatResponse:
+    """In-app Craft chat — local VLM + archive tools (search / summary / moodboard)."""
+    from cinearchive.services.agent_chat import AgentChatService
+
+    return await AgentChatService(session, settings, vector_repo, embedder).chat(body)

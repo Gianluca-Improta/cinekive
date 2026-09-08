@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LayoutTemplate, Plus, Check } from "lucide-react";
+import { LayoutTemplate, Plus, Check, Crown } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { PRO_UPGRADE_URL, useHasFeature } from "@/hooks/useEntitlements";
 
 type Props = {
   shotIds: string[];
@@ -34,9 +36,12 @@ export function SendToBoardMenu({
   onAdded,
 }: Props) {
   const qc = useQueryClient();
+  const canMoodboard = useHasFeature("moodboard");
+  const btnRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   const { data: boards = [], isFetching } = useQuery({
     queryKey: ["collections", "canvas", projectId || "all"],
@@ -47,6 +52,14 @@ export function SendToBoardMenu({
       }),
     enabled: open && shotIds.length > 0,
   });
+
+  useEffect(() => {
+    if (!open || !btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    const menuW = 240;
+    const left = Math.min(Math.max(8, rect.right - menuW), window.innerWidth - menuW - 8);
+    setPos({ top: rect.bottom + 4, left });
+  }, [open]);
 
   const finish = (collectionId: string) => {
     qc.invalidateQueries({ queryKey: ["collection", collectionId] });
@@ -102,61 +115,88 @@ export function SendToBoardMenu({
   return (
     <div className={cn("relative", className)}>
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!canMoodboard) {
+            window.open(PRO_UPGRADE_URL, "_blank", "noopener,noreferrer");
+            return;
+          }
+          setOpen((v) => !v);
+        }}
         className="inline-flex items-center gap-1.5 rounded border border-cinema-border px-2 py-1 text-[11px] text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
+        title={canMoodboard ? label : "Moodboard is Pro"}
       >
-        <LayoutTemplate className="h-3.5 w-3.5" />
+        {canMoodboard ? (
+          <LayoutTemplate className="h-3.5 w-3.5" />
+        ) : (
+          <Crown className="h-3.5 w-3.5 text-cinema-cyan" />
+        )}
         {label}
       </button>
-      {open && (
-        <div className="absolute right-0 z-50 mt-1 w-60 overflow-hidden rounded-lg border border-cinema-border bg-cinema-surface shadow-xl">
-          <div className="border-b border-cinema-border px-2.5 py-1.5 text-[10px] uppercase tracking-widest text-cinema-muted">
-            Project moodboard
-          </div>
-          <div className="max-h-48 overflow-y-auto py-1">
-            {isFetching && (
-              <p className="px-2.5 py-2 text-[11px] text-cinema-muted">Loading…</p>
-            )}
-            {!isFetching && boards.length === 0 && (
-              <p className="px-2.5 py-2 text-[11px] text-cinema-muted">
-                No boards yet — create one below
-              </p>
-            )}
-            {boards.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                disabled={addMutation.isPending}
-                onClick={() => addMutation.mutate(b.id)}
-                className="flex w-full items-center justify-between px-2.5 py-1.5 text-left text-[11px] text-white hover:bg-cinema-panel"
-              >
-                <span className="truncate">{b.name}</span>
-                {justAdded === b.id ? (
-                  <Check className="h-3 w-3 text-cinema-cyan" />
-                ) : (
-                  <span className="text-cinema-muted">{b.shot_count}</span>
+      {open &&
+        canMoodboard &&
+        pos &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-[80] cursor-default"
+              aria-label="Close"
+              onClick={() => setOpen(false)}
+            />
+            <div
+              className="fixed z-[90] w-60 overflow-hidden rounded-lg border border-cinema-border bg-cinema-surface shadow-xl"
+              style={{ top: pos.top, left: pos.left }}
+            >
+              <div className="border-b border-cinema-border px-2.5 py-1.5 text-[10px] uppercase tracking-widest text-cinema-muted">
+                Project moodboard
+              </div>
+              <div className="max-h-48 overflow-y-auto py-1">
+                {isFetching && (
+                  <p className="px-2.5 py-2 text-[11px] text-cinema-muted">Loading…</p>
                 )}
+                {!isFetching && boards.length === 0 && (
+                  <p className="px-2.5 py-2 text-[11px] text-cinema-muted">
+                    No boards yet — create one below
+                  </p>
+                )}
+                {boards.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    disabled={addMutation.isPending}
+                    onClick={() => addMutation.mutate(b.id)}
+                    className="flex w-full items-center justify-between px-2.5 py-1.5 text-left text-[11px] text-white hover:bg-cinema-panel"
+                  >
+                    <span className="truncate">{b.name}</span>
+                    {justAdded === b.id ? (
+                      <Check className="h-3 w-3 text-cinema-cyan" />
+                    ) : (
+                      <span className="text-cinema-muted">{b.shot_count}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={createMutation.isPending || creating}
+                onClick={() => {
+                  setCreating(true);
+                  createMutation.mutate();
+                }}
+                className="flex w-full items-center gap-1.5 border-t border-cinema-border px-2.5 py-2 text-[11px] text-cinema-cyan hover:bg-cinema-panel"
+              >
+                <Plus className="h-3 w-3" />
+                {createMutation.isPending ? "Adding…" : "New board + add"}
               </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            disabled={createMutation.isPending || creating}
-            onClick={() => {
-              setCreating(true);
-              createMutation.mutate();
-            }}
-            className="flex w-full items-center gap-1.5 border-t border-cinema-border px-2.5 py-2 text-[11px] text-cinema-cyan hover:bg-cinema-panel"
-          >
-            <Plus className="h-3 w-3" />
-            {createMutation.isPending ? "Adding…" : "New board + add"}
-          </button>
-          <p className="border-t border-cinema-border/50 px-2.5 py-1.5 text-[10px] text-cinema-muted">
-            Opens Moodboard after add
-          </p>
-        </div>
-      )}
+              <p className="border-t border-cinema-border/50 px-2.5 py-1.5 text-[10px] text-cinema-muted">
+                Opens Moodboard after add
+              </p>
+            </div>
+          </>,
+          document.body
+        )}
     </div>
   );
 }

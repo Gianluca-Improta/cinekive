@@ -24,14 +24,19 @@ def schedule_global_dedupe(*, delay_sec: float = 60.0) -> None:
 async def dedupe_scheduler_loop(settings: Settings) -> None:
     """Run in API lifespan — periodic + debounced ingest-triggered dedupe."""
     global _wake_at
+    from cinearchive.services import library_config as lib_cfg
+
+    on_ingest, global_on = lib_cfg.resolve_dedupe(settings)
     logger.info(
-        "Dedupe scheduler started (interval=%ss, on_ingest=%s)",
+        "Dedupe scheduler started (interval=%ss, on_ingest=%s, global=%s)",
         settings.dedupe_interval_sec,
-        settings.dedupe_on_ingest,
+        on_ingest,
+        global_on,
     )
     while True:
         await asyncio.sleep(10)
-        if not settings.dedupe_global:
+        _, global_on = lib_cfg.resolve_dedupe(settings)
+        if not global_on:
             continue
         from cinearchive.services.entitlements import has_feature
 

@@ -11,33 +11,25 @@ Natural language → interpreted filters + SigLIP search.
 
 ```http
 POST /agent/query
+```
+
+## Craft chat (in-app + MCP)
+
+```http
+POST /agent/chat
 Content-Type: application/json
 
 {
-  "prompt": "return 5 low-angle tracking shots with melancholic teal-dominant palette matching a rainy neon city logline",
-  "project_id": null,
-  "limit": 5
+  "message": "moodboard: lonely courier in rain-slick neon alleys",
+  "project_id": "<optional-uuid>",
+  "history": [],
+  "create_board": true
 }
 ```
 
-Response:
+Routes intents: archive summary, search, moodboard (pins a canvas collection). Uses local Ollama / configured VLM for prose when reachable.
 
-```json
-{
-  "interpretation": {
-    "raw": "...",
-    "filters": {
-      "camera_movement": "tracking",
-      "color_hex": "#008080",
-      "mood_vibe": "melancholic",
-      "tags": ["low-angle"]
-    },
-    "semantic": "..."
-  },
-  "results": [{ "shot": { "...": "..." }, "score": 0.82 }],
-  "message": "Interpreted as semantic search with filters ..."
-}
-```
+External agents: see [MCP.md](MCP.md) (Pro).
 
 ## Moodboard from pitch / logline
 

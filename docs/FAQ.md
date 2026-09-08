@@ -89,7 +89,7 @@ UI packs: English, Chinese, Spanish, French, German, Japanese. Shot/craft taxono
 | Board PNG/PDF export, folder watcher | — | Unlocked |
 | Cloud VLM (OpenRouter / ChatGPT / Claude) | Local Ollama | Bring your key |
 | Continuous enrich, Agent API, unlimited projects | Soft / locked | Unlocked |
-| Support | GitHub | Email hello@gianlucaimprota.com |
+| Support | GitHub | Email cinekive@agentmail.to |
 
 Same desktop installer. Buy on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro), then **Settings → Cinekive Pro → Activate**. Early-bird $12 for the first 100 buyers when offered.
 

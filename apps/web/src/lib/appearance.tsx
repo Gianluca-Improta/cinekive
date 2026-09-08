@@ -33,6 +33,14 @@ function applyTheme(theme: AppearanceTheme) {
     document.head.appendChild(meta);
   }
   meta.setAttribute("content", color);
+  // Sync Electron title/menu bar with in-app appearance
+  try {
+    const desk = (window as unknown as { cinekive?: { setAppearance?: (t: string) => void } })
+      .cinekive;
+    desk?.setAppearance?.(theme);
+  } catch {
+    /* browser / no preload */
+  }
 }
 
 export function AppearanceProvider({ children }: { children: ReactNode }) {

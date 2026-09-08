@@ -44,6 +44,7 @@ function needsEngineRefresh() {
   const installed = installedVersion();
   const wanted = appVersion();
   if (installed && wanted && installed !== wanted) return true;
+  if (!installed) return true;
 
   // Broken Windows/macOS venv from CI: pyvenv.cfg / python points at hostedtoolcache
   const root = engineRoot();
@@ -57,18 +58,20 @@ function needsEngineRefresh() {
     const py =
       process.platform === "win32"
         ? [
-            path.join(root, "python", "Scripts", "python.exe"),
             path.join(root, "python", "python.exe"),
+            path.join(root, "python", "Scripts", "python.exe"),
           ].find((p) => fs.existsSync(p))
         : [
             path.join(root, "python", "bin", "python3"),
             path.join(root, "python", "bin", "python"),
           ].find((p) => fs.existsSync(p));
     if (!py) return true;
-    execSync(`"${py}" -c "import sys"`, {
+    // Must import the API stack — bare `import sys` can pass on a dead venv redirector
+    execSync(`"${py}" -c "import uvicorn, cinearchive"`, {
+      cwd: path.join(root, "python"),
       windowsHide: true,
       stdio: "ignore",
-      timeout: 12000,
+      timeout: 20000,
     });
   } catch {
     return true;
@@ -136,12 +139,19 @@ function downloadFile(url, dest, { onProgress } = {}) {
 async function extractArchive(archivePath, destDir) {
   fs.mkdirSync(destDir, { recursive: true });
   if (process.platform === "win32") {
-    await run("powershell", [
-      "-NoProfile",
-      "-Command",
-      `Expand-Archive -Path '${archivePath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force`,
-    ]);
-    return;
+    // Prefer tar (Windows 10+) — Expand-Archive is extremely slow on ~500MB packs
+    try {
+      await run("tar", ["-xf", archivePath, "-C", destDir]);
+      return;
+    } catch (e) {
+      // Fall back to PowerShell only if tar missing
+      await run("powershell", [
+        "-NoProfile",
+        "-Command",
+        `Expand-Archive -Path '${archivePath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force`,
+      ]);
+      return;
+    }
   }
   if (archivePath.endsWith(".zip")) {
     await run("unzip", ["-o", archivePath, "-d", destDir]);
@@ -170,10 +180,10 @@ function flattenEngineRoot(destDir) {
 }
 
 /**
- * @param {{ version?: string, onStatus?: (s: string) => void, onProgress?: (done: number, total: number) => void }} opts
+ * @param {{ version?: string, force?: boolean, onStatus?: (s: string) => void, onProgress?: (done: number, total: number) => void }} opts
  */
-async function ensureEnginePack({ version, onStatus, onProgress } = {}) {
-  if (nativeReady()) {
+async function ensureEnginePack({ version, force = false, onStatus, onProgress } = {}) {
+  if (!force && nativeReady() && !needsEngineRefresh()) {
     onStatus?.("Native engine ready");
     return { ok: true, alreadyInstalled: true };
   }
@@ -190,7 +200,7 @@ async function ensureEnginePack({ version, onStatus, onProgress } = {}) {
       try {
         return JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")).version;
       } catch {
-        return "0.4.0";
+        return "0.5.1";
       }
     })();
   const url = releaseDownloadUrl(ver);
@@ -198,14 +208,23 @@ async function ensureEnginePack({ version, onStatus, onProgress } = {}) {
   const dataDir = readConfig().dataDir || defaultDataDir();
   fs.mkdirSync(path.dirname(root), { recursive: true });
 
+  // Prefer latest release asset if tagged version 404s (e.g. mid-release)
+  let downloadUrl = url;
   const tmpZip = path.join(dataDir, packAssetName());
   onStatus?.(`Downloading engine pack (${packAssetName()})…`);
   try {
-    await downloadFile(url, tmpZip, { onProgress });
+    await downloadFile(downloadUrl, tmpZip, { onProgress });
   } catch (e) {
-    throw new Error(
-      `Could not download engine pack for ${ver}.\n\n${e.message}\n\nInstall Docker Desktop instead, or check your connection.`
-    );
+    // Fall back to latest release tag from GitHub
+    try {
+      onStatus?.("Versioned pack missing — trying latest release…");
+      downloadUrl = `https://github.com/${REPO}/releases/latest/download/${packAssetName()}`;
+      await downloadFile(downloadUrl, tmpZip, { onProgress });
+    } catch (e2) {
+      throw new Error(
+        `Could not download engine pack for ${ver}.\n\n${e2.message || e.message}\n\nInstall Docker Desktop instead, or check your connection.`
+      );
+    }
   }
 
   onStatus?.("Extracting engine pack…");
@@ -231,6 +250,14 @@ async function ensureEnginePack({ version, onStatus, onProgress } = {}) {
 
   if (!nativeReady()) {
     throw new Error("Engine pack extracted but files are missing. Try again or use Docker.");
+  }
+
+  // Refuse to keep a broken CI venv pack
+  if (needsEngineRefresh()) {
+    throw new Error(
+      "Downloaded engine pack still looks broken (non-relocatable Python).\n\n" +
+        "Please reinstall from the latest GitHub release, or use Docker mode."
+    );
   }
 
   onStatus?.("Engine pack installed");

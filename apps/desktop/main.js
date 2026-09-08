@@ -13,6 +13,7 @@ const {
   ipcMain,
   nativeImage,
   clipboard,
+  nativeTheme,
 } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
@@ -127,13 +128,37 @@ function createWizard() {
   });
 }
 
+/** Map in-app appearance → Windows title/menu chrome (nativeTheme). */
+function applyNativeAppearance(theme) {
+  const t = theme === "light" ? "light" : "dark";
+  nativeTheme.themeSource = t;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    const bg = theme === "light" ? "#f3f1ec" : theme === "slate" ? "#0b1220" : "#000000";
+    try {
+      mainWindow.setBackgroundColor(bg);
+    } catch {
+      /* older Electron */
+    }
+  }
+}
+
 function createMain() {
+  const cfgTheme = (() => {
+    try {
+      return readConfig()?.appearanceTheme || "dark";
+    } catch {
+      return "dark";
+    }
+  })();
+  applyNativeAppearance(cfgTheme);
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 680,
-    backgroundColor: "#000000",
+    backgroundColor:
+      cfgTheme === "light" ? "#f3f1ec" : cfgTheme === "slate" ? "#0b1220" : "#000000",
     title: "Cinekive",
     show: false,
     icon: loadIcon(),
@@ -200,6 +225,43 @@ function createTray() {
   });
 }
 
+/** Shared by app menu and Settings → Browse… */
+async function chooseLibraryFolderFlow() {
+  const win = wizardWindow || mainWindow;
+  const res = await dialog.showOpenDialog(win || undefined, {
+    title: "Visual archive folder",
+    properties: ["openDirectory", "createDirectory"],
+    defaultPath: readConfig().libraryPath || defaultLibraryDir(),
+  });
+  if (res.canceled || !res.filePaths[0]) return null;
+  const lib = res.filePaths[0];
+  setLibraryHostPath(lib);
+  writeConfig({ libraryPath: lib });
+  const restart = await dialog.showMessageBox(win || undefined, {
+    type: "info",
+    buttons: ["Restart stack", "Later"],
+    defaultId: 0,
+    message: "Library path saved",
+    detail:
+      "Docker needs a restart to mount the new folder. Existing files are not moved automatically.",
+  });
+  let restarted = false;
+  if (restart.response === 0) {
+    try {
+      createSplash();
+      await restartStack({ onStatus: setSplashStatus });
+      splashWindow?.close();
+      splashWindow = null;
+      mainWindow?.reload();
+      restarted = true;
+    } catch (e) {
+      splashWindow?.close();
+      dialog.showErrorBox("Restart failed", String(e.message || e));
+    }
+  }
+  return { ok: true, path: lib, restarted };
+}
+
 function buildMenu() {
   const template = [
     {
@@ -207,35 +269,8 @@ function buildMenu() {
       submenu: [
         {
           label: "Choose library folder…",
-          click: async () => {
-            const res = await dialog.showOpenDialog({
-              title: "Visual archive folder",
-              properties: ["openDirectory", "createDirectory"],
-            });
-            if (res.canceled || !res.filePaths[0]) return;
-            const lib = res.filePaths[0];
-            setLibraryHostPath(lib);
-            writeConfig({ libraryPath: lib });
-            const restart = await dialog.showMessageBox({
-              type: "info",
-              buttons: ["Restart stack", "Later"],
-              defaultId: 0,
-              message: "Library path saved",
-              detail:
-                "Docker needs a restart to mount the new folder. Existing files are not moved automatically.",
-            });
-            if (restart.response === 0) {
-              try {
-                createSplash();
-                await restartStack({ onStatus: setSplashStatus });
-                splashWindow?.close();
-                splashWindow = null;
-                mainWindow?.reload();
-              } catch (e) {
-                splashWindow?.close();
-                dialog.showErrorBox("Restart failed", String(e.message || e));
-              }
-            }
+          click: () => {
+            void chooseLibraryFolderFlow();
           },
         },
         {
@@ -373,6 +408,10 @@ function buildMenu() {
               message: "Cinekive",
               detail: `Version ${app.getVersion()}\nLocal-first cinematic archive.\nStack: ${stackRoot()}`,
             }),
+        },
+        {
+          label: "Check for updates…",
+          click: () => require("./updater").checkForUpdates({ silent: false }),
         },
       ],
     },
@@ -568,6 +607,8 @@ ipcMain.handle("pick-library-folder", async () => {
   return res.filePaths[0];
 });
 
+ipcMain.handle("choose-library-folder", async () => chooseLibraryFolderFlow());
+
 ipcMain.handle("complete-first-run", async (_e, opts) => {
   const libraryPath = (typeof opts === "string" ? opts : opts?.libraryPath) || defaultLibraryDir();
   const engineMode = (typeof opts === "object" && opts?.engineMode) || "auto";
@@ -592,6 +633,13 @@ ipcMain.handle("open-external", async (_e, url) => {
   await shell.openExternal(url);
 });
 
+ipcMain.handle("set-appearance", async (_e, theme) => {
+  const t = theme === "light" || theme === "slate" || theme === "dark" ? theme : "dark";
+  writeConfig({ appearanceTheme: t });
+  applyNativeAppearance(t);
+  return { ok: true, theme: t };
+});
+
 ipcMain.handle("quit-app", async () => {
   quitting = true;
   app.quit();
@@ -609,6 +657,12 @@ app.whenReady().then(async () => {
     return;
   }
   await bootStackAndMain();
+  // Non-blocking update nudge after the UI is up
+  setTimeout(() => {
+    require("./updater")
+      .checkForUpdates({ silent: true })
+      .catch(() => {});
+  }, 8000);
 });
 
 app.on("before-quit", async (e) => {

@@ -10,10 +10,12 @@ contextBridge.exposeInMainWorld("cinekive", {
   openProUpgrade: () => ipcRenderer.invoke("open-pro-upgrade"),
   checkDocker: () => ipcRenderer.invoke("check-docker"),
   pickLibraryFolder: () => ipcRenderer.invoke("pick-library-folder"),
+  chooseLibraryFolder: () => ipcRenderer.invoke("choose-library-folder"),
   completeFirstRun: (opts) => ipcRenderer.invoke("complete-first-run", opts),
   setEngineMode: (mode) => ipcRenderer.invoke("set-engine-mode", mode),
   openEngineLogs: () => ipcRenderer.invoke("open-engine-logs"),
   openExternal: (url) => ipcRenderer.invoke("open-external", url),
+  setAppearance: (theme) => ipcRenderer.invoke("set-appearance", theme),
   quit: () => ipcRenderer.invoke("quit-app"),
   onStatus: (cb) => {
     const handler = (_e, msg) => cb(msg);

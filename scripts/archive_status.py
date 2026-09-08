@@ -55,7 +55,11 @@ SOURCES = {
     },
     "shotdeck": {
         "label": "ShotDeck",
-        "disk": Path("D:/library/_shotdeck") if Path("D:/").exists() else ROOT / "data" / "library" / "_shotdeck",
+        "disk": (
+            Path(os.environ["LIBRARY_HOST_PATH"]) / "_shotdeck"
+            if os.environ.get("LIBRARY_HOST_PATH")
+            else ROOT / "data" / "library" / "_shotdeck"
+        ),
         "glob": "**/*.jpg",
         "project_id": "6dbcf19c-440d-408e-9918-e3fc09c30573",
     },

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 import traceback
 from pathlib import Path
@@ -236,80 +237,118 @@ async def run_enrich_job(
         qdrant = QdrantClient(url=settings.qdrant_url, timeout=60, check_compatibility=False)
         vector_repo = VectorRepository(qdrant, settings)
 
+        total = len(work)
+        concurrency = max(1, min(8, int(getattr(settings, "enrich_concurrency", 3) or 3)))
+        sem = asyncio.Semaphore(concurrency)
+        lock = asyncio.Lock()
         processed = 0
         passed = 0
         failed_qa = 0
-        for item in work:
-            await update_job(
-                job_id,
-                current_step=f"Enriching {item['id'][:8]}… ({model_name})",
-                progress_pct=round((processed / len(work)) * 100, 1),
-                processed_items=processed,
-            )
-            keyframe = artifacts / item["keyframe_path"]
-            if not keyframe.is_file():
-                keyframe = legacy / item["keyframe_path"]
-            if not keyframe.is_file():
-                logger.warning("Missing keyframe for %s", item["id"])
-                processed += 1
-                continue
+        started = time.monotonic()
 
-            result = await enricher.enrich_image(
-                keyframe,
-                context={
-                    "source_title": item.get("source_title"),
-                    "source_filename": item.get("source_filename"),
-                    "frame_role": item.get("frame_role"),
-                    "is_moving": item.get("is_moving"),
-                    "content_hint": item.get("content_format"),
-                    **project_ctx,
-                },
-            )
+        async def _one(item: dict[str, Any]) -> None:
+            nonlocal processed, passed, failed_qa
+            async with sem:
+                t0 = time.monotonic()
+                keyframe = artifacts / item["keyframe_path"]
+                if not keyframe.is_file():
+                    keyframe = legacy / item["keyframe_path"]
+                if not keyframe.is_file():
+                    logger.warning("Missing keyframe for %s", item["id"])
+                    async with lock:
+                        processed += 1
+                        done = processed
+                        avg = (time.monotonic() - started) / max(done, 1)
+                        await update_job(
+                            job_id,
+                            current_step=(
+                                f"Gemi Local AI {done}/{total} · {model_name} · "
+                                f"{avg:.1f}s/shot · x{concurrency}"
+                            ),
+                            progress_pct=round((done / total) * 100, 1),
+                            processed_items=done,
+                        )
+                    return
 
-            async with SessionLocal() as session:
-                repo = ShotRepository(session)
-                shot = await repo.get(item["id"])
-                if not shot:
+                result = await enricher.enrich_image(
+                    keyframe,
+                    context={
+                        "source_title": item.get("source_title"),
+                        "source_filename": item.get("source_filename"),
+                        "frame_role": item.get("frame_role"),
+                        "is_moving": item.get("is_moving"),
+                        "content_hint": item.get("content_format"),
+                        **project_ctx,
+                    },
+                )
+
+                async with SessionLocal() as session:
+                    repo = ShotRepository(session)
+                    shot = await repo.get(item["id"])
+                    if not shot:
+                        async with lock:
+                            processed += 1
+                        return
+                    qa = _apply_result(shot, result)
+                    await session.commit()
+                    await session.refresh(shot)
+                    payload = shot_payload(shot)
+                    try:
+                        from cinearchive.pipelines.sidecar_meta import write_shot_sidecar
+
+                        write_shot_sidecar(shot)
+                    except Exception:
+                        pass
+
+                vector_repo.set_payload(item["id"], payload)
+                elapsed = time.monotonic() - t0
+                async with lock:
                     processed += 1
-                    continue
-                qa = _apply_result(shot, result)
-                if qa["pass"]:
-                    passed += 1
-                else:
-                    failed_qa += 1
-                    logger.info(
-                        "Tag QA soft-fail %s score=%.1f issues=%s",
-                        item["id"][:8],
-                        qa["score"],
-                        qa["issues"][:4],
+                    if qa["pass"]:
+                        passed += 1
+                    else:
+                        failed_qa += 1
+                        logger.info(
+                            "Tag QA soft-fail %s score=%.1f issues=%s",
+                            item["id"][:8],
+                            qa["score"],
+                            qa["issues"][:4],
+                        )
+                    done = processed
+                    avg = (time.monotonic() - started) / max(done, 1)
+                    await update_job(
+                        job_id,
+                        current_step=(
+                            f"Gemi Local AI {done}/{total} · {model_name} · "
+                            f"{avg:.1f}s/shot (last {elapsed:.1f}s) · x{concurrency}"
+                        ),
+                        progress_pct=round((done / total) * 100, 1),
+                        processed_items=done,
                     )
-                await session.commit()
-                await session.refresh(shot)
-                payload = shot_payload(shot)
-                try:
-                    from cinearchive.pipelines.sidecar_meta import write_shot_sidecar
 
-                    write_shot_sidecar(shot)
-                except Exception:
-                    pass
+        await asyncio.gather(*[_one(item) for item in work])
 
-            vector_repo.set_payload(item["id"], payload)
-            processed += 1
-
+        avg_final = (time.monotonic() - started) / max(processed, 1)
         await update_job(
             job_id,
             status="completed",
-            current_step=f"Done · {passed} pass / {failed_qa} need polish · {model_name}",
+            current_step=(
+                f"Done · {passed} pass / {failed_qa} need polish · {model_name} · "
+                f"{avg_final:.1f}s/shot avg · x{concurrency}"
+            ),
             progress_pct=100.0,
             processed_items=processed,
         )
         logger.info(
-            "Enrich job %s completed (%d shots, %d QA pass, %d QA fail, model=%s)",
+            "Enrich job %s completed (%d shots, %d QA pass, %d QA fail, model=%s, "
+            "avg=%.2fs, concurrency=%d)",
             job_id,
             processed,
             passed,
             failed_qa,
             model_name,
+            avg_final,
+            concurrency,
         )
 
     except Exception as exc:
@@ -343,56 +382,74 @@ async def enrich_shot_batch(
     vector_repo = VectorRepository(qdrant, settings)
     ctx = project_ctx or {}
 
+    total = progress_total if progress_total is not None else len(shot_ids)
+    concurrency = max(1, min(8, int(getattr(settings, "enrich_concurrency", 3) or 3)))
+    sem = asyncio.Semaphore(concurrency)
+    lock = asyncio.Lock()
     ok = 0
     fail = 0
-    total = progress_total if progress_total is not None else len(shot_ids)
-    for idx, sid in enumerate(shot_ids):
-        async with SessionLocal() as session:
-            repo = ShotRepository(session)
-            shot = await repo.get(sid)
-            if not shot:
-                continue
-            keyframe = artifacts / shot.keyframe_path
-            if not keyframe.is_file():
-                keyframe = legacy / shot.keyframe_path
-            if not keyframe.is_file():
-                fail += 1
-                continue
-            result = await enricher.enrich_image(
-                keyframe,
-                context={
-                    "source_title": getattr(shot, "source_title", None),
-                    "source_filename": getattr(shot, "source_filename", None)
-                    or Path(shot.source_path).name,
-                    "frame_role": getattr(shot, "frame_role", None),
-                    "is_moving": bool(getattr(shot, "is_moving", False)),
-                    "content_hint": getattr(shot, "content_format", None),
-                    **ctx,
-                },
-            )
-            qa = _apply_result(shot, result)
-            await session.commit()
-            await session.refresh(shot)
-            payload = shot_payload(shot)
-            try:
-                from cinearchive.pipelines.sidecar_meta import write_shot_sidecar
+    done_local = 0
+    started = time.monotonic()
 
-                write_shot_sidecar(shot)
-            except Exception:
-                pass
-            vector_repo.set_payload(sid, payload)
-            if qa["pass"]:
-                ok += 1
-            else:
-                fail += 1
-        if job_id:
-            done = progress_offset + idx + 1
-            pct = min(99.0, (done / max(total, 1)) * 100.0)
-            await update_job(
-                job_id,
-                processed_items=done,
-                total_items=total,
-                progress_pct=pct,
-                current_step=f"Craft AI {done}/{total} · {model_name}",
-            )
+    async def _one(sid: str) -> None:
+        nonlocal ok, fail, done_local
+        async with sem:
+            async with SessionLocal() as session:
+                repo = ShotRepository(session)
+                shot = await repo.get(sid)
+                if not shot:
+                    return
+                keyframe = artifacts / shot.keyframe_path
+                if not keyframe.is_file():
+                    keyframe = legacy / shot.keyframe_path
+                if not keyframe.is_file():
+                    async with lock:
+                        fail += 1
+                        done_local += 1
+                    return
+                result = await enricher.enrich_image(
+                    keyframe,
+                    context={
+                        "source_title": getattr(shot, "source_title", None),
+                        "source_filename": getattr(shot, "source_filename", None)
+                        or Path(shot.source_path).name,
+                        "frame_role": getattr(shot, "frame_role", None),
+                        "is_moving": bool(getattr(shot, "is_moving", False)),
+                        "content_hint": getattr(shot, "content_format", None),
+                        **ctx,
+                    },
+                )
+                qa = _apply_result(shot, result)
+                await session.commit()
+                await session.refresh(shot)
+                payload = shot_payload(shot)
+                try:
+                    from cinearchive.pipelines.sidecar_meta import write_shot_sidecar
+
+                    write_shot_sidecar(shot)
+                except Exception:
+                    pass
+                vector_repo.set_payload(sid, payload)
+                async with lock:
+                    if qa["pass"]:
+                        ok += 1
+                    else:
+                        fail += 1
+                    done_local += 1
+                    if job_id:
+                        done = progress_offset + done_local
+                        pct = min(99.0, (done / max(total, 1)) * 100.0)
+                        avg = (time.monotonic() - started) / max(done_local, 1)
+                        await update_job(
+                            job_id,
+                            processed_items=done,
+                            total_items=total,
+                            progress_pct=pct,
+                            current_step=(
+                                f"Gemi Local AI {done}/{total} · {model_name} · "
+                                f"{avg:.1f}s/shot · x{concurrency}"
+                            ),
+                        )
+
+    await asyncio.gather(*[_one(sid) for sid in shot_ids])
     return {"ok": ok, "fail": fail, "total": len(shot_ids)}

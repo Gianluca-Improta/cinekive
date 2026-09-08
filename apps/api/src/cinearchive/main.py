@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from qdrant_client import QdrantClient
 from sqlalchemy import text
 
 from cinearchive.api.routes import (
+    board,
     collections,
     enrich,
     health,
@@ -156,7 +158,13 @@ async def lifespan(app: FastAPI):
     app.state.qdrant = qdrant
     app.state.settings = settings
 
+    from cinearchive.services import library_config as lib_cfg
     from cinearchive.services.watcher import get_watcher
+
+    try:
+        await lib_cfg.bootstrap_dedupe_prefs(settings)
+    except Exception as exc:
+        logger.warning("Dedupe prefs bootstrap skipped: %s", exc)
 
     # Poller always runs; it only ingests when a project has watch_enabled (Pro).
     watcher = get_watcher(settings)
@@ -166,10 +174,17 @@ async def lifespan(app: FastAPI):
     from cinearchive.jobs.dedupe_scheduler import start_dedupe_scheduler, stop_dedupe_scheduler
     from cinearchive.jobs.enrich_scheduler import start_enrich_scheduler, stop_enrich_scheduler
 
-    if settings.dedupe_global:
-        start_dedupe_scheduler(settings)
-    # Always start — loop checks runtime config so Settings UI can enable VLM live
-    start_enrich_scheduler(settings)
+    _, dedupe_global = lib_cfg.resolve_dedupe(settings)
+
+    async def _start_background_jobs() -> None:
+        # Let /health and the desktop splash succeed before heavy library sweeps.
+        await asyncio.sleep(45)
+        if dedupe_global:
+            start_dedupe_scheduler(settings)
+        start_enrich_scheduler(settings)
+        logger.info("Background enrich/dedupe schedulers started (delayed)")
+
+    app.state.bg_jobs_task = asyncio.create_task(_start_background_jobs())
 
     # Purge soft-deleted shots past retention on startup
     try:
@@ -186,6 +201,13 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    bg = getattr(app.state, "bg_jobs_task", None)
+    if bg and not bg.done():
+        bg.cancel()
+        try:
+            await bg
+        except asyncio.CancelledError:
+            pass
     await stop_enrich_scheduler()
     await stop_dedupe_scheduler()
     await watcher.stop()
@@ -225,6 +247,7 @@ def create_app() -> FastAPI:
     app.include_router(sources.router)
     app.include_router(taxonomy.router)
     app.include_router(language.router)
+    app.include_router(board.router)
     return app
 
 

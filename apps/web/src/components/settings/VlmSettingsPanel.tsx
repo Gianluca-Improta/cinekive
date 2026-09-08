@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Crown, Cpu, RefreshCw, Sparkles } from "lucide-react";
+import { Crown, Cpu, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ProGateBanner } from "@/components/pro/ProGateBanner";
 import { PRO_UPGRADE_URL, useHasFeature } from "@/hooks/useEntitlements";
@@ -17,13 +17,14 @@ type Preset = {
 };
 
 /**
- * Settings → VLM / craft AI — local Ollama free; cloud providers (OpenRouter,
+ * Settings → Gemi Local AI — local Ollama free; cloud providers (OpenRouter,
  * ChatGPT, Claude, Kimi…) are Pro.
  */
 export function VlmSettingsPanel() {
   const qc = useQueryClient();
   const canContinuous = useHasFeature("continuous_enrich");
   const canCloud = useHasFeature("cloud_vlm");
+  const canGenerate = useHasFeature("image_generate");
   const cfgQuery = useQuery({
     queryKey: ["enrich-config"],
     queryFn: () => api.enrichConfig(),
@@ -51,6 +52,12 @@ export function VlmSettingsPanel() {
   const [openaiKey, setOpenaiKey] = useState("");
   const [openaiModel, setOpenaiModel] = useState("");
   const [dirtyKey, setDirtyKey] = useState(false);
+  const [imageBackend, setImageBackend] = useState("auto");
+  const [imageLocalUrl, setImageLocalUrl] = useState("http://127.0.0.1:7860");
+  const [imageApiUrl, setImageApiUrl] = useState("");
+  const [imageApiKey, setImageApiKey] = useState("");
+  const [imageModel, setImageModel] = useState("");
+  const [dirtyImageKey, setDirtyImageKey] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,6 +72,12 @@ export function VlmSettingsPanel() {
     setOpenaiModel(cfg.openai_model || "");
     setOpenaiKey("");
     setDirtyKey(false);
+    setImageBackend((cfg as { image_backend?: string }).image_backend || "auto");
+    setImageLocalUrl((cfg as { image_local_url?: string }).image_local_url || "http://127.0.0.1:7860");
+    setImageApiUrl((cfg as { image_api_base_url?: string }).image_api_base_url || "");
+    setImageModel((cfg as { image_model?: string }).image_model || "");
+    setImageApiKey("");
+    setDirtyImageKey(false);
   }, [cfg]);
 
   const isLocalUrl = (url: string) => {
@@ -92,14 +105,21 @@ export function VlmSettingsPanel() {
         ollama_model: ollamaModel,
         openai_base_url: openaiUrl,
         openai_model: openaiModel,
+        image_backend: imageBackend,
+        image_local_url: imageLocalUrl,
+        image_api_base_url: imageApiUrl,
+        image_model: imageModel,
       };
       if (dirtyKey) body.openai_api_key = openaiKey;
+      if (dirtyImageKey) body.image_api_key = imageApiKey;
       return api.updateEnrichConfig(body);
     },
     onSuccess: async () => {
       setMsg("Saved — enrichment uses this config live (no restart).");
       setDirtyKey(false);
       setOpenaiKey("");
+      setDirtyImageKey(false);
+      setImageApiKey("");
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["enrich-config"] }),
         qc.invalidateQueries({ queryKey: ["enrich-models"] }),
@@ -132,13 +152,11 @@ export function VlmSettingsPanel() {
 
   return (
     <section className="space-y-3" data-no-translate>
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-cinema-cyan" />
-        <h2 className="text-sm font-medium text-white">Craft AI (VLM)</h2>
-      </div>
       <p className="text-xs text-cinema-muted">
-        Tags shots with craft DNA. Free: local Ollama or LM Studio. Pro: OpenRouter, ChatGPT,
-        Claude, Kimi, and any cloud OpenAI-compatible endpoint.
+        Tags shots with craft DNA and powers the Gemi AI Assistant. Free: local Ollama or LM Studio.
+        Pro: OpenRouter, ChatGPT, Claude, Kimi, and any cloud OpenAI-compatible endpoint. Auto picks
+        the best reachable provider. Enrichment runs through Python and Ollama (or a Pro cloud key)
+        today; a browser-only path is experimental and not ready yet.
       </p>
       {!canCloud && (
         <ProGateBanner
@@ -157,7 +175,7 @@ export function VlmSettingsPanel() {
         />
       )}
 
-      <div className="rounded-xl border border-cinema-border bg-cinema-surface/50 p-4 space-y-4">
+      <div className="rounded-xl bg-cinema-surface/50 p-4 space-y-4">
         <div className="flex flex-wrap items-center gap-3 text-[11px]">
           <label className="inline-flex items-center gap-2 text-cinema-muted">
             <input
@@ -383,6 +401,117 @@ export function VlmSettingsPanel() {
         </div>
 
         {msg && <p className="text-[11px] text-cinema-muted">{msg}</p>}
+      </div>
+
+      <div className="rounded-xl bg-cinema-surface/50 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium text-white">Image generate</h3>
+          {!canGenerate && (
+            <span className="rounded border border-cinema-cyan/30 px-1 text-[9px] text-cinema-cyan">
+              Cloud = Pro
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-cinema-muted">
+          Free local: Forge / Automatic1111 (`--api` on :7860) or ComfyUI (:8188). Moodboard Generate
+          nodes pick Auto / Stable Diffusion / Flux 1 / Qwen Image — Auto probes what is running.
+          Pro: paste OpenAI / OpenRouter image API keys separately from tagging.
+        </p>
+        <label className="block space-y-1">
+          <span className="text-[10px] uppercase tracking-widest text-cinema-muted">Backend</span>
+          <select
+            value={imageBackend}
+            onChange={(e) => setImageBackend(e.target.value)}
+            className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 text-xs text-white outline-none"
+          >
+            <option value="auto">Auto — try local, then cloud</option>
+            <option value="a1111">Local A1111 / Forge / SD.Next</option>
+            <option value="comfyui">Local ComfyUI</option>
+            <option value="cloud">Cloud only (Pro key)</option>
+          </select>
+        </label>
+        {(imageBackend === "auto" ||
+          imageBackend === "a1111" ||
+          imageBackend === "comfyui") && (
+          <label className="block space-y-1">
+            <span className="text-[10px] uppercase tracking-widest text-cinema-muted">
+              Local URL
+            </span>
+            <input
+              value={imageLocalUrl}
+              onChange={(e) => setImageLocalUrl(e.target.value)}
+              placeholder="http://127.0.0.1:7860"
+              className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 font-mono text-xs text-white outline-none focus:border-cinema-cyan"
+            />
+          </label>
+        )}
+        {(imageBackend === "auto" || imageBackend === "cloud") && (
+          <div className="space-y-2">
+            {!canGenerate && (
+              <ProGateBanner
+                feature="image_generate"
+                title="Cloud image keys are Pro"
+                detail="Local Forge/Comfy stays free. Cloud DALL·E / Flux APIs need Pro."
+                compact
+              />
+            )}
+            <label className="block space-y-1">
+              <span className="text-[10px] uppercase tracking-widest text-cinema-muted">
+                Cloud base URL (…/v1)
+              </span>
+              <input
+                value={imageApiUrl}
+                onChange={(e) => setImageApiUrl(e.target.value)}
+                disabled={!canGenerate}
+                placeholder="https://api.openai.com/v1"
+                className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 font-mono text-xs text-white outline-none focus:border-cinema-cyan disabled:opacity-50"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-[10px] uppercase tracking-widest text-cinema-muted">
+                Cloud API key{" "}
+                {(cfg as { image_api_key_set?: boolean })?.image_api_key_set
+                  ? `(set ${(cfg as { image_api_key_masked?: string }).image_api_key_masked})`
+                  : ""}
+              </span>
+              <input
+                type="password"
+                value={imageApiKey}
+                disabled={!canGenerate}
+                onChange={(e) => {
+                  setImageApiKey(e.target.value);
+                  setDirtyImageKey(true);
+                }}
+                placeholder={
+                  (cfg as { image_api_key_set?: boolean })?.image_api_key_set
+                    ? "Leave blank to keep"
+                    : "sk-…"
+                }
+                className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 font-mono text-xs text-white outline-none focus:border-cinema-cyan disabled:opacity-50"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-[10px] uppercase tracking-widest text-cinema-muted">
+                Image model id
+              </span>
+              <input
+                value={imageModel}
+                onChange={(e) => setImageModel(e.target.value)}
+                disabled={!canGenerate && imageBackend === "cloud"}
+                placeholder="dall-e-3"
+                className="w-full rounded border border-cinema-border bg-cinema-black px-2 py-1.5 font-mono text-xs text-white outline-none focus:border-cinema-cyan disabled:opacity-50"
+              />
+            </label>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => save.mutate()}
+          disabled={save.isPending}
+          className="rounded border border-cinema-cyan/40 bg-cinema-cyan/10 px-3 py-1.5 text-xs text-cinema-cyan hover:bg-cinema-cyan/20 disabled:opacity-50"
+        >
+          {save.isPending ? "Saving…" : "Save image settings"}
+        </button>
       </div>
     </section>
   );

@@ -42,6 +42,22 @@ logger = logging.getLogger(__name__)
 _VEC_FLOOR_ALONE = 0.03
 _VEC_FLOOR_WHEN_META = 0.08
 _VEC_WEIGHT_VISUAL = 0.95
+# A raw cosine at or above this is a confidently strong SigLIP match.
+_VEC_STRONG = 0.20
+
+
+def _calibrate_vec(raw: float, best: float) -> float:
+    """Map a raw SigLIP cosine onto the 0–1 scale keyword scores already use.
+
+    Raw cosines top out near 0.25, so comparing them directly against keyword
+    scores (0.4–1.0) meant a perfect visual match always lost to an incidental
+    filename substring hit. Rank within the query decides the shape; the
+    absolute best score decides how much confidence the whole query earns.
+    """
+    if raw <= 0 or best <= 0:
+        return 0.0
+    confidence = min(1.0, best / _VEC_STRONG)
+    return min(1.0, (raw / best) * confidence)
 
 
 def _query_tokens(query: str) -> list[str]:
@@ -289,6 +305,8 @@ class SearchService:
             "theme": req.theme,
             "genre": req.genre,
             "shape": req.shape,
+            "camera_angle": req.camera_angle,
+            "lens_look": req.lens_look,
             "color_hex": req.color_hex.upper() if req.color_hex else None,
         }
 
@@ -423,11 +441,16 @@ class SearchService:
                         if vec < floor:
                             continue
                         vec_scores[shot.id] = max(vec_scores.get(shot.id, 0.0), vec)
+                except TypeError:
+                    # Signature drift between _filter_kwargs and VectorRepository.search
+                    # silently degraded every query to keyword-only. Never swallow it.
+                    logger.exception("Vector search call is malformed — semantic search is OFF")
                 except Exception as exc:
                     logger.warning("Vector search unavailable, keyword-only: %s", exc)
 
             # Merge channels
             results: list[SearchResult] = []
+            best_vec = max(vec_scores.values(), default=0.0)
             all_ids = set(kw_scores) | set(vec_scores)
             for sid in all_ids:
                 shot = shots_by_id.get(sid)
@@ -438,7 +461,8 @@ class SearchService:
                 if director_filter and not _director_matches(shot, director_filter):
                     continue
                 kw = kw_scores.get(sid, 0.0)
-                vec = vec_scores.get(sid, 0.0)
+                # Compare like with like: raw cosines are on a different scale
+                vec = _calibrate_vec(vec_scores.get(sid, 0.0), best_vec)
                 if intent == "metadata":
                     if kw <= 0:
                         continue
@@ -464,7 +488,7 @@ class SearchService:
             return SearchResponse(results=sliced, total=len(results), query=req.query)
 
         # Browse without text query (filters only — including color)
-        fetch_limit = min(req.limit * 6, 600) if group else req.limit
+        fetch_limit = min(max(req.limit * 6, req.limit), 20_000) if group else req.limit
         fetch_offset = 0 if group else req.offset
         items, total = await self.shot_repo.list(
             project_id=req.project_id,
@@ -527,7 +551,9 @@ class SearchService:
         limit: int = 48,
     ) -> ShotList:
         group = self._should_group(group_sequences)
-        fetch_limit = min(limit * 6, 600) if group else limit
+        # When grouping, over-fetch so collapse still has enough source rows.
+        # Cap high enough that explore / “all stills” paging can complete.
+        fetch_limit = min(max(limit * 6, limit), 20_000) if group else limit
         fetch_offset = 0 if group else offset
         items, total = await self.shot_repo.list(
             project_id=project_id,

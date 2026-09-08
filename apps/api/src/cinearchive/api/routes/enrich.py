@@ -160,7 +160,22 @@ async def put_enrich_config(
         data["openai_api_key"] = ""
     elif "openai_api_key" in data and data["openai_api_key"] is None:
         data.pop("openai_api_key", None)
+    if "image_api_key" in body and body["image_api_key"] == "":
+        data["image_api_key"] = ""
+    elif "image_api_key" in data and data["image_api_key"] is None:
+        data.pop("image_api_key", None)
     patch.update(data)
+
+    # Cloud image keys / remote image hosts are Pro.
+    next_image_backend = patch.get("image_backend") or (vc.load_runtime(settings).image_backend or "auto")
+    next_image_url = patch.get("image_api_base_url")
+    if next_image_url is None:
+        next_image_url = vc.load_runtime(settings).image_api_base_url or ""
+    if next_image_backend == "cloud" or (
+        next_image_url and not vc.is_local_openai_url(str(next_image_url))
+    ):
+        if patch.get("image_api_key") or patch.get("image_api_base_url") or next_image_backend == "cloud":
+            require_feature("image_generate", settings)
 
     # Cloud OpenAI-compatible endpoints (OpenRouter, OpenAI, Claude, Kimi…) are Pro.
     next_provider = patch.get("provider") or vc.effective_provider(settings)
