@@ -7,6 +7,7 @@
 | “How do I…?” / ideas / show your board | [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) |
 | Bug that breaks install or search | [Issues](https://github.com/Gianluca-Improta/cinekive/issues) |
 | **Cinekive Pro** (license, activate, billed support) | **cinekive@agentmail.to** (target ~48h, best-effort) |
+| Request a **14-day Pro trial key** | **cinekive@agentmail.to** — say which OS you are on |
 | Security | [SECURITY.md](SECURITY.md) |
 | Full walkthrough | [docs/GUIDE.md](docs/GUIDE.md) |
 | Desktop install | [docs/DESKTOP.md](docs/DESKTOP.md) · [Releases](https://github.com/Gianluca-Improta/cinekive/releases/latest) |

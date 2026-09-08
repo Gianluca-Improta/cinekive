@@ -84,7 +84,8 @@ UI packs: English, Chinese, Spanish, French, German, Japanese. Shot/craft taxono
 
 | | Free | Pro ($19 one-time) |
 |--|------|---------------------|
-| Search, ingest, canvas, single export, LAN | Yes | Yes |
+| Search, ingest, single export, LAN | Yes | Yes |
+| Moodboard canvas | — | Unlocked |
 | Archive mirrors, batch export, share tunnel | Soft / locked | Unlocked |
 | Board PNG/PDF export, folder watcher | — | Unlocked |
 | Cloud VLM (OpenRouter / ChatGPT / Claude) | Local Ollama | Bring your key |
@@ -93,7 +94,17 @@ UI packs: English, Chinese, Spanish, French, German, Japanese. Shot/craft taxono
 
 Same desktop installer. Buy on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro), then **Settings → Cinekive Pro → Activate**. Early-bird $12 for the first 100 buyers when offered.
 
-Self-built from source: no license checks (honor system). Packaged desktop enforces Free until you activate.
+Free is the default everywhere — installers, Docker, and builds from source. Pro
+needs a real license file: a Gumroad key or a signed 14-day trial key. Setting
+`CINEKIVE_TIER=pro` does nothing unless you also opt in with
+`CINEKIVE_ALLOW_DEV_LICENSE=true`, which packaged builds hard-disable.
+
+## Can I try Pro before buying?
+
+Yes. Signed **14-day trial keys** unlock every Pro feature, then the app drops back
+to Free. Paste one into **Settings → Cinekive Pro** like a normal key. Expiry is an
+absolute timestamp verified against network time, so rolling the clock back will not
+extend it, and each key burns on first activation. Ask at cinekive@agentmail.to.
 
 ## How do I activate Pro offline?
 

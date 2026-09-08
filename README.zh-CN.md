@@ -39,6 +39,10 @@
 
 同一安装包。**免费版**可搜、导入、画板、单帧导出；**Pro**（[Gumroad 一次性 $19](https://gianlucaimprota.gumroad.com/l/cinekive-pro)）解锁档案镜像同步、批量导出、分享隧道、持续标注等。在 **设置 → Cinekive Pro** 粘贴许可证密钥激活。详见英文 README 的 Free vs Pro 表。
 
+**免费版是所有安装方式的默认状态**——安装包、Docker、以及自行从源码构建都一样。解锁 Pro 需要真实的许可证：Gumroad 密钥，或经签名的 14 天试用密钥；没有任何环境变量可以直接开启 Pro。
+
+想先试用？签名的 **14 天试用密钥**可解锁全部 Pro 功能，到期后自动回到免费版；有效期按绝对时间戳并对照网络时间校验，回调系统时钟无法延长。索取密钥：cinekive@agentmail.to。
+
 | 平台 | 下载哪个文件 |
 |------|----------------|
 | **Windows** | `Cinekive-*-win-x64.exe`（安装包）或 `*-portable.exe`（绿色版） |

@@ -32,6 +32,7 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
   <a href="#tour">Tour</a> ·
   <a href="docs/FAQ.md">FAQ</a> ·
   <a href="docs/COMPARE.md">vs FilmGrab / Flim / Kive</a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
   <a href="#roadmap--v2">Roadmap</a> ·
   <a href="#join-in">Join in</a> ·
   <a href="README.zh-CN.md">中文</a>
@@ -54,24 +55,29 @@ If this saves you time, a [GitHub star](https://github.com/Gianluca-Improta/cine
 
 ## Downloads
 
-**[→ Download Cinekive v0.5.1](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.5.1)** — no Docker or terminal needed on Windows / Mac.
+**[→ Download Cinekive v0.5.3](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.5.3)** — no Docker or terminal needed on Windows / Mac.
 
 | Your computer | Download this | Then |
 |---------------|---------------|------|
-| **Windows** | [`Cinekive-0.5.1-win-x64.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.1/Cinekive-0.5.1-win-x64.exe) | Double-click → Start menu shortcut appears |
-| **Windows (no install)** | [`Cinekive-0.5.1-portable.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.1/Cinekive-0.5.1-portable.exe) | Double-click and run |
-| **Mac (Apple Silicon M1/M2/M3/M4)** | [`Cinekive-0.5.1-mac-arm64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.1/Cinekive-0.5.1-mac-arm64.dmg) | Open DMG → drag to Applications |
-| **Mac (Intel)** | [`Cinekive-0.5.1-mac-x64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.1/Cinekive-0.5.1-mac-x64.dmg) | Open DMG → drag to Applications |
-| **Linux** | [`.AppImage` / `.deb`](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.5.1) | Needs Docker Desktop for now |
+| **Windows** | [`Cinekive-0.5.3-win-x64.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.3/Cinekive-0.5.3-win-x64.exe) | Double-click → Start menu shortcut appears |
+| **Windows (no install)** | [`Cinekive-0.5.3-portable.exe`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.3/Cinekive-0.5.3-portable.exe) | Double-click and run |
+| **Mac (Apple Silicon M1/M2/M3/M4)** | [`Cinekive-0.5.3-mac-arm64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.3/Cinekive-0.5.3-mac-arm64.dmg) | Open DMG → drag to Applications |
+| **Mac (Intel)** | [`Cinekive-0.5.3-mac-x64.dmg`](https://github.com/Gianluca-Improta/cinekive/releases/download/v0.5.3/Cinekive-0.5.3-mac-x64.dmg) | Open DMG → drag to Applications |
+| **Linux** | [`.AppImage` / `.deb`](https://github.com/Gianluca-Improta/cinekive/releases/tag/v0.5.3) | Needs Docker Desktop for now |
 
 ### Free vs Pro
 
-Same installer. Pro is a **one-time** [Gumroad license](https://gianlucaimprota.gumroad.com/l/cinekive-pro) ($19, early-bird $12).
+Same installer, and the same code you see in this repo. Pro is a **one-time**
+[Gumroad license](https://gianlucaimprota.gumroad.com/l/cinekive-pro) ($19, early-bird $12).
+
+**Free is the default everywhere** — installers, `docker compose`, and builds from
+source alike. Pro unlocks with a real license: a Gumroad key or a signed 14-day
+trial key. There is no environment variable that flips Pro on.
 
 | | Free (Community) | Pro ($19 once) |
 |--|------------------|----------------|
 | Promise | Your local cinematic archive | Studio workflow unlocked |
-| Search + ingest + canvas | Yes | Yes |
+| Search + ingest | Yes | Yes |
 | Single-shot export | Yes | Yes |
 | LAN phone URL | Yes | Yes |
 | Projects | Soft cap (3) | Unlimited |
@@ -85,10 +91,21 @@ Same installer. Pro is a **one-time** [Gumroad license](https://gianlucaimprota.
 | Generate still from reference (BYO image key) | — | Yes |
 | Folder watcher (auto-ingest) | Manual drop | Yes |
 | Agent / inspiration seek | — | Yes |
+| Global dedupe | — | Yes |
+| MCP server for external agents | — | Yes |
 | Promo / upgrade links | Small Settings / Sidebar | Removed |
 | Support | GitHub Issues / Discussions | Email (~48h) |
 
-Activate in **Settings → Cinekive Pro**. Self-built from source has no license checks — Pro supports the project and unlocks packaged entitlements. Seller notes: [docs/GUMROAD.md](docs/GUMROAD.md).
+Activate in **Settings → Cinekive Pro**. Seller notes: [docs/GUMROAD.md](docs/GUMROAD.md).
+
+**Testing Pro?** Signed **14-day trial keys** unlock everything, then drop back to
+Free. Expiry is an absolute timestamp checked against network time, so winding the
+system clock back does not extend it. Ask for a key at cinekive@agentmail.to.
+
+Gating is client-side by nature — this is MIT source, and anyone can patch their own
+copy. The point is that a plain clone-and-build gives you Free, so Pro is a
+deliberate choice rather than an accident. If you rely on Cinekive at work, buying a
+license is what keeps the free edition moving.
 
 ### Install in 3 steps
 
@@ -177,13 +194,26 @@ Then open http://localhost:3000
 
 ---
 
-## What you get (v0.5.1)
+## What you get (v0.5.3)
+
+New in 0.5.3 — see [CHANGELOG.md](CHANGELOG.md):
+
+- **Semantic search actually works again** — a filter mismatch had been silently
+  downgrading every visual query to filename matching; scores are now calibrated so
+  a strong look match outranks an incidental title hit
+- **Free by default everywhere** — source builds no longer unlock Pro; Pro needs a
+  real Gumroad or signed trial license
+- **14-day trial keys** for testers, with absolute expiry and clock-rollback checks
+- **Offline archive previews** — 12 public-domain film stills bundled, so Seed cards
+  render with no network
+- **Spacebar play + hover autoplay** on stills; delete button on empty projects
+
+Also in the 0.5.x line:
 
 - **Cloud VLM (Pro)** — OpenRouter, ChatGPT/OpenAI, Claude (via OpenRouter), Kimi; local Ollama stays free
 - **Board PNG/PDF export (Pro)** + **folder watcher** auto-ingest
 - **Cinekive Pro** open-core — $19 one-time Gumroad license; Free stays useful
 - **Native engine** — relocatable Python in the engine pack
-- **Mac first-run fix** — creates `Application Support/Cinekive/runtime/.env` before setup so the wizard no longer hits ENOENT
 - **One-click desktop install** — Windows `.exe` / Mac `.dmg`; native engine by default (no Docker or terminal)
 - **Phone on same WiFi** — browse your library from a phone browser on your LAN
 - **Faster craft enrich** — continuous VLM drip with live Activity status; quicker Ollama calls

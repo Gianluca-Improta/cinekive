@@ -29,9 +29,13 @@ Engine data: `%APPDATA%\Cinekive\data` (Windows) / `~/Library/Application Suppor
 
 ### Free vs Pro
 
-The installer is the same binary. **Free** includes search, ingest, canvas, single-shot export, LAN phone URL, and **local Ollama** (+ Craft chat in the sidebar). **Pro** ($19 one-time on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro)) unlocks archive mirrors, continuous enrich, **cloud VLM** (OpenRouter / ChatGPT / Claude / Kimi), batch export, **board PNG/PDF**, **folder watcher**, share tunnel, Agent API, **MCP server** (`cinekive-mcp`), and unlimited projects.
+The installer is the same binary, and building from source gives you the same Free tier. **Free** includes search, ingest, single-shot export, LAN phone URL, and **local Ollama** (+ Craft chat in the sidebar). **Pro** ($19 one-time on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro)) unlocks the **moodboard canvas**, archive mirrors, continuous enrich, **cloud VLM** (OpenRouter / ChatGPT / Claude / Kimi), batch export, **board PNG/PDF**, **folder watcher**, share tunnel, Agent API, **MCP server** (`cinekive-mcp`), global dedupe, and unlimited projects.
 
 Activate: in-app **Settings → Cinekive Pro** (or paste your license key). License file: `%APPDATA%\Cinekive\license.json` (Mac/Linux under Application Support / `.config`).
+
+**Trials:** a signed `CK-TRIAL-…` key activates the same way and unlocks Pro for 14
+days, then the app returns to Free. Building from source also gives you Free, so
+there is no difference to work around.
 
 **Folder watcher (Pro):** Project brief panel → enable watch on the project inbox (or any absolute path). New stills/clips dropped there auto-ingest.
 

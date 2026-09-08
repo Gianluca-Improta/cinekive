@@ -22,8 +22,8 @@ body:
     id: version
     attributes:
       label: Version
-      description: Release tag or commit (e.g. v0.3.3)
-      placeholder: v0.3.3
+      description: Release tag or commit (e.g. v0.5.3). Settings shows the running version.
+      placeholder: v0.5.3
     validations:
       required: true
   - type: input
@@ -54,6 +54,6 @@ body:
     attributes:
       label: Checks
       options:
-        - label: Docker Desktop is running
         - label: I searched existing Issues / Discussions
         - label: I am not posting private client footage or credentials
+        - label: Docker Desktop is running (only needed for the browser / Docker setup)

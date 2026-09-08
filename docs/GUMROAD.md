@@ -1,6 +1,8 @@
 # Cinekive Pro on Gumroad
 
-One-time license for the **desktop** app. Source stays MIT; self-built / Docker without `CINEKIVE_LICENSE_ENFORCE` stays unlocked (honor system).
+One-time license for the **desktop** app. Source stays MIT, but Free is now the
+default everywhere: installers, Docker, and source builds all start Free, and Pro
+requires a real `license.json` (Gumroad key or signed trial key).
 
 ## Product checklist (seller)
 
@@ -46,7 +48,8 @@ Source stays open (MIT). Buying Pro supports the project and unlocks packaged en
 
 - Free vs Pro: see table in README.
 - Mac Gatekeeper / Windows SmartScreen: unsigned builds — Open / Run anyway.
-- Self-built from source: no license checks; Pro is for the packaged desktop + support.
+- Building from source gives you Free, same as the installer; Pro needs a license key.
+- Want to try first? Ask for a signed 14-day trial key (cinekive@agentmail.to).
 
 ## App / API env (packaged desktop)
 
@@ -56,13 +59,13 @@ Source stays open (MIT). Buying Pro supports the project and unlocks packaged en
 | `GUMROAD_PRODUCT_PERMALINK` | Alternate: product permalink slug(s), e.g. `cinekive-pro,cinekive-pro-annual` |
 | `GUMROAD_ACCESS_TOKEN` | Optional; only if your Gumroad setup requires it |
 | `CINEKIVE_PRO_URL` | Buy URL shown in UI |
-| `CINEKIVE_LICENSE_ENFORCE=true` | Free until activated (set by packaged launcher) |
+| `CINEKIVE_LICENSE_ENFORCE=true` | Set by the packaged launcher. Free is now the default even when this is unset, so leaving it off no longer unlocks Pro |
 | `CINEKIVE_LICENSE_PATH` | Path to `license.json` |
 | `CINEKIVE_LICENSE_DEVICE_LIMIT` | Max Gumroad `uses` / devices (default **3**) |
 | `CINEKIVE_LICENSE_REVERIFY_SEC` | Online re-check interval (default 14 days) |
 | `CINEKIVE_LICENSE_GRACE_SEC` | Offline Pro grace after last verify (default 14 days) |
 | `CINEKIVE_SUPPORT_EMAIL` | Default `cinekive@agentmail.to` |
-| `CINEKIVE_ALLOW_DEV_LICENSE` | Accept `CINEKIVE-DEV-PRO` (default on in non-prod) |
+| `CINEKIVE_ALLOW_DEV_LICENSE` | Local dev only: accept `CINEKIVE-DEV-PRO` and honour `CINEKIVE_TIER=pro`. Packaged builds hard-set this to `false` |
 | `CINEKIVE_TRIAL_SECRET` | HMAC secret for minting/verifying `CK-TRIAL-…` keys (mint machine + packaged env must match) |
 
 ## 14-day trial keys (testers)
@@ -85,6 +88,11 @@ Behavior:
 - Each key’s `jti` is burned on first activate — deactivate does **not** free the key; ask for a regenerate.
 - Residual risk: open-source clients can be patched; trials are for trusted testers. Paid seats stay on Gumroad.
 
+**Release builds must share the mint secret**, or every trial key is rejected as
+forged. Store it as the `CINEKIVE_TRIAL_SECRET` repo secret in GitHub Actions; the
+Windows / macOS / Linux jobs in `.github/workflows/desktop.yml` pass it through to
+electron-builder. Rotating the secret invalidates all outstanding keys.
+
 ## Activation + verification flow
 
 1. Buyer gets a Gumroad license key.
@@ -99,7 +107,9 @@ Behavior:
 
 ## Dev unlock
 
-With `CINEKIVE_ALLOW_DEV_LICENSE=true` (default for local), activate with key `CINEKIVE-DEV-PRO`.
+For local development, set `CINEKIVE_ALLOW_DEV_LICENSE=true` and either activate with
+key `CINEKIVE-DEV-PRO` or set `CINEKIVE_TIER=pro`. Without that opt-in, a source
+checkout resolves to Free — same as a released installer.
 
 ## After publish
 
