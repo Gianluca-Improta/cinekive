@@ -13,6 +13,7 @@ from cinearchive.config import Settings
 from cinearchive.db.session import SessionLocal
 from cinearchive.pipelines.embedding import EmbeddingPipeline
 from cinearchive.repositories.vector_repo import VectorRepository
+from cinearchive.services.entitlements import APP_VERSION
 
 router = APIRouter(tags=["health"])
 
@@ -104,6 +105,6 @@ async def health(
         "vlm_reachable": vlm_ok,
         "enrich": enrich_info,
         "watcher_enabled": settings.watcher_enabled,
-        "version": "0.5.1",
+        "version": APP_VERSION,
         "lan_web_url": os.environ.get("CINEKIVE_LAN_WEB_URL") or None,
     }
