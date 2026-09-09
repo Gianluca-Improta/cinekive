@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Film, Layers, Lock, Sparkles } from "lucide-react";
+import { Film, Layers, Sparkles } from "lucide-react";
 import { api, artifactUrl } from "@/lib/api-client";
 import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -50,15 +50,15 @@ function sourceMeta(p: Project): {
   if (slug.includes("shotdeck") || name.includes("shotdeck")) {
     return {
       label: "ShotDeck",
-      hint: "Searchable HD movie frames",
-      Icon: Lock,
+      hint: "Previously ingested stills (local files only)",
+      Icon: Film,
       accent: "text-amber-300",
     };
   }
   if (slug.includes("moviestills") || name.includes("moviestills")) {
     return {
       label: "MovieStillsDB",
-      hint: "Still database mirror",
+      hint: "Still database source",
       Icon: Film,
       accent: "text-sky-300",
     };
@@ -66,8 +66,8 @@ function sourceMeta(p: Project): {
   if (slug.includes("stillslab") || name.includes("stills")) {
     return {
       label: "StillsLab",
-      hint: "Production stills mirror",
-      Icon: Lock,
+      hint: "Previously ingested stills (local files only)",
+      Icon: Film,
       accent: "text-rose-300",
     };
   }

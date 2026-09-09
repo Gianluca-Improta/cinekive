@@ -18,11 +18,10 @@ ROOT = Path(__file__).resolve().parents[1]
 DB = ROOT / "data" / "db" / "cinearchive.db"
 API = os.environ.get("CINEKIVE_API", "http://localhost:8000").rstrip("/")
 
-SOURCES = ("filmgrab", "eyecandy", "shotdeck")
+SOURCES = ("filmgrab", "eyecandy")
 PROJECT_IDS = {
     "filmgrab": "68b6eb1b-6e56-4350-a0a7-cd709782c64e",
     "eyecandy": "b8e404f9-7d47-437f-912b-fd975213fe1e",
-    "shotdeck": "6dbcf19c-440d-408e-9918-e3fc09c30573",
 }
 
 

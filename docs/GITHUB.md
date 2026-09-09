@@ -38,7 +38,7 @@ Keep these green so GitHub and search engines surface the project:
 ## Getting the word out (lightweight)
 
 1. Share the [latest release](https://github.com/Gianluca-Improta/cinekive/releases/latest) with one GIF from `docs/showcase/`
-2. Post in editor / filmmaker Discords and Reddit (`r/editors`, `r/Filmmakers`) — lead with *local* and *own your frames*, link FAQ for Docker
+2. Post in editor / filmmaker Discords and Reddit (`r/editors`, `r/Filmmakers`) — lead with *local-first* and *your archive, your disk*, link FAQ for Docker
 3. Product Hunt / indie hacker launch when no-Docker ships (bigger unlock)
 4. Short vertical demo: drop URL → heroes → moodboard (30–45s)
 5. Chinese audience: point to `README.zh-CN.md` + zh UI

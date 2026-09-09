@@ -123,7 +123,7 @@ export function ProLicensePanel() {
         )}
       </div>
       <p className="text-xs text-cinema-muted">
-        Annual or Lifetime unlock via Gumroad license key. Archive mirrors, cloud VLM, batch + board
+        Annual or Lifetime unlock via license key. Automated archive pull, cloud VLM, batch + board
         export, folder watcher, continuous enrich, share tunnel. Each Pro key covers up to{" "}
         {deviceLimit} devices. Free Desktop keeps working if Pro is inactive.
       </p>

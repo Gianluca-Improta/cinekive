@@ -1,4 +1,9 @@
-﻿"""Bootstrap archive sources (ShotDeck, FilmGrab, EyeCandy) — scan + ingest + mirror."""
+﻿"""Bootstrap archive sources (FilmGrab, EyeCandy, MovieStillsDB) — scan + ingest + mirror.
+
+Only public, no-login sources are mirrored automatically. Automating authenticated
+access to a paid third-party subscription (scraping a gated account) is out of
+scope here by design — see docs/COMPARE.md and README.md licensing notes.
+"""
 
 from __future__ import annotations
 
@@ -60,18 +65,6 @@ SOURCES: dict[str, SourceSpec] = {
         site_url="https://eyecannndy.com/",
         access="public",
     ),
-    "shotdeck": SourceSpec(
-        key="shotdeck",
-        label="ShotDeck",
-        folder="_shotdeck",
-        ingest_path="/data/library/_shotdeck",
-        mirror_script="shotdeck_mirror.py",
-        archive_slug="shotdeck-archive",
-        archive_name="ShotDeck Archive",
-        description="Commercials, music videos, and indie films from ShotDeck (skips titles already in FilmGrab).",
-        site_url="https://shotdeck.com/",
-        access="gated",
-    ),
     "moviestillsdb": SourceSpec(
         key="moviestillsdb",
         label="MovieStillsDB",
@@ -83,18 +76,6 @@ SOURCES: dict[str, SourceSpec] = {
         description="1M+ community stills — previews without login; donator account for full resolution.",
         site_url="https://www.moviestillsdb.com/",
         access="public",
-    ),
-    "stillslab": SourceSpec(
-        key="stillslab",
-        label="StillsLab",
-        folder="_stillslab",
-        ingest_path="/data/library/_stillslab/by_title",
-        mirror_script="stillslab_mirror.py",
-        archive_slug="stillslab-archive",
-        archive_name="StillsLab Archive",
-        description="Film/TV/music-video stills — subscription email + password required.",
-        site_url="https://stillslab.com/",
-        access="gated",
     ),
 }
 
@@ -214,20 +195,6 @@ def _read_manifest(root: Path, *, max_bytes: int = 900_000) -> dict[str, Any]:
         return {}
 
 
-def _shotdeck_db_stats(root: Path) -> dict[str, Any]:
-    db_path = root / ".cache" / "state.db"
-    if not db_path.exists():
-        return {}
-    try:
-        conn = sqlite3.connect(db_path)
-        tasks = dict(conn.execute("SELECT status, COUNT(*) FROM tasks GROUP BY status").fetchall())
-        shots = dict(conn.execute("SELECT status, COUNT(*) FROM shots GROUP BY status").fetchall())
-        conn.close()
-        return {"tasks": tasks, "shots": shots}
-    except Exception:
-        return {}
-
-
 def _count_from_manifest(manifest: dict[str, Any]) -> int | None:
     if manifest.get("_large"):
         return None
@@ -337,7 +304,6 @@ def scan_source(settings: Settings, key: str) -> dict[str, Any]:
         raise ValueError(f"Unknown source: {key}")
     root = library_root(settings) / spec.folder
     manifest = _read_manifest(root)
-    db_stats = _shotdeck_db_stats(root) if key == "shotdeck" else {}
     samples = _sample_preview_relpaths(root, limit=6)
     return {
         "key": spec.key,
@@ -345,7 +311,7 @@ def scan_source(settings: Settings, key: str) -> dict[str, Any]:
         "path": str(root),
         "ingest_path": spec.ingest_path,
         "exists": root.exists(),
-        "image_count": _count_images(root, manifest=manifest, db_stats=db_stats),
+        "image_count": _count_images(root, manifest=manifest, db_stats={}),
         "manifest_updated_at": manifest.get("updated_at"),
         "mirror_available": spec.mirror_script is not None,
         "mirror_run": _mirror_run_state(root),
@@ -358,7 +324,6 @@ def scan_source(settings: Settings, key: str) -> dict[str, Any]:
         "credentials_configured": creds_configured(library_root(settings), key),
         "preview_urls": [f"/sources/{key}/preview/{i}" for i in range(len(samples))],
         "preview_count": len(samples),
-        **({"db_stats": db_stats} if key == "shotdeck" else {}),
     }
 
 
@@ -398,12 +363,7 @@ def resolve_mirror_script(settings: Settings, spec: SourceSpec) -> Path | None:
 
 
 def _resolve_credentials(settings: Settings, source: str) -> tuple[str, str]:
-    lib = library_root(settings)
-    user, password = get_source_credentials(lib, source)
-    if source == "shotdeck" and not user:
-        user = settings.shotdeck_user or ""
-        password = settings.shotdeck_pass or ""
-    return user, password
+    return get_source_credentials(library_root(settings), source)
 
 
 def start_mirror(
@@ -413,14 +373,10 @@ def start_mirror(
     limit_films: int | None = None,
     limit_per_tech: int | None = None,
     max_clips: int | None = None,
-    limit_tasks: int | None = 3,
-    limit_pages: int | None = 2,
     limit_shots: int | None = 30,
     films: str | None = None,
-    discover_only: bool = False,
     user: str | None = None,
     password: str | None = None,
-    login_browser: bool = False,
 ) -> dict[str, Any]:
     spec = SOURCES.get(source)
     if not spec or not spec.mirror_script:
@@ -453,69 +409,13 @@ def start_mirror(
     if not auth_user:
         auth_user, auth_pass = _resolve_credentials(settings, source)
 
-    if login_browser:
-        if source not in {"shotdeck", "stillslab"}:
-            raise ValueError(f"Browser login is not supported for {spec.label}")
-        # Headful Playwright window — user completes Cloudflare / SSO there.
-        cmd.append("--login-browser")
-        if auth_user:
-            cmd.extend(["--user", auth_user])
-        if auth_pass:
-            cmd.extend(["--password", auth_pass])
-        env[f"{source.upper()}_USER"] = auth_user
-        env[f"{source.upper()}_PASS"] = auth_pass
-        if source == "shotdeck":
-            env["SHOTDECK_USER"] = auth_user
-            env["SHOTDECK_PASS"] = auth_pass
-        log_path = root / ".cache" / "mirror_login.log"
-        log_f = open(log_path, "a", encoding="utf-8")
-        proc = subprocess.Popen(cmd, stdout=log_f, stderr=subprocess.STDOUT, env=env)
-        state = {
-            "pid": proc.pid,
-            "running": True,
-            "started_at": time.time(),
-            "source": source,
-            "log_path": str(log_path),
-            "mode": "login_browser",
-        }
-        run_state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-        return {
-            "message": (
-                f"{spec.label}: browser login window opened. "
-                "Complete Cloudflare/sign-in there, then run Mirror again."
-            ),
-            **state,
-        }
-
-    if spec.access == "gated":
-        if not auth_user or not auth_pass:
-            raise ValueError(
-                f"Set {spec.label} credentials on the Archives page or in "
-                f"library/.cache/source_credentials.json — or use Browser login "
-                f"when Cloudflare blocks password login."
-            )
-        cmd.extend(["--user", auth_user, "--password", auth_pass])
-        env[f"{source.upper()}_USER"] = auth_user
-        env[f"{source.upper()}_PASS"] = auth_pass
-        if source == "shotdeck":
-            env["SHOTDECK_USER"] = auth_user
-            env["SHOTDECK_PASS"] = auth_pass
-    elif auth_user and auth_pass:
+    if auth_user and auth_pass:
         cmd.extend(["--user", auth_user, "--password", auth_pass])
         env[f"{source.upper()}_USER"] = auth_user
         env[f"{source.upper()}_PASS"] = auth_pass
 
     films_arg = (films or "").strip()
-    if source == "shotdeck":
-        if limit_tasks is not None:
-            cmd.extend(["--limit-tasks", str(limit_tasks)])
-        if limit_pages is not None:
-            cmd.extend(["--limit-pages", str(limit_pages)])
-        if limit_shots is not None:
-            cmd.extend(["--limit-shots", str(limit_shots)])
-        if discover_only:
-            cmd.append("--discover-only")
-    elif source == "filmgrab":
+    if source == "filmgrab":
         if films_arg:
             cmd.extend(["--films", films_arg])
         if limit_films is not None:
@@ -529,11 +429,6 @@ def start_mirror(
             cmd.extend(["--max-clips", str(max_clips)])
     elif source == "moviestillsdb" and limit_films is not None:
         cmd.extend(["--limit-movies", str(limit_films)])
-    elif source == "stillslab":
-        if limit_shots is not None:
-            cmd.extend(["--limit-stills", str(limit_shots)])
-        if limit_films is not None:
-            cmd.extend(["--limit-titles", str(limit_films)])
 
     log_path = root / ".cache" / "mirror.log"
     log_f = open(log_path, "a", encoding="utf-8")

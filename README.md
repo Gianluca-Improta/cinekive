@@ -43,7 +43,7 @@ Inspired by FilmGrab, EyeCandy, Flim & Kive. Built to live on **your** machine.
 ## Who it’s for
 
 - **Editors & directors** building lookbooks without scrubbing a full timeline  
-- **Commercial / social teams** who need client-safe references on a studio drive  
+- **Commercial / social teams** who need a private, offline reference library on a studio drive (Cinekive does not clear rights — use only assets you're authorized to use)  
 - **Cinephiles & students** collecting stills they have rights to access  
 - Anyone who wants a **local FilmGrab-style archive** plus ingest and moodboards  
 
@@ -81,7 +81,7 @@ trial key. There is no environment variable that flips Pro on.
 | Single-shot export | Yes | Yes |
 | LAN phone URL | Yes | Yes |
 | Projects | Soft cap (3) | Unlimited |
-| Archive mirror sync | Browse only | Sync tools |
+| Automated archive pull (public sources) | Browse + manual ingest only | One-click batch pull |
 | Continuous craft enrich | Manual only | Always-on drip |
 | Cloud VLM (OpenRouter / ChatGPT / Claude / Kimi) | Local Ollama only | Bring your own key |
 | Batch export / share tunnel | — | Yes |
@@ -153,7 +153,7 @@ Then open http://localhost:3000
 <p align="center">
   <img src="docs/showcase/ui-library.png" width="90%" alt="FilmGrab archive grid" />
 </p>
-<p align="center"><em>Browse your archive — heroes, craft filters, FilmGrab / ShotDeck / your own ingest</em></p>
+<p align="center"><em>Browse your archive — heroes, craft filters, public-domain sources / your own ingest</em></p>
 
 <p align="center">
   <img src="docs/showcase/ui-discovery.png" width="90%" alt="Discovery grid" />
@@ -173,7 +173,7 @@ Then open http://localhost:3000
 <p align="center">
   <img src="docs/showcase/ui-archives.png" width="90%" alt="Archives UI" />
 </p>
-<p align="center"><em>Archives — mirrors, logins, more sources</em></p>
+<p align="center"><em>Archives — public sources, your own ingest, discover more</em></p>
 
 <p align="center">
   <img src="docs/showcase/library-reel.gif" width="80%" alt="Sample archive frames reel" />
@@ -222,7 +222,7 @@ Also in the 0.5.x line:
 - **GHCR pre-built images** — Docker users pull images instead of building locally when possible
 
 - **Narrative / Commercial / Social** — ingest your own footage (drop files or any yt-dlp URL)
-- **Archives** — FilmGrab, EyeCandy, ShotDeck, MovieStillsDB, StillsLab mirrors + Discover list
+- **Archives** — FilmGrab, EyeCandy, MovieStillsDB (public/free sources) + your own ingest + Discover list
 - **Search** — film titles, directors, techniques, eras, visual look (SigLIP + metadata routing)
 - **Languages** — UI in EN / 中文 / ES / FR / DE / JA; Chinese craft taxonomy labels
 - **Inspector + full panel** — side inspector by default; click the image for a large stage
@@ -286,7 +286,7 @@ First open shows a short onboarding. Re-run anytime from the top bar **Tour**.
 |------|------|
 | Shelves | Narrative / Commercial / Social vs Archives |
 | Ingest | Full-screen drop zone + URL paste |
-| Archives | Mirrors (with logins) + More sources |
+| Archives | Public sources (FilmGrab, EyeCandy, MovieStillsDB) + your own ingest |
 | Moodboard | Project → Moodboard → drag from clip rail or Send to board |
 | Inspector | Default side panel; click image / double-click for full stage |
 

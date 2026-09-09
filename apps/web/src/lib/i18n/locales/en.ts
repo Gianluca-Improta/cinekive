@@ -22,7 +22,7 @@ const en: MessageTree = {
     wardrobe: "Wardrobe",
     wardrobeHint: "Costume · fabric · character look",
     archives: "Archives",
-    archivesHint: "Mirrors · your still dumps",
+    archivesHint: "Sources · your still dumps",
     archivesHub: "Manage",
     archivesHubHint: "archive of archives · pull · drop stills",
     discovery: "Discovery",
@@ -269,7 +269,7 @@ const en: MessageTree = {
     manage: "All libraries",
     newArchive: "New archive",
     yourArchives: "Yours",
-    builtIn: "Mirrors",
+    builtIn: "Sources",
     freeLibraries: "Seed",
   },
   settings: {
@@ -318,7 +318,7 @@ const en: MessageTree = {
       "Dial in saves craft tokens as chips. Active chips glow cyan; click again to clear. Pair with the filter row (Heroes, Moving, Favorites) — if the grid goes blank, Clear filters.",
     archivesTitle: "Archive of archives",
     archivesBody:
-      "One screen for every library — yours, mirrors, and curated sources. Filter by type, pull specific films, then ingest. Storage stays lean; export can Real-ESRGAN upscale.",
+      "One screen for every library — yours and curated public sources. Filter by type, pull specific films, then ingest. Storage stays lean; export can Real-ESRGAN upscale.",
     boardsTitle: "Moodboards live on a project",
     boardsBody:
       "Open a project → Moodboard. Drag stills from the rail, add text via the move handle (edit without dragging the whole board), link refs into Generate, export PNG/PDF on Pro.",

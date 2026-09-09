@@ -77,8 +77,8 @@ export function inferRights(shot: Shot): RightsBadge {
   if (/shotdeck|stillslab/.test(blob)) {
     return {
       code: "subscription",
-      label: "Subscription ref",
-      hint: "Mirrored under your account access — not a redistribution license.",
+      label: "Third-party reference",
+      hint: "Sourced from a still elsewhere — verify you're authorized to use it before publishing or sharing.",
       tone: "amber",
     };
   }
@@ -111,7 +111,7 @@ function mapCode(code: string, label: string, hint: string): RightsBadge | null 
     return { code: "cleared", label: label || "Cleared", hint, tone: "cyan" };
   }
   if (/sub|shotdeck|licensed.?access/.test(code)) {
-    return { code: "subscription", label: label || "Subscription", hint, tone: "amber" };
+    return { code: "subscription", label: label || "Third-party reference", hint, tone: "amber" };
   }
   if (/ref|study|fair.?use/.test(code)) {
     return { code: "reference", label: label || "Reference", hint, tone: "muted" };

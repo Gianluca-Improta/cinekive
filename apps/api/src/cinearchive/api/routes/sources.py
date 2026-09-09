@@ -41,23 +41,18 @@ class SourceIngestRequest(BaseModel):
 
 class MirrorRunRequest(BaseModel):
     source: str = "filmgrab"
-    limit_tasks: int | None = Field(default=3, ge=1, le=500)
-    limit_pages: int | None = Field(default=2, ge=1, le=500)
     limit_shots: int | None = Field(default=30, ge=1, le=5000)
     limit_films: int | None = Field(default=None, ge=1, le=10_000)
     limit_per_tech: int | None = Field(default=None, ge=1, le=2000)
     max_clips: int | None = Field(default=None, ge=1, le=50_000)
     # Comma-separated film titles/slugs (FilmGrab --films)
     films: str | None = Field(default=None, max_length=4000)
-    discover_only: bool = False
     user: str | None = Field(default=None, max_length=320)
     password: str | None = Field(default=None, max_length=512)
-    # Headful browser login for Cloudflare / SSO (ShotDeck, StillsLab)
-    login_browser: bool = False
 
 
 class SourceCredentialsRequest(BaseModel):
-    source: str = Field(description="shotdeck | stillslab | moviestillsdb (optional full-res)")
+    source: str = Field(description="moviestillsdb (optional full-res donator login)")
     user: str = Field(min_length=1, max_length=320)
     password: str = Field(min_length=1, max_length=512)
 
@@ -240,9 +235,6 @@ async def ingest_archive_source(
     spec = SOURCES.get(source_key)
     if not spec:
         raise HTTPException(status_code=400, detail=f"Unknown source: {source_key}")
-    if spec.access == "gated" and source_key == "shotdeck":
-        # Allow ingest of already-local files only; no encouragement to scrape
-        pass
 
     repo = ProjectRepository(session)
     project = None
@@ -320,14 +312,9 @@ async def save_credentials(
     body: SourceCredentialsRequest,
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    """Save subscription credentials locally for a gated archive mirror (Pro)."""
-    from cinearchive.services.entitlements import require_feature
-
+    """Save an optional donator login for a public archive mirror (e.g. MovieStillsDB full-res)."""
     if body.source not in SOURCES:
         raise HTTPException(status_code=400, detail=f"Unknown source: {body.source}")
-    spec = SOURCES[body.source]
-    if spec.access == "gated":
-        require_feature("archive_mirrors", settings)
     save_source_credentials(
         library_root(settings),
         body.source,
@@ -344,8 +331,7 @@ async def save_credentials(
 
 @router.get("/sources/credentials")
 async def list_credentials(settings: Settings = Depends(get_settings)) -> dict:
-    keys = [k for k, s in SOURCES.items() if s.access == "gated"] + ["moviestillsdb"]
-    return {"credentials": status_for_sources(library_root(settings), keys)}
+    return {"credentials": status_for_sources(library_root(settings), ["moviestillsdb"])}
 
 
 @router.post("/sources/mirror/run")
@@ -358,24 +344,20 @@ async def run_mirror(
     spec = SOURCES.get(body.source)
     if not spec:
         raise HTTPException(status_code=400, detail=f"Unknown source: {body.source}")
-    # Subscription / login scrapers are Pro-only; public mirrors stay Free.
-    if spec.access == "gated":
-        require_feature("archive_mirrors", settings)
+    # Automated batch pull/sync from public archives is Pro; Free can still ingest
+    # files already on disk (drop them in and hit Ingest — no gate on that path).
+    require_feature("archive_mirrors", settings)
     try:
         return start_mirror(
             settings,
             source=body.source,
-            limit_tasks=body.limit_tasks,
-            limit_pages=body.limit_pages,
             limit_shots=body.limit_shots,
             limit_films=body.limit_films,
             limit_per_tech=body.limit_per_tech,
             max_clips=body.max_clips,
             films=body.films,
-            discover_only=body.discover_only,
             user=body.user,
             password=body.password,
-            login_browser=body.login_browser,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

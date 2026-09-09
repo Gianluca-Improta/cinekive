@@ -10,7 +10,7 @@ const es: MessageTree = {
     social: "Redes sociales",
     socialHint: "Corto / largo · aspecto opcional",
     archives: "Archivos",
-    archivesHint: "Espejos · fotogramas",
+    archivesHint: "Fuentes · fotogramas",
     archivesHub: "Gestionar",
     archivesHubHint: "scrapers · bibliotecas · soltar stills",
     discovery: "Descubrir",
@@ -197,7 +197,7 @@ const es: MessageTree = {
     manage: "Gestión de archivos",
     newArchive: "Nuevo archivo",
     yourArchives: "Tus archivos",
-    builtIn: "Scrapers",
+    builtIn: "Fuentes",
     freeLibraries: "Más bibliotecas",
   },
   bin: {

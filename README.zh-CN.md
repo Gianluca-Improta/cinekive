@@ -37,7 +37,7 @@
 
 **[→ 下载 Windows / Mac / Linux 桌面版](https://github.com/Gianluca-Improta/cinekive/releases/latest)**
 
-同一安装包。**免费版**可搜、导入、画板、单帧导出；**Pro**（[Gumroad 一次性 $19](https://gianlucaimprota.gumroad.com/l/cinekive-pro)）解锁档案镜像同步、批量导出、分享隧道、持续标注等。在 **设置 → Cinekive Pro** 粘贴许可证密钥激活。详见英文 README 的 Free vs Pro 表。
+同一安装包。**免费版**可搜、导入、画板、单帧导出；**Pro**（付费许可证）解锁自动批量拉取公共来源、批量导出、分享隧道、持续标注等。在 **设置 → Cinekive Pro** 粘贴许可证密钥激活，或使用 14 天免卡试用密钥。详见英文 README 的 Free vs Pro 表。
 
 **免费版是所有安装方式的默认状态**——安装包、Docker、以及自行从源码构建都一样。解锁 Pro 需要真实的许可证：Gumroad 密钥，或经签名的 14 天试用密钥；没有任何环境变量可以直接开启 Pro。
 
@@ -98,7 +98,7 @@
 <p align="center">
   <img src="docs/showcase/ui-library.png" width="90%" alt="档案网格" />
 </p>
-<p align="center"><em>浏览档案 — 英雄帧、技法筛选、FilmGrab / ShotDeck / 自有导入</em></p>
+<p align="center"><em>浏览档案 — 英雄帧、技法筛选、公共来源 / 自有导入</em></p>
 
 <p align="center">
   <img src="docs/showcase/ui-discovery.png" width="90%" alt="发现页" />
@@ -118,7 +118,7 @@
 - **GHCR 预构建镜像** — Docker 用户优先拉取镜像，减少本地构建
 
 - **叙事 / 广告 / 社媒** — 导入自有素材（拖文件或任意 yt-dlp 链接）
-- **档案库** — FilmGrab、EyeCandy、ShotDeck、MovieStillsDB、StillsLab 镜像 + 发现更多来源
+- **档案库** — FilmGrab、EyeCandy、MovieStillsDB（公共/免费来源）+ 自有导入 + 发现更多来源
 - **搜索** — 片名、导演、技法、年代、画面感（SigLIP + 元数据）
 - **多语言** — 界面 EN / 中文 / ES / FR / DE / JA；景别与技法等中文标签
 - **检视器 + 全屏面板** — 默认侧栏检视；点击画面进入大舞台

@@ -32,7 +32,7 @@ import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { FALLBACK_IDEAS } from "./_fallback_ideas";
 
-type SourceKey = "filmgrab" | "eyecandy" | "shotdeck" | "moviestillsdb" | "stillslab";
+type SourceKey = "filmgrab" | "eyecandy" | "moviestillsdb";
 type FilterKind = "all" | "yours" | "mirrors" | "curated";
 type SortKind = "updated" | "name" | "frames";
 type HubView = "cards" | "details";
@@ -517,9 +517,6 @@ export default function ArchivesPage() {
                 }
                 if (tile.kind === "mirror") {
                   const key = tile.source.key as SourceKey;
-                  const gated =
-                    tile.source.access === "gated" || Boolean(tile.source.requires_pro);
-                  const locked = gated && !canMirror;
                   const running = Boolean(runs[key]?.running);
                   const preview = mirrorPreview(tile.source);
                   return (
@@ -527,27 +524,18 @@ export default function ArchivesPage() {
                       key={tile.id}
                       title={tile.source.label}
                       subtitle={
-                        locked
-                          ? "Subscription scraper — unlock with Pro"
-                          : tile.source.image_count
-                            ? `${tile.source.image_count.toLocaleString()} on disk · click to ingest`
-                            : tile.source.description || "Click to pull / ingest"
+                        tile.source.image_count
+                          ? `${tile.source.image_count.toLocaleString()} on disk · click to ingest`
+                          : tile.source.description || "Click to browse / ingest"
                       }
-                      badge={gated ? "mirror" : "free"}
+                      badge="free"
                       previewUrls={preview.urls}
                       bundledUrls={preview.bundled}
                       illustrative={preview.illustrative}
-                      locked={locked}
                       selected={selectedId === tile.id}
                       layout={hubView === "details" ? "row" : "card"}
                       accentClass={SOURCE_ACCENTS[key]}
-                      onClick={() => {
-                        if (locked) {
-                          window.open(PRO_UPGRADE_URL, "_blank", "noopener,noreferrer");
-                          return;
-                        }
-                        setSelectedId(tile.id);
-                      }}
+                      onClick={() => setSelectedId(tile.id)}
                       footer={
                         running ? (
                           <span className="font-mono text-[10px] text-cinema-cyan">mirroring…</span>
@@ -665,8 +653,8 @@ export default function ArchivesPage() {
                 const archive = projectFor(source.archive_slug, source.archive_name);
                 const canIngest =
                   Boolean(source.image_count) || Boolean(source.exists) || Boolean(archive);
-                const gated = source.access === "gated";
-                const locked = gated && !canMirror;
+                // Automated batch pull is Pro; ingesting files already on disk stays Free.
+                const locked = !canMirror;
                 const cred = creds[key];
                 const configured = Boolean(source.credentials_configured || cred?.configured);
                 const form = credForms[key] || { user: "", password: "" };
@@ -681,16 +669,16 @@ export default function ArchivesPage() {
                     {locked && (
                       <ProGateBanner
                         feature="archive_mirrors"
-                        title={`${source.label} is Pro`}
-                        detail="Subscription scrapers need Pro. Free mirrors stay available."
+                        title={`Automated pull is Pro`}
+                        detail="Drop files you already have into Ingest for free, or unlock Pro for one-click batch pulls."
                         compact
                       />
                     )}
-                    {gated && !locked && (
+                    {key === "moviestillsdb" && !locked && (
                       <div className="rounded-xl border border-cinema-border/50 bg-cinema-black/40 p-3">
                         <div className="mb-2 flex items-center gap-1.5 text-[11px] text-cinema-muted">
                           <KeyRound className="h-3.5 w-3.5" />
-                          Login
+                          Optional donator login (full-res previews)
                           {configured && cred?.user_hint ? (
                             <span className="text-cinema-cyan">· {cred.user_hint}</span>
                           ) : null}
@@ -734,26 +722,8 @@ export default function ArchivesPage() {
                             }
                             className="text-left text-[10px] text-cinema-cyan hover:underline disabled:opacity-40"
                           >
-                            Save credentials locally
+                            Save login locally
                           </button>
-                          {(key === "shotdeck" || key === "stillslab") && (
-                            <button
-                              type="button"
-                              disabled={mirrorMutation.isPending || locked}
-                              onClick={() =>
-                                mirrorMutation.mutate({
-                                  source: key,
-                                  user: form.user || undefined,
-                                  password: form.password || undefined,
-                                  login_browser: true,
-                                })
-                              }
-                              className="text-left text-[10px] text-amber-300/90 hover:underline disabled:opacity-40"
-                              title="Opens a browser window so you can pass Cloudflare / SSO, then run Mirror"
-                            >
-                              Browser login (Cloudflare / SSO)
-                            </button>
-                          )}
                         </div>
                       </div>
                     )}
@@ -794,12 +764,7 @@ export default function ArchivesPage() {
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
-                        disabled={
-                          locked ||
-                          mirrorMutation.isPending ||
-                          running ||
-                          (gated && !configured && !form.user && !form.password)
-                        }
+                        disabled={locked || mirrorMutation.isPending || running}
                         onClick={() => {
                           if (locked) {
                             window.open(PRO_UPGRADE_URL, "_blank", "noopener,noreferrer");

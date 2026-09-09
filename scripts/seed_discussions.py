@@ -23,7 +23,7 @@ POSTS = [
         "body": """\
 ## Hey
 
-Cinekive is a **local-first** cinematic visual archive: own your frames, search by look/mood/technique, ingest files or yt-dlp URLs, and build moodboards — without renting someone else's library.
+Cinekive is a **local-first** cinematic visual archive: search your own stills by look/mood/technique, ingest files or yt-dlp URLs, and build moodboards — all on your own disk, no subscription required.
 
 ### Start here
 

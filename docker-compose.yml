@@ -69,9 +69,9 @@ services:
       - WATCHER_ENABLED=${WATCHER_ENABLED:-false}
       - WATCHER_POLL_SEC=${WATCHER_POLL_SEC:-5}
       - SEEK_ENABLED=${SEEK_ENABLED:-true}
-      - SHOTDECK_USER=${SHOTDECK_USER:-}
-      - SHOTDECK_PASS=${SHOTDECK_PASS:-}
       - MIRROR_SCRIPTS_DIR=/app/scripts
+      - MOVIESTILLSDB_USER=${MOVIESTILLSDB_USER:-}
+      - MOVIESTILLSDB_PASS=${MOVIESTILLSDB_PASS:-}
       # Dedupe: compose seeds env only. After first API boot, library_runtime.json
       # owns the toggle (new installs → true; existing libraries freeze current value).
       - DEDUPE_ON_INGEST=${DEDUPE_ON_INGEST:-false}

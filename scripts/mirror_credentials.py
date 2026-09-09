@@ -18,12 +18,8 @@ def _library_root(out_dir: Path | None = None) -> Path:
             return Path(*parts[: parts.index("_filmgrab")])
         if "_eyecandy" in parts:
             return Path(*parts[: parts.index("_eyecandy")])
-        if "_shotdeck" in parts:
-            return Path(*parts[: parts.index("_shotdeck")])
         if "_moviestillsdb" in parts:
             return Path(*parts[: parts.index("_moviestillsdb")])
-        if "_stillslab" in parts:
-            return Path(*parts[: parts.index("_stillslab")])
         if out_dir.name.startswith("_"):
             return out_dir.parent
     env = os.environ.get("CINEKIVE_LIBRARY", "") or os.environ.get("LIBRARY_HOST_PATH", "")
@@ -40,10 +36,6 @@ def load_credentials(source_key: str, *, out_dir: Path | None = None) -> tuple[s
     env_pass = os.environ.get(f"{source_key.upper()}_PASS", "") or os.environ.get(
         f"{source_key.upper()}_PASSWORD", ""
     )
-    # ShotDeck legacy env names
-    if source_key == "shotdeck":
-        env_user = env_user or os.environ.get("SHOTDECK_USER", "")
-        env_pass = env_pass or os.environ.get("SHOTDECK_PASS", "")
     if env_user and env_pass:
         return env_user, env_pass
 

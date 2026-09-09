@@ -7,7 +7,7 @@ Honest positioning so people searching “FilmGrab alternative”, “local Flim
 | Need | Try |
 |------|-----|
 | Browse famous stills in a browser | FilmGrab, MovieStillsDB, similar sites |
-| Curated cloud shot library + search UX | Flim, Kive, ShotDeck (product depending on plan) |
+| Curated cloud shot library + search UX | Flim, Kive, and similar hosted products (depending on plan) |
 | **Own the files**, search locally, ingest your cuts, moodboard | **Cinekive** |
 | NLE editing | DaVinci Resolve, Premiere, etc. (Cinekive does not replace them) |
 
@@ -15,13 +15,13 @@ Honest positioning so people searching “FilmGrab alternative”, “local Flim
 
 **They shine at:** discovery of iconic frames, zero install.
 
-**Cinekive adds:** permanent local copies *you* choose to mirror or ingest, craft filters, visual similarity, project shelves, moodboards. Mirror scripts assume **your** licensed access — we do not ship third-party still archives in git.
+**Cinekive adds:** local search and organization for media *you* choose to ingest, craft filters, visual similarity, project shelves, moodboards. Cinekive does not clear rights or bypass access controls on any third-party service — ingest is limited to files you provide and public-domain/free sources. Use only assets you're authorized to use.
 
-## Flim / Kive / ShotDeck-style products
+## Flim / Kive-style products
 
 **They shine at:** polished hosted search, team seats, always-on cloud.
 
-**Cinekive trades that for:** privacy, offline-friendly archives, no monthly rent for *your* library, open MIT code you can fork. You operate Docker (for now) and your own disk.
+**Cinekive trades that for:** privacy, an offline-friendly local archive, and open MIT code you can fork. You operate Docker (for now) and your own disk.
 
 ## Pure NLE bins
 

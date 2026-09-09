@@ -25,7 +25,7 @@ Cinekive Free is your local FilmGrab-style archive: search, ingest, canvas, sing
 
 Pro unlocks studio workflow on the same installer:
 
-- Archive mirror sync tools
+- Automated batch pull from public archive sources
 - Continuous craft enrich + cloud VLM settings
 - Bring-your-own cloud VLM: OpenRouter, ChatGPT/OpenAI, Claude (via OpenRouter), Kimi
 - Batch export (multi-shot ZIP / EDL)

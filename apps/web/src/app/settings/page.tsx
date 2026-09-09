@@ -340,7 +340,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <p className="text-[11px] text-cinema-muted">
-                    Mirror logins & pull filters:{" "}
+                    Archive sources & pull filters:{" "}
                     <Link href="/archives" className="text-cinema-cyan hover:underline">
                       Archive of Archives
                     </Link>

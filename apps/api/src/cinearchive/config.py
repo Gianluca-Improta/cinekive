@@ -81,9 +81,7 @@ class Settings(BaseSettings):
     brave_search_api_key: str = ""  # BRAVE_SEARCH_API_KEY — Pro web stills search
     brave_search_count: int = 12
 
-    # Bootstrap mirrors (ShotDeck host capture)
-    shotdeck_user: str = ""
-    shotdeck_pass: str = ""
+    # Bootstrap mirror scripts (host capture for public/free archive sources)
     mirror_scripts_dir: str = ""
 
     # Soft-delete bin — X on cards moves here; hard-delete after N days

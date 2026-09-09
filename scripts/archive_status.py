@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""One-screen archive pipeline status — mirrors, disk, ingest jobs, recent log tails."""
+"""One-screen archive pipeline status — sources, disk, ingest jobs, recent log tails."""
 
 from __future__ import annotations
 
 import json
 import os
-import sqlite3
 import sys
 import urllib.error
 import urllib.request
@@ -52,16 +51,6 @@ SOURCES = {
         "disk": ROOT / "data" / "library" / "_eyecandy",
         "glob": "**/*.gif",
         "project_id": "b8e404f9-7d47-437f-912b-fd975213fe1e",
-    },
-    "shotdeck": {
-        "label": "ShotDeck",
-        "disk": (
-            Path(os.environ["LIBRARY_HOST_PATH"]) / "_shotdeck"
-            if os.environ.get("LIBRARY_HOST_PATH")
-            else ROOT / "data" / "library" / "_shotdeck"
-        ),
-        "glob": "**/*.jpg",
-        "project_id": "6dbcf19c-440d-408e-9918-e3fc09c30573",
     },
 }
 
@@ -141,20 +130,6 @@ def mirror_pid(root: Path) -> tuple[int | None, bool]:
     return None, False
 
 
-def shotdeck_db_summary(root: Path) -> str:
-    db = root / ".cache" / "state.db"
-    if not db.exists():
-        return "no state.db"
-    try:
-        conn = sqlite3.connect(db)
-        tasks = dict(conn.execute("SELECT status, COUNT(*) FROM tasks GROUP BY status").fetchall())
-        shots = dict(conn.execute("SELECT status, COUNT(*) FROM shots GROUP BY status").fetchall())
-        conn.close()
-        return f"tasks={tasks} shots={shots}"
-    except Exception as exc:
-        return f"db error: {exc}"
-
-
 def print_section(title: str) -> None:
     safe_print("")
     safe_print(f"=== {title} ===")
@@ -171,7 +146,7 @@ def main() -> int:
     else:
         safe_print("  health: UNREACHABLE")
 
-    print_section("Mirrors (disk + process)")
+    print_section("Sources (disk + process)")
     for key, spec in SOURCES.items():
         root: Path = spec["disk"]
         n = count_files(root, spec["glob"])
@@ -186,21 +161,7 @@ def main() -> int:
                 mpid = int(run["pid"])
                 if process_alive(mpid):
                     pid_s = f"pid {mpid} running (mirror)"
-        if key == "shotdeck":
-            loop = load_json(root / ".cache" / "loop_state.json")
-            blocked = loop.get("blocked")
-            extra = (
-                f" | cycle={loop.get('cycle')} blocked={blocked} "
-                f"on_disk={loop.get('images_on_disk')} updated={fmt_age(loop.get('updated_at'))}"
-            )
-            for sub in ("by_commercial", "by_music_video", "by_indie", "by_movie"):
-                c = count_files(root / sub, "*.jpg")
-                if c:
-                    extra += f" | {sub}={c}"
-            extra += f"\n    {shotdeck_db_summary(root)}"
-            log = root / ".cache" / "loop_stdout.log"
-        else:
-            log = root / ".cache" / "mirror.log"
+        log = root / ".cache" / "mirror.log"
         safe_print(f"  {spec['label']}: {n} files | {pid_s}{extra}")
         for line in tail_lines(log, 3):
             safe_print(f"    log: {line}")
@@ -241,12 +202,11 @@ def main() -> int:
 
     print_section("Log tails (live watch)")
     for label, path in [
-        ("ShotDeck loop", SOURCES["shotdeck"]["disk"] / ".cache" / "loop_stdout.log"),
         ("FilmGrab mirror", SOURCES["filmgrab"]["disk"] / ".cache" / "mirror.log"),
+        ("EyeCandy mirror", SOURCES["eyecandy"]["disk"] / ".cache" / "mirror.log"),
     ]:
         safe_print(f"  {label}: {path}")
     safe_print("")
-    safe_print("  Watch live:  Get-Content D:\\library\\_shotdeck\\.cache\\loop_stdout.log -Wait -Tail 20")
     safe_print("  Auto-refresh: powershell -File scripts/archive_status_watch.ps1")
     safe_print("  One-shot:     python scripts/archive_status.py")
     return 0

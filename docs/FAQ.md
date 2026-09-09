@@ -11,11 +11,11 @@ Think FilmGrab + moodboard + ingest — running on **your** machine.
 ## Who is it for?
 
 - Editors and directors building lookbooks and reference boards
-- Commercial / social teams who want client-safe libraries on a studio drive
+- Commercial / social teams who want a private, offline reference library on a studio drive (use only assets you're authorized to use — Cinekive does not clear rights)
 - Students and cinephiles collecting stills legally from sites they have access to
 - Anyone tired of scrubbing a timeline for “that neon hallway”
 
-## Is this FilmGrab / Flim / Kive / ShotDeck?
+## Is this FilmGrab / Flim / Kive?
 
 Those are great references. Cinekive is **software you run yourself**:
 
@@ -86,7 +86,7 @@ UI packs: English, Chinese, Spanish, French, German, Japanese. Shot/craft taxono
 |--|------|---------------------|
 | Search, ingest, single export, LAN | Yes | Yes |
 | Moodboard canvas | — | Unlocked |
-| Archive mirrors, batch export, share tunnel | Soft / locked | Unlocked |
+| Automated archive pull (public sources), batch export, share tunnel | Soft / locked | Unlocked |
 | Board PNG/PDF export, folder watcher | — | Unlocked |
 | Cloud VLM (OpenRouter / ChatGPT / Claude) | Local Ollama | Bring your key |
 | Continuous enrich, Agent API, unlimited projects | Soft / locked | Unlocked |

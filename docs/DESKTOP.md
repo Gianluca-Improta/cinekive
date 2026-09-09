@@ -29,7 +29,7 @@ Engine data: `%APPDATA%\Cinekive\data` (Windows) / `~/Library/Application Suppor
 
 ### Free vs Pro
 
-The installer is the same binary, and building from source gives you the same Free tier. **Free** includes search, ingest, single-shot export, LAN phone URL, and **local Ollama** (+ Craft chat in the sidebar). **Pro** ($19 one-time on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro)) unlocks the **moodboard canvas**, archive mirrors, continuous enrich, **cloud VLM** (OpenRouter / ChatGPT / Claude / Kimi), batch export, **board PNG/PDF**, **folder watcher**, share tunnel, Agent API, **MCP server** (`cinekive-mcp`), global dedupe, and unlimited projects.
+The installer is the same binary, and building from source gives you the same Free tier. **Free** includes search, ingest, single-shot export, LAN phone URL, and **local Ollama** (+ Craft chat in the sidebar). **Pro** (paid license) unlocks the **moodboard canvas**, automated archive pull, continuous enrich, **cloud VLM** (OpenRouter / ChatGPT / Claude / Kimi), batch export, **board PNG/PDF**, **folder watcher**, share tunnel, Agent API, **MCP server** (`cinekive-mcp`), global dedupe, and unlimited projects.
 
 Activate: in-app **Settings → Cinekive Pro** (or paste your license key). License file: `%APPDATA%\Cinekive\license.json` (Mac/Linux under Application Support / `.config`).
 

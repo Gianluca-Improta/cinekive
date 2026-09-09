@@ -805,8 +805,6 @@ export const api = {
       }[];
       mirror_runs?: Record<string, { running?: boolean; pid?: number }>;
       credentials?: Record<string, { configured?: boolean; user_hint?: string }>;
-      shotdeck_mirror_run?: { running?: boolean; pid?: number };
-      shotdeck_credentials_configured?: boolean;
       note?: string;
     }>("/sources/status"),
 
@@ -839,17 +837,12 @@ export const api = {
       method: "POST",
     }),
 
-  ingestArchiveSource: (
-    source: "shotdeck" | "filmgrab" | "eyecandy" | "moviestillsdb" | "stillslab"
-  ) =>
+  ingestArchiveSource: (source: "filmgrab" | "eyecandy" | "moviestillsdb") =>
     request<{ job: Job; message: string }>(`/sources/${source}/ingest`, {
       method: "POST",
     }),
 
-  ingestSource: (
-    projectId: string,
-    source: "shotdeck" | "filmgrab" | "eyecandy" | "moviestillsdb" | "stillslab"
-  ) =>
+  ingestSource: (projectId: string, source: "filmgrab" | "eyecandy" | "moviestillsdb") =>
     request<{ job: Job; message: string }>(`/projects/${projectId}/sources/ingest`, {
       method: "POST",
       body: JSON.stringify({ source, recursive: true }),
@@ -865,15 +858,11 @@ export const api = {
     source: string;
     user?: string;
     password?: string;
-    limit_tasks?: number;
-    limit_pages?: number;
     limit_shots?: number;
     limit_films?: number;
     limit_per_tech?: number;
     max_clips?: number;
     films?: string;
-    discover_only?: boolean;
-    login_browser?: boolean;
   }) =>
     request<{ message: string; pid?: number; running?: boolean }>("/sources/mirror/run", {
       method: "POST",
