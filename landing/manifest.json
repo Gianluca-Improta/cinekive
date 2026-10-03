@@ -1,0 +1,17 @@
+{
+  "name": "Cinekive",
+  "short_name": "Cinekive",
+  "description": "Local desktop archive for film crews. Real stills on your disk. Search by camera, lens, lighting, and mood.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B0C10",
+  "theme_color": "#0B0C10",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

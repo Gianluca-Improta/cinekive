@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cinearchive-api"
-version = "0.1.0"
+version = "0.5.3"
 description = "Cinekive — local cinematic visual library API"
 requires-python = ">=3.11"
 dependencies = [
@@ -45,6 +45,10 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 cinearchive = ["prompts/*.md"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100

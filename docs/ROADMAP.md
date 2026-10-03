@@ -2,18 +2,24 @@
 
 Living document. Prefer [Discussions](https://github.com/Gianluca-Improta/cinekive/discussions) for debate; open an Issue when something is actionable.
 
-## v0.4 (current)
+## v0.5.3 (current)
+
+Shipped: local search and ingest, moodboard canvas, Free-by-default licensing, 14-day trial keys, public archive sources (FilmGrab, EyeCandy, MovieStillsDB), desktop installers.
+
+Not in this release: code-signed installers, a working macOS native engine pack, a search eval harness in CI, Lemon Squeezy annual ($19/year) — Lifetime is the live checkout.
+
+## Already shipped (was listed as v0.4)
 
 - **Windows: Docker optional** — native engine pack on first start
 - GHCR pre-built Docker images (faster Docker launches)
 - First-run wizard: engine mode (auto / docker / native), health panel, engine logs
 - Local ingest (files + yt-dlp URLs)
-- Archives mirrors + Discover catalog
+- Public archive sources + Discover catalog. No authenticated scrapers for paid still libraries
 - SigLIP search + craft / director / color filters
 - Inspector + full-stage detail
 - Moodboard canvas: clip rail, text, sticky, audio/media, concepts, stacks
 - Desktop (Electron) + Docker web
-- Optional share tunnel
+- Optional share tunnel (Pro, with a rights confirmation)
 
 ## v1.x hardening
 

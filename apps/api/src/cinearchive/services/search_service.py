@@ -34,6 +34,7 @@ from cinearchive.schemas.search import (
 from cinearchive.schemas.shot import ShotList
 from cinearchive.services.dedupe_service import collapse_shots_to_sequences
 from cinearchive.services.shot_mapper import shot_to_read
+from cinearchive.services.vec_score import calibrate_vec as _calibrate_vec
 
 logger = logging.getLogger(__name__)
 
@@ -42,22 +43,6 @@ logger = logging.getLogger(__name__)
 _VEC_FLOOR_ALONE = 0.03
 _VEC_FLOOR_WHEN_META = 0.08
 _VEC_WEIGHT_VISUAL = 0.95
-# A raw cosine at or above this is a confidently strong SigLIP match.
-_VEC_STRONG = 0.20
-
-
-def _calibrate_vec(raw: float, best: float) -> float:
-    """Map a raw SigLIP cosine onto the 0–1 scale keyword scores already use.
-
-    Raw cosines top out near 0.25, so comparing them directly against keyword
-    scores (0.4–1.0) meant a perfect visual match always lost to an incidental
-    filename substring hit. Rank within the query decides the shape; the
-    absolute best score decides how much confidence the whole query earns.
-    """
-    if raw <= 0 or best <= 0:
-        return 0.0
-    confidence = min(1.0, best / _VEC_STRONG)
-    return min(1.0, (raw / best) * confidence)
 
 
 def _query_tokens(query: str) -> list[str]:

@@ -68,6 +68,7 @@ export default function SettingsPage() {
   const { data: entitlements } = useEntitlements();
   const isPro = Boolean(entitlements?.is_pro);
   const [copied, setCopied] = useState<string | null>(null);
+  const [shareRightsOk, setShareRightsOk] = useState(false);
   const [lanUrl, setLanUrl] = useState<string | null>(null);
   const [tab, setTab] = useState<SettingsTab>("general");
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -516,11 +517,24 @@ export default function SettingsPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <label className="mt-4 flex items-start gap-2 text-[11px] leading-relaxed text-cinema-muted">
+                        <input
+                          type="checkbox"
+                          checked={shareRightsOk}
+                          onChange={(e) => setShareRightsOk(e.target.checked)}
+                          className="mt-0.5"
+                        />
+                        <span>
+                          I am authorized to show these frames to anyone with the link. Cinekive does
+                          not clear rights. The tunnel is temporary and public while it runs.
+                        </span>
+                      </label>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <button
                           type="button"
+                          disabled={!shareRightsOk}
                           onClick={() => copy(tunnelCmd, "tunnel")}
-                          className="inline-flex items-center gap-1.5 rounded border border-cinema-cyan/40 bg-cinema-cyan/10 px-3 py-2 text-xs text-cinema-cyan hover:bg-cinema-cyan/20"
+                          className="inline-flex items-center gap-1.5 rounded border border-cinema-cyan/40 bg-cinema-cyan/10 px-3 py-2 text-xs text-cinema-cyan hover:bg-cinema-cyan/20 disabled:opacity-40"
                         >
                           <Copy className="h-3.5 w-3.5" />
                           {copied === "tunnel" ? "Copied" : "Copy tunnel command"}

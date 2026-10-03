@@ -1,0 +1,2557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B0C10" />
+  <meta
+    name="description"
+    content="Local desktop archive for film crews. Real stills on your disk. Search by camera, lens, lighting, and mood. Free forever. Pro from $19/year."
+  />
+  <link rel="canonical" href="https://github.com/Gianluca-Improta/cinekive" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Cinekive — The Visual Archive You Own, Not Rent" />
+  <meta
+    property="og:description"
+    content="A local archive of real film stills for directors, DPs, and art directors. Free desktop. Pro from $19/year."
+  />
+  <meta property="og:image" content="./stills/ui/ui-discovery.jpg" />
+  <meta property="og:url" content="https://github.com/Gianluca-Improta/cinekive" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Cinekive — The Visual Archive You Own, Not Rent" />
+  <meta
+    name="twitter:description"
+    content="AI tags camera, lens, lighting, and mood on stills you already own. Local search, ingest, and moodboards. Free desktop. Pro for studio speed."
+  />
+  <meta name="twitter:image" content="./stills/ui/ui-discovery.jpg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="./manifest.json" />
+  <title>Cinekive — The Visual Archive You Own, Not Rent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Cinekive",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Windows, macOS, Linux",
+    "description": "Local desktop archive for film crews. Real stills on your disk. Search by camera, lens, lighting, and mood.",
+    "url": "https://github.com/Gianluca-Improta/cinekive",
+    "downloadUrl": "https://github.com/Gianluca-Improta/cinekive/releases/latest",
+    "offers": [
+      {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "name": "Cinekive Free"
+      },
+      {
+        "@type": "Offer",
+        "price": "19",
+        "priceCurrency": "USD",
+        "name": "Cinekive Pro Annual",
+        "billingDuration": "P1Y"
+      },
+      {
+        "@type": "Offer",
+        "price": "99",
+        "priceCurrency": "USD",
+        "name": "Cinekive Pro Lifetime"
+      }
+    ],
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+  <style>
+    :root {
+      --obsidian: #0B0C10;
+      --slate: #1F2833;
+      --slate-2: #162028;
+      --cyan: #66FCF1;
+      --teal: #45A29E;
+      --amber: #E8B86D;
+      --muted: #8B98A8;
+      --white: #E8EEF4;
+      --danger: #FF6B6B;
+      --radius: 14px;
+      --glow: 0 0 28px rgba(102, 252, 241, 0.28);
+      --font: "Inter", system-ui, -apple-system, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--obsidian);
+      color: var(--white);
+      line-height: 1.5;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(69, 162, 158, 0.18), transparent 55%),
+        radial-gradient(ellipse 40% 30% at 90% 20%, rgba(102, 252, 241, 0.06), transparent 50%),
+        linear-gradient(180deg, #0B0C10 0%, #0E1118 40%, #0B0C10 100%);
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img { max-width: 100%; display: block; }
+    button { font-family: inherit; cursor: pointer; }
+    /* Full-bleed content rail — gutters scale with viewport, no narrow center column */
+    .wrap {
+      width: 100%;
+      max-width: 100%;
+      margin-inline: auto;
+      padding-inline: clamp(1rem, 3.5vw, 3.5rem);
+      box-sizing: border-box;
+      position: relative;
+      z-index: 1;
+    }
+    @media (min-width: 1600px) {
+      .wrap { padding-inline: clamp(2rem, 5vw, 5rem); }
+    }
+    .label {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      z-index: 200;
+      background: var(--cyan);
+      color: #061018;
+      padding: 0.65rem 1rem;
+      font-weight: 700;
+      border-radius: 0 0 8px 0;
+    }
+    .skip-link:focus {
+      left: 0;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding-top: env(safe-area-inset-top, 0);
+    }
+    .nav-chrome {
+      position: relative;
+      z-index: 55;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(11, 12, 16, 0.72);
+      border-bottom: 1px solid rgba(102, 252, 241, 0.08);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 0;
+      position: relative;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: var(--white);
+      text-decoration: none;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .brand:hover { text-decoration: none; }
+    /* Viewfinder mark: dark field, cyan corners, cyan center square. */
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      overflow: hidden;
+      line-height: 0;
+    }
+    .brand-mark svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .nav-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: 1px solid rgba(102, 252, 241, 0.25);
+      background: transparent;
+      color: var(--cyan);
+      padding: 0;
+      position: relative;
+    }
+    .nav-toggle-bars {
+      display: block;
+      width: 18px;
+      height: 12px;
+      position: relative;
+    }
+    .nav-toggle-bars span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      border-radius: 1px;
+      background: var(--cyan);
+      transition: transform 0.2s ease, opacity 0.2s ease, top 0.2s ease;
+    }
+    .nav-toggle-bars span:nth-child(1) { top: 0; }
+    .nav-toggle-bars span:nth-child(2) { top: 5px; }
+    .nav-toggle-bars span:nth-child(3) { top: 10px; }
+    .nav-toggle.is-open .nav-toggle-bars span:nth-child(1) {
+      top: 5px;
+      transform: rotate(45deg);
+    }
+    .nav-toggle.is-open .nav-toggle-bars span:nth-child(2) {
+      opacity: 0;
+    }
+    .nav-toggle.is-open .nav-toggle-bars span:nth-child(3) {
+      top: 5px;
+      transform: rotate(-45deg);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      flex-wrap: nowrap;
+    }
+    .nav-links a.text {
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 0.45rem 0.55rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .nav-links a.text:hover { color: var(--white); }
+
+    /* Desktop: overlay links on the chrome row (sibling of blur layer so mobile fixed works) */
+    @media (min-width: 1100px) {
+      .nav {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .nav-chrome,
+      .nav-links {
+        grid-area: 1 / 1;
+      }
+      .nav-links {
+        position: relative;
+        z-index: 56;
+        justify-self: end;
+        align-self: center;
+        padding-inline: clamp(1rem, 3.5vw, 3.5rem);
+        pointer-events: none;
+      }
+      .nav-links > * { pointer-events: auto; }
+    }
+
+    /* Collapse earlier so dense nav never overflows mid-width laptops */
+    @media (max-width: 1099px) {
+      .nav-toggle { display: inline-flex; }
+      .nav-links {
+        display: none;
+        position: fixed;
+        inset: 0;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 0.35rem;
+        padding: calc(4.25rem + env(safe-area-inset-top, 0px)) clamp(1rem, 3.5vw, 3.5rem) calc(1.25rem + env(safe-area-inset-bottom, 0px));
+        background: #0b0c10;
+        border-bottom: none;
+        flex-wrap: nowrap;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        z-index: 45;
+      }
+      .nav-links.open { display: flex; }
+      .nav-links .btn,
+      .nav-links a.text {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        min-height: 48px;
+        font-size: 1rem;
+      }
+      body.nav-open { overflow: hidden; }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 0.7rem 1.15rem;
+      min-height: 44px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn-label { display: inline; }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.55; cursor: wait; transform: none; }
+    .btn-primary {
+      background: var(--cyan);
+      color: #061018;
+      box-shadow: var(--glow);
+    }
+    .btn-primary:hover { background: #8ffdf6; }
+    .btn-ghost {
+      background: transparent;
+      border-color: rgba(102, 252, 241, 0.35);
+      color: var(--cyan);
+    }
+    .btn-ghost:hover { background: rgba(102, 252, 241, 0.08); }
+    .btn-muted {
+      background: var(--slate);
+      color: var(--white);
+      border-color: rgba(255, 255, 255, 0.06);
+    }
+    .btn-lg { padding: 0.9rem 1.35rem; font-size: 0.95rem; min-height: 48px; }
+    .btn-danger {
+      background: transparent;
+      border-color: rgba(255, 107, 107, 0.4);
+      color: var(--danger);
+      padding: 0.55rem 0.9rem;
+      font-size: 0.8rem;
+      min-height: 44px;
+    }
+    .spin {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(6, 16, 24, 0.25);
+      border-top-color: #061018;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hero {
+      padding-block: clamp(2.5rem, 6vw, 5.5rem) clamp(2rem, 4vw, 3.5rem);
+      display: grid;
+      gap: clamp(1.5rem, 3vw, 2.75rem);
+    }
+    @media (min-width: 900px) {
+      .hero {
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+        align-items: center;
+      }
+    }
+    @media (min-width: 1400px) {
+      .hero {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+        gap: 3.5rem;
+      }
+    }
+    .hero h1 {
+      margin: 0.6rem 0 1rem;
+      font-size: clamp(1.85rem, 4.2vw, 3.75rem);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      font-weight: 800;
+    }
+    .hero-lead {
+      color: var(--muted);
+      font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+      max-width: min(42rem, 100%);
+      margin: 0 0 1.5rem;
+    }
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 559px) {
+      .cta-row .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .pricing-cta-row .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    .proof {
+      margin-top: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .proof a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      color: var(--white);
+      text-decoration: none;
+    }
+    .proof a:hover { border-color: var(--cyan); color: var(--cyan); }
+    .award {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: 1px solid rgba(232, 184, 109, 0.4);
+      background: rgba(232, 184, 109, 0.08);
+      color: var(--amber);
+      border-radius: 999px;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .award:hover { text-decoration: none; color: var(--white); border-color: var(--cyan); }
+
+    .hero-panel {
+      border: 1px solid rgba(102, 252, 241, 0.16);
+      background: #07090d;
+      border-radius: calc(var(--radius) + 2px);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+      align-self: stretch;
+    }
+    @media (min-width: 900px) {
+      .hero-panel { min-height: 26rem; }
+    }
+    .hero-stage {
+      position: relative;
+      overflow: hidden;
+      border-radius: 0;
+      aspect-ratio: 16 / 9;
+      min-height: 16rem;
+      background: #11151c;
+    }
+    @media (min-width: 900px) {
+      .hero-stage {
+        aspect-ratio: auto;
+        height: 100%;
+        min-height: 26rem;
+      }
+    }
+    .hero-stage img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.7s ease;
+    }
+    .hero-stage img.is-active { opacity: 1; }
+    .hero-meta {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 0.75rem;
+      padding: 2.5rem 1rem 0.85rem;
+      background: linear-gradient(transparent, rgba(6, 10, 14, 0.92));
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      pointer-events: none;
+    }
+    .hero-meta #hero-caption {
+      color: rgba(232, 238, 244, 0.92);
+      line-height: 1.35;
+      max-width: 75%;
+    }
+    .ratio-pill {
+      flex-shrink: 0;
+      border: 1px solid rgba(232, 184, 109, 0.4);
+      color: var(--amber);
+      background: rgba(11, 12, 16, 0.65);
+      border-radius: 6px;
+      padding: 0.2rem 0.45rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+    }
+    .hero-dots {
+      display: flex;
+      gap: 0.4rem;
+      padding: 0.65rem 0.85rem 0.85rem;
+      justify-content: center;
+      background: #07090d;
+    }
+    .hero-dots button {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 0;
+      padding: 0;
+      background: rgba(255, 255, 255, 0.22);
+      min-height: 0;
+    }
+    .hero-dots button[aria-selected="true"] {
+      background: var(--cyan);
+      box-shadow: var(--glow);
+      transform: scale(1.2);
+    }
+
+    .social-strip {
+      border-block: 1px solid rgba(102, 252, 241, 0.1);
+      background: rgba(8, 10, 14, 0.65);
+      padding: 1.25rem 0;
+    }
+    .social-strip .strip-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem 1.25rem;
+      align-items: start;
+    }
+    @media (min-width: 700px) {
+      .social-strip .strip-inner {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.75rem;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+    .social-strip .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .social-strip .stat strong {
+      font-size: 1.35rem;
+      letter-spacing: -0.02em;
+      color: var(--white);
+    }
+    .social-strip .stat span {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .feature-grid {
+      display: grid;
+      gap: 1rem;
+    }
+    .feature-grid.primary {
+      margin-bottom: 1.25rem;
+    }
+    @media (min-width: 700px) {
+      .feature-grid.primary { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 1000px) {
+      .feature-grid.primary { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (min-width: 1600px) {
+      .feature-grid.primary { gap: 1.25rem; }
+    }
+    .feature {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--slate-2);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.3rem;
+    }
+    .feature.primary {
+      border-top: 3px solid var(--cyan);
+      padding-top: 1.15rem;
+    }
+    .feature.primary h3 {
+      margin: 0 0 0.45rem;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+    .feature.primary p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .feature .label {
+      margin-bottom: 0.4rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--cyan);
+    }
+    .feature.primary .label::before {
+      content: attr(data-mark);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.15rem;
+      height: 1.15rem;
+      border-radius: 4px;
+      background: rgba(102, 252, 241, 0.15);
+      border: 1px solid rgba(102, 252, 241, 0.35);
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .feature.primary[data-accent="amber"] {
+      border-top-color: var(--amber);
+    }
+    .feature.primary[data-accent="amber"] .label { color: var(--amber); }
+    .feature.primary[data-accent="amber"] .label::before {
+      color: var(--amber);
+      background: rgba(232, 184, 109, 0.12);
+      border-color: rgba(232, 184, 109, 0.4);
+    }
+    .feature.primary[data-accent="teal"] {
+      border-top-color: var(--teal);
+    }
+    .feature.primary[data-accent="teal"] .label { color: var(--teal); }
+    .feature.primary[data-accent="teal"] .label::before {
+      color: var(--teal);
+      background: rgba(69, 162, 158, 0.12);
+      border-color: rgba(69, 162, 158, 0.4);
+    }
+    .feature.primary[data-accent="white"] {
+      border-top-color: rgba(232, 238, 244, 0.55);
+    }
+    .feature.primary[data-accent="white"] .label { color: var(--white); }
+    .feature.primary[data-accent="white"] .label::before {
+      color: var(--white);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .feature-secondary {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.65rem;
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    @media (min-width: 480px) {
+      .feature-secondary { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 900px) {
+      .feature-secondary { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 1400px) {
+      .feature-secondary { grid-template-columns: repeat(6, 1fr); }
+    }
+    .feature-lite {
+      margin: 0;
+      padding: 0.85rem 0.95rem;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius);
+      background: rgba(14, 18, 24, 0.55);
+    }
+    .feature-lite .label {
+      margin: 0 0 0.35rem;
+      color: var(--cyan);
+    }
+    .feature-lite h3 {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1.3;
+    }
+    .feature-lite p { display: none; }
+
+    .pricing-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin: 0 0 1.5rem;
+    }
+    .plan-trial-line {
+      margin: 0.35rem 0 0;
+      font-size: 0.82rem;
+      color: var(--amber);
+      line-height: 1.35;
+    }
+    .plan details.trial-details {
+      margin: 0.65rem 0 0;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+    .plan details.trial-details summary {
+      cursor: pointer;
+      list-style: none;
+      font-size: 0.78rem;
+      color: var(--cyan);
+      font-weight: 500;
+    }
+    .plan details.trial-details summary::-webkit-details-marker { display: none; }
+    .plan details.trial-details p {
+      margin: 0.5rem 0 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .compare-note {
+      color: var(--muted);
+      font-size: 0.9rem;
+      max-width: 40rem;
+      margin: 0 0 1.25rem;
+    }
+    .compare-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .compare {
+      width: 100%;
+      min-width: 40rem;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .compare th, .compare td {
+      text-align: left;
+      padding: 0.8rem 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: top;
+    }
+    .compare th {
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+    .compare td:first-child { color: var(--white); font-weight: 500; width: 22%; }
+    .compare .ours {
+      color: var(--cyan);
+      background: rgba(102, 252, 241, 0.04);
+    }
+
+    .quote-grid {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    @media (min-width: 800px) {
+      .quote-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .quote {
+      border: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: transparent;
+      border-radius: 0;
+      padding: 1.35rem 0 1.35rem 1.1rem;
+      border-left: 2px solid rgba(102, 252, 241, 0.45);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    @media (min-width: 800px) {
+      .quote:nth-child(odd) { padding-right: 1.5rem; }
+      .quote:nth-child(even) { padding-left: 1.75rem; }
+    }
+    .quote p {
+      margin: 0;
+      color: var(--white);
+      font-size: 1.02rem;
+      line-height: 1.5;
+      font-weight: 450;
+    }
+    .quote .byline {
+      margin-top: auto;
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+    }
+    .quote .byline strong { color: var(--cyan); font-weight: 600; }
+    .usecase {
+      margin: 0;
+      padding: 1.1rem 0;
+      border-top: 1px solid rgba(232, 238, 244, 0.08);
+    }
+    .usecase .role {
+      color: var(--cyan);
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.02em;
+      margin: 0 0 0.35rem;
+    }
+    .usecase p {
+      margin: 0;
+      color: var(--white);
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+
+    section { padding: clamp(2.5rem, 5vw, 4.5rem) 0; position: relative; z-index: 1; }
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-head h2 {
+      margin: 0.35rem 0 0;
+      font-size: clamp(1.45rem, 3vw, 2rem);
+      letter-spacing: -0.02em;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .chip {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--slate);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 0.55rem 0.9rem;
+      min-height: 44px;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chip.active,
+    .chip[aria-pressed="true"] {
+      color: #061018;
+      background: var(--cyan);
+      border-color: var(--cyan);
+    }
+    .masonry {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+    @media (min-width: 640px) { .masonry { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 960px) { .masonry { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1400px) { .masonry { grid-template-columns: repeat(4, 1fr); } }
+    .card {
+      margin: 0;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #0a0c10;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:focus-within { outline: 2px solid var(--cyan); outline-offset: 2px; }
+    .card img {
+      width: 100%;
+      aspect-ratio: 2.39 / 1;
+      object-fit: cover;
+      display: block;
+      background: #11151c;
+    }
+    .card-tag {
+      position: absolute;
+      top: 0.45rem;
+      left: 0.45rem;
+      z-index: 2;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: rgba(11, 12, 16, 0.78);
+      color: var(--amber);
+      border: 1px solid rgba(232, 184, 109, 0.35);
+      padding: 0.18rem 0.4rem;
+      border-radius: 4px;
+      backdrop-filter: blur(6px);
+    }
+    .card-caption {
+      margin: 0;
+      padding: 0.55rem 0.65rem 0.65rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      line-height: 1.4;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(8, 10, 14, 0.95);
+      min-height: 2.6rem;
+    }
+
+    .pricing-grid {
+      display: grid;
+      gap: 1rem;
+      align-items: stretch;
+    }
+    @media (min-width: 800px) {
+      .pricing-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 1400px) {
+      .pricing-grid { gap: 1.25rem; }
+    }
+    .plan {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      border-radius: calc(var(--radius) + 2px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--slate-2);
+      padding: 1.5rem;
+    }
+    .plan.pro {
+      border-color: rgba(102, 252, 241, 0.35);
+      background: linear-gradient(165deg, rgba(31, 40, 51, 0.95), rgba(14, 28, 32, 0.98));
+      box-shadow: var(--glow);
+    }
+    .plan h3 { margin: 0; font-size: 1.15rem; }
+    .plan-note {
+      margin: 0.35rem 0 0;
+      font-size: 0.82rem;
+      color: var(--amber);
+      line-height: 1.35;
+    }
+    .price {
+      margin: 0.75rem 0 0.25rem;
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--white);
+    }
+    .price .unit {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .plan ul {
+      margin: 1rem 0;
+      padding: 0;
+      list-style: none;
+      flex: 1 1 auto;
+    }
+    .plan li {
+      padding: 0.4rem 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .plan li strong { color: var(--white); font-weight: 500; }
+    .plan > .btn,
+    .plan > a.btn {
+      margin-top: auto;
+      align-self: flex-start;
+    }
+    .plan.pro details.trial-details {
+      margin-bottom: 0.35rem;
+    }
+
+    .matrix-wrap {
+      margin-top: 1.75rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .matrix {
+      width: 100%;
+      min-width: 36rem;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .matrix th, .matrix td {
+      text-align: left;
+      padding: 0.75rem 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .matrix th {
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .matrix td:nth-child(n+2),
+    .matrix th:nth-child(n+2) { text-align: center; }
+    .matrix td:nth-child(n+2) { color: var(--muted); }
+    .yes { color: var(--cyan); }
+    .no { color: #4a5560; }
+
+    #app {
+      border-top: 1px solid rgba(102, 252, 241, 0.1);
+      background: rgba(8, 10, 14, 0.8);
+    }
+    .showcase-panel {
+      max-width: min(72rem, 100%);
+      margin: 0 auto;
+    }
+    .showcase-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      border-radius: calc(var(--radius) + 4px);
+      overflow: hidden;
+      border: 1px solid rgba(102, 252, 241, 0.22);
+      background: var(--slate-2);
+      box-shadow: var(--glow);
+    }
+    .showcase-stage img,
+    .showcase-stage .slide-placeholder {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.55s ease;
+      pointer-events: none;
+    }
+    .showcase-stage img.is-active,
+    .showcase-stage .slide-placeholder.is-active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .showcase-stage .slide-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      padding: 1.5rem;
+      text-align: center;
+      background:
+        linear-gradient(160deg, rgba(31, 40, 51, 0.95), rgba(11, 12, 16, 0.98)),
+        repeating-linear-gradient(
+          -12deg,
+          transparent,
+          transparent 11px,
+          rgba(102, 252, 241, 0.04) 11px,
+          rgba(102, 252, 241, 0.04) 12px
+        );
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .showcase-stage .slide-placeholder strong {
+      display: block;
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 0;
+      font-weight: 500;
+    }
+    .showcase-stage .slide-placeholder span {
+      display: block;
+      max-width: 22rem;
+    }
+    .showcase-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-top: 0.85rem;
+      flex-wrap: wrap;
+    }
+    .showcase-meta #showcase-caption {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .showcase-dots {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .showcase-dots button {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1px solid rgba(102, 252, 241, 0.45);
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+    }
+    .showcase-dots button[aria-selected="true"] {
+      background: var(--cyan);
+      border-color: var(--cyan);
+    }
+    .showcase-cta {
+      margin-top: 1.25rem;
+      text-align: center;
+    }
+
+    .faq details {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      background: var(--slate-2);
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.65rem;
+    }
+    .faq summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--white);
+      list-style: none;
+    }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq details p {
+      margin: 0.65rem 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .modal-root {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(4, 6, 10, 0.72);
+      backdrop-filter: blur(8px);
+    }
+    .modal-root.open { display: flex; }
+    .modal {
+      width: min(440px, 100%);
+      background: var(--slate);
+      border: 1px solid rgba(102, 252, 241, 0.25);
+      border-radius: calc(var(--radius) + 2px);
+      padding: 1.35rem;
+      box-shadow: var(--glow);
+    }
+    .modal h3 { margin: 0 0 0.35rem; }
+    .modal p { margin: 0 0 1rem; color: var(--muted); font-size: 0.9rem; }
+    .field {
+      display: grid;
+      gap: 0.35rem;
+      margin-bottom: 0.85rem;
+    }
+    .field label {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .field input {
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--obsidian);
+      color: var(--white);
+      padding: 0.75rem 0.85rem;
+      font-size: 16px;
+      outline: none;
+    }
+    .field input:focus { border-color: var(--cyan); }
+    .modal-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .err {
+      color: var(--danger);
+      font-size: 0.8rem;
+      margin: 0 0 0.75rem;
+      min-height: 1.1em;
+    }
+
+    footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 2rem 0 3rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      position: relative;
+      z-index: 1;
+    }
+    footer .row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+      right: calc(1.25rem + env(safe-area-inset-right, 0px));
+      z-index: 120;
+      background: var(--slate);
+      border: 1px solid rgba(102, 252, 241, 0.3);
+      color: var(--white);
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      display: none;
+      max-width: min(420px, calc(100vw - 2rem));
+      line-height: 1.45;
+    }
+    .toast.show { display: block; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="nav">
+    <div class="nav-chrome">
+      <div class="wrap nav-inner">
+        <a class="brand" href="#top" aria-label="Cinekive home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" focusable="false">
+              <rect width="128" height="128" rx="20" fill="#0B0C10"/>
+              <g fill="none" stroke="#66FCF1" stroke-width="7" stroke-linecap="square">
+                <path d="M30 46 V30 H46"/>
+                <path d="M82 30 H98 V46"/>
+                <path d="M98 82 V98 H82"/>
+                <path d="M46 98 H30 V82"/>
+              </g>
+              <rect x="52" y="52" width="24" height="24" fill="#66FCF1"/>
+            </svg>
+          </span>
+          Cinekive
+        </a>
+        <button
+          type="button"
+          class="nav-toggle"
+          id="nav-toggle"
+          aria-expanded="false"
+          aria-controls="primary-nav"
+          aria-label="Open menu"
+        >
+          <span class="nav-toggle-bars" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+        </button>
+      </div>
+    </div>
+    <nav class="nav-links" id="primary-nav" aria-label="Primary">
+      <a class="text" href="#features">Features</a>
+      <a class="text" href="#app">See the app</a>
+      <a class="text" href="#compare">Compare</a>
+      <a class="text" href="#pricing">Pricing</a>
+      <a class="text" href="#faq">FAQ</a>
+      <a
+        class="text"
+        id="nav-download"
+        href="https://github.com/Gianluca-Improta/cinekive/releases/latest"
+        target="_blank"
+        rel="noreferrer"
+      >Download Free</a>
+      <button type="button" class="btn btn-primary" data-open-checkout="lifetime" aria-label="Get Pro">Get Pro</button>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="wrap hero" id="top">
+      <div>
+        <p class="label">Local. Offline-first. Built for film crews.</p>
+        <h1>The Visual Archive You Own, Instead Of Rent.</h1>
+        <p class="hero-lead">
+          Visual libraries take years to build. Cinekive lives on your machine. It holds real stills and frames from your
+          own footage, pulls frames from any source you have access to. Then local AI tags their metadata and organises.
+        </p>
+        <div class="cta-row">
+          <a
+            class="btn btn-primary btn-lg"
+            id="cta-download"
+            href="https://github.com/Gianluca-Improta/cinekive/releases/latest"
+            target="_blank"
+            rel="noreferrer"
+          >Download Free Desktop</a>
+          <a class="btn btn-ghost btn-lg" id="cta-trial" href="mailto:cinekive@agentmail.to?subject=Cinekive%2014-day%20trial" aria-label="Request a 14-day Pro trial key">
+            <span class="btn-label">Request a 14-day trial key</span>
+          </a>
+        </div>
+        <div class="proof">
+          <a
+            class="award"
+            href="https://github.com/Gianluca-Improta/cinekive"
+            target="_blank"
+            rel="noreferrer"
+          >★ 100+ stars on GitHub</a>
+          <a href="https://github.com/Gianluca-Improta/cinekive" target="_blank" rel="noreferrer">
+            Star the repo
+          </a>
+          <span>Open source. Windows, Mac, Linux. MIT. 100+ GitHub stars.</span>
+        </div>
+      </div>
+      <aside class="hero-panel" aria-label="Rotating reference stills">
+        <div class="hero-stage" id="hero-stage">
+          <div class="hero-meta">
+            <span id="hero-caption">AI tags · archive reference still</span>
+            <span class="ratio-pill" id="hero-ratio">2.39:1</span>
+          </div>
+        </div>
+        <div class="hero-dots" id="hero-dots" role="tablist" aria-label="Choose still"></div>
+      </aside>
+    </section>
+
+    <div class="social-strip">
+      <div class="wrap strip-inner">
+        <div class="stat">
+          <strong>100+</strong>
+          <span>GitHub stars</span>
+        </div>
+        <div class="stat">
+          <strong>MIT</strong>
+          <span>Open-source core</span>
+        </div>
+        <div class="stat">
+          <strong>$0</strong>
+          <span>Free desktop forever</span>
+        </div>
+        <div class="stat">
+          <strong>Offline</strong>
+          <span>Your library, your disk</span>
+        </div>
+      </div>
+    </div>
+
+    <section id="app">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="label">Product tour</p>
+            <h2>See the desktop app</h2>
+            <p style="margin:0.4rem 0 0;color:var(--muted);font-size:0.9rem;max-width:40rem">
+              Real UI on a filled local library: discovery, search, shelves, moodboard, archives.
+            </p>
+          </div>
+        </div>
+        <div class="showcase-panel">
+          <div class="showcase-stage" id="showcase-stage" aria-live="polite"></div>
+          <div class="showcase-meta">
+            <span id="showcase-caption">Product screenshot</span>
+            <div class="showcase-dots" id="showcase-dots" role="tablist" aria-label="Choose screenshot"></div>
+          </div>
+          <div class="showcase-cta">
+            <a
+              class="btn btn-primary"
+              id="cta-app-download"
+              href="https://github.com/Gianluca-Improta/cinekive/releases/latest"
+              target="_blank"
+              rel="noreferrer"
+            >Download Free Desktop</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="label">Product</p>
+            <h2>One local archive for every still on the project</h2>
+            <p style="margin:0.4rem 0 0;color:var(--muted);font-size:0.9rem;max-width:40rem">
+              Stills and frames in one place on your disk. Tag them in craft language. Search like a
+              DP. Pin a moodboard. Built for crews who keep a lifetime of looks.
+            </p>
+          </div>
+        </div>
+        <div class="feature-grid primary">
+          <article class="feature primary" data-accent="cyan">
+            <span class="label" data-mark="↓">Ingest</span>
+            <h3>Stills, video, and folders</h3>
+            <p>Drop a folder or pull frames from video you already have. The archive stays on your disk.</p>
+          </article>
+          <article class="feature primary" data-accent="amber">
+            <span class="label" data-mark="✦">AI tagging</span>
+            <h3>Craft tags, not a new image</h3>
+            <p>Camera, lens, lighting, mood on real stills. Local models by default.</p>
+          </article>
+          <article class="feature primary" data-accent="teal">
+            <span class="label" data-mark="⌕">Search</span>
+            <h3>Find the frame you meant</h3>
+            <p>Filters and craft words beat a hunt through old folders.</p>
+          </article>
+          <article class="feature primary" data-accent="white">
+            <span class="label" data-mark="▦">Moodboards</span>
+            <h3>A canvas for the brief</h3>
+            <p>Pin shots, group a sequence, export frames or a lookbook.</p>
+          </article>
+        </div>
+        <div class="feature-secondary">
+          <div class="feature-lite">
+            <span class="label">Studio</span>
+            <h3>Watch folders and local mirrors you control</h3>
+          </div>
+          <div class="feature-lite">
+            <span class="label">DNA</span>
+            <h3>Shelves for props, locations, and wardrobe</h3>
+          </div>
+          <div class="feature-lite">
+            <span class="label">Privacy</span>
+            <h3>Local-first. No Cinekive account</h3>
+          </div>
+          <div class="feature-lite">
+            <span class="label">LAN</span>
+            <h3>Browse from a phone on the same Wi-Fi</h3>
+          </div>
+          <div class="feature-lite">
+            <span class="label">Export</span>
+            <h3>Lookbook templates. PNG/PDF on Pro</h3>
+          </div>
+          <div class="feature-lite">
+            <span class="label">Pro add-on</span>
+            <h3>Generate a new still from a reference with your own image key</h3>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="demo">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="label">Reference bay</p>
+            <h2>Tagged stills, widescreen</h2>
+            <p style="margin:0.4rem 0 0;color:var(--muted);font-size:0.9rem;max-width:36rem">
+              Each tile is 2.39:1. Captions use the same craft tags as the desktop app.
+            </p>
+          </div>
+        </div>
+        <div class="masonry" id="demo-grid"></div>
+      </div>
+    </section>
+
+    <section id="compare">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="label">Positioning</p>
+            <h2>How Cinekive differs from browser still sites and hosted shot libraries</h2>
+          </div>
+        </div>
+        <p class="compare-note">
+          Browser still sites are strong for discovery. Hosted libraries are strong for cloud search.
+          Cinekive is for people who want to organize and search media they already have: local
+          search, ingest, and moodboards, entirely on your own drive.
+        </p>
+        <div class="compare-wrap">
+          <table class="compare" aria-label="Cinekive vs other tools">
+            <thead>
+              <tr>
+                <th>Need</th>
+                <th>FilmGrab / still sites</th>
+                <th>Hosted shot libraries</th>
+                <th class="ours">Cinekive</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Where files live</td>
+                <td>On their site</td>
+                <td>In their cloud</td>
+                <td class="ours">On your disk</td>
+              </tr>
+              <tr>
+                <td>Ingest your own cuts</td>
+                <td>No</td>
+                <td>Limited / product-dependent</td>
+                <td class="ours">Yes: stills, local video, folders</td>
+              </tr>
+              <tr>
+                <td>Scene detect &amp; previews</td>
+                <td>—</td>
+                <td>Hosted / product-dependent</td>
+                <td class="ours">On your machine (ffmpeg)</td>
+              </tr>
+              <tr>
+                <td>Works offline</td>
+                <td>No</td>
+                <td>Usually no</td>
+                <td class="ours">Yes (local-first)</td>
+              </tr>
+              <tr>
+                <td>AI craft tags</td>
+                <td>Manual / none</td>
+                <td>Hosted search UX</td>
+                <td class="ours">Local AI models on your system, or your cloud keys</td>
+              </tr>
+              <tr>
+                <td>Search shape</td>
+                <td>Browse / save</td>
+                <td>Hosted filters</td>
+                <td class="ours">Taxonomy + similarity + project shelves</td>
+              </tr>
+              <tr>
+                <td>Moodboards / lookbooks</td>
+                <td>Browser saves only</td>
+                <td>Often included</td>
+                <td class="ours">Canvas + Pro lookbook export</td>
+              </tr>
+              <tr>
+                <td>Pricing model</td>
+                <td>Free browse</td>
+                <td>Subscription seats</td>
+                <td class="ours">Free forever + Annual / Lifetime Pro</td>
+              </tr>
+              <tr>
+                <td>Source code</td>
+                <td>—</td>
+                <td>Closed</td>
+                <td class="ours">MIT, forkable</td>
+              </tr>
+              <tr>
+                <td>Best when you…</td>
+                <td>Want iconic frames fast</td>
+                <td>Want polished hosted search</td>
+                <td class="ours">Want to own and search your archive</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="voices">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="label">On set</p>
+            <h2>What crews use it for</h2>
+            <p style="margin:0.4rem 0 0;color:var(--muted);font-size:0.9rem;max-width:40rem">
+              Typical jobs, not paid reviews.
+            </p>
+          </div>
+        </div>
+        <div class="quote-grid">
+          <article class="usecase">
+            <p class="role">DP</p>
+            <p>Drop stills once. Tag them. Build the brief without five browser tabs.</p>
+          </article>
+          <article class="usecase">
+            <p class="role">Post producer</p>
+            <p>Keep client assets on the NAS. Search them without a cloud seat.</p>
+          </article>
+          <article class="usecase">
+            <p class="role">Creative director</p>
+            <p>Prove the archive on local models. Unlock Pro when lookbook PDF is a weekly deliverable.</p>
+          </article>
+          <article class="usecase">
+            <p class="role">Colorist</p>
+            <p>Grab a frame from local reference video. Pin it on the canvas.</p>
+          </article>
+          <article class="usecase">
+            <p class="role">Art department</p>
+            <p>One tagged library so the team stops asking which drive holds the good stills.</p>
+          </article>
+          <article class="usecase">
+            <p class="role">1st AC</p>
+            <p>LAN browse from a phone on set while the laptop stays in the van.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="label">Pricing</p>
+            <h2>Free forever. Pro when the studio needs speed.</h2>
+            <p style="margin:0.4rem 0 0;color:var(--muted);font-size:0.9rem;max-width:40rem">
+              Same installer. No Cinekive account. Cancel a trial and Free Desktop keeps working.
+            </p>
+          </div>
+        </div>
+        <div class="pricing-cta-row cta-row">
+          <a
+            class="btn btn-ghost btn-lg"
+            href="https://github.com/Gianluca-Improta/cinekive/releases/latest"
+            target="_blank"
+            rel="noreferrer"
+          >Download Free Desktop</a>
+          <a class="btn btn-primary btn-lg" href="mailto:cinekive@agentmail.to?subject=Cinekive%2014-day%20trial">
+            <span class="btn-label">Request a 14-day trial key</span>
+          </a>
+        </div>
+        <div class="pricing-grid">
+          <article class="plan">
+            <p class="label">Community</p>
+            <h3>Free Desktop</h3>
+            <p class="price">$0 <span class="unit">forever</span></p>
+            <p class="plan-note">Your library on your drive</p>
+            <ul>
+              <li>Local search, ingest, and moodboards.</li>
+              <li>Free includes <span data-free-max-projects>3</span> projects. Pro removes the cap.</li>
+              <li>Props, locations, wardrobe shelves.</li>
+              <li>Lookbook layout on the canvas.</li>
+              <li>Frames from local video.</li>
+              <li>Local AI models on your machine.</li>
+              <li>LAN phone browse while the app runs.</li>
+              <li>Same installer as Pro.</li>
+            </ul>
+            <a
+              class="btn btn-ghost"
+              href="https://github.com/Gianluca-Improta/cinekive/releases/latest"
+              target="_blank"
+              rel="noreferrer"
+            >Download Free Desktop</a>
+          </article>
+          <article class="plan pro">
+            <p class="label">Studio</p>
+            <h3>Pro Annual</h3>
+            <p class="price">$<span data-price-annual>19</span> <span class="unit">per year</span></p>
+            <p class="plan-note">$19/year once that subscription is live. Lifetime is on sale now.</p>
+            <details class="trial-details">
+              <summary>14-day trial details</summary>
+              <p>
+                Testers get a no-card key (<span>CK-TRIAL-…</span>) by email. It unlocks Pro for 14 days,
+                then the app returns to Free Desktop. No reinstall. No data loss. Only Pro tools lock.
+                A card-on-file yearly trial is not on sale yet.
+              </p>
+            </details>
+            <ul>
+              <li>Your own ChatGPT, Claude, or OpenRouter key for faster cloud tagging.</li>
+              <li>Generate a still from a reference with your own image key.</li>
+              <li>Client lookbooks as PNG or PDF.</li>
+              <li>Watch-folder ingest.</li>
+              <li>Batch export of frames you are authorized to use.</li>
+              <li>Temporary share links you turn on.</li>
+              <li>Email support in about 48 hours.</li>
+            </ul>
+            <a class="btn btn-primary" href="mailto:cinekive@agentmail.to?subject=Cinekive%2014-day%20trial">Request a 14-day trial key</a>
+            <button type="button" class="btn btn-ghost" data-open-checkout="annual" aria-label="Pro Annual is not on sale yet" style="margin-top:0.5rem">Yearly plan coming soon</button>
+          </article>
+          <article class="plan pro">
+            <p class="label">Studio</p>
+            <h3>Pro Lifetime</h3>
+            <p class="price">$<span data-price-lifetime>99</span> <span class="unit">one-time</span></p>
+            <p class="plan-note">Pay once. No renew date.</p>
+            <ul>
+              <li>All Annual tools.</li>
+              <li>One payment. No trial.</li>
+              <li>Best if the archive is a daily tool.</li>
+            </ul>
+            <button type="button" class="btn btn-primary" data-open-checkout="lifetime" aria-label="Unlock Pro Lifetime">Unlock Lifetime</button>
+          </article>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="matrix" aria-label="Free vs Pro Annual vs Pro Lifetime comparison">
+            <thead>
+              <tr>
+                <th>Capability</th>
+                <th>Free</th>
+                <th>Annual</th>
+                <th>Lifetime</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Local search, ingest, canvas</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Projects</td><td class="yes"><span data-free-max-projects>3</span></td><td class="yes">Unlimited</td><td class="yes">Unlimited</td></tr>
+              <tr><td>Props / locations / wardrobe shelves</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Lookbook layout templates</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Frames from local video</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Local AI models (on your machine)</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Cloud AI keys (OpenRouter / ChatGPT / Claude)</td><td class="no">—</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Generate still from reference (BYO image key)</td><td class="no">—</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Lookbook PNG/PDF + multi-shot export</td><td class="no">—</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Folder auto-ingest + sync tools</td><td class="no">—</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>LAN phone browse while the app runs</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Email support (~48h)</td><td class="no">GitHub</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+              <tr><td>Billing</td><td class="yes">Free</td><td class="yes">$19/yr</td><td class="yes">$99 once</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq" class="faq">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <p class="label">FAQ</p>
+            <h2>Before you buy or install</h2>
+          </div>
+        </div>
+        <details>
+          <summary>Is this a browser tool or a desktop app?</summary>
+          <p>
+            Cinekive is a desktop app for Windows, Mac, and Linux. This page is the marketing site.
+            A read-only browser gallery may exist at
+            <a id="faq-archive" href="https://app.cinekive.ai/" target="_blank" rel="noreferrer">app.cinekive.ai</a>.
+            Download the free installer for search, ingest, and moodboards.
+          </p>
+        </details>
+        <details>
+          <summary>How do Free and Pro differ?</summary>
+          <p>
+            Free runs your archive forever: search, ingest, canvas, single exports, local AI models.
+            Free includes <span data-free-max-projects>3</span> projects; Pro removes the cap.
+            Pro adds studio tools: cloud AI keys, lookbook PNG/PDF, folder auto-ingest, batch export,
+            sync, email support. Pro is Annual at $<span data-price-annual>19</span>/year or Lifetime at
+            $<span data-price-lifetime>99</span> once.
+          </p>
+        </details>
+        <details>
+          <summary>How does the free trial work?</summary>
+          <p>
+            Email cinekive@agentmail.to for a no-card 14-day key. It expires on its own and the app
+            stays on Free Desktop. A card-on-file yearly trial is not on sale yet. Lifetime is a
+            one-time purchase with no trial.
+          </p>
+        </details>
+        <details>
+          <summary>How does license activation work?</summary>
+          <p>
+            Buy Lifetime on Lemon Squeezy. You get a license key by email. In the app: Settings →
+            Cinekive Pro → paste the key. There is no Cinekive account. The app checks the key with
+            Lemon Squeezy (key and instance id only, not your media). Each key has a device limit set
+            on the store (default 3). Online re-check about every 14 days. Offline grace is 14 days.
+            After that only Pro tools lock. Free Desktop still works. Lost key: look it up in your
+            Lemon Squeezy receipt email.
+          </p>
+        </details>
+        <details>
+          <summary>Is my media uploaded?</summary>
+          <p>
+            Not by default. The library stays on your disk. License checks send the key and product id
+            only. Pro features send media off-machine only when you choose them (a share link, or a
+            cloud model with your own API key).
+          </p>
+        </details>
+        <details>
+          <summary>Does Cinekive include other companies' stills?</summary>
+          <p>
+            No. The installer ships a handful of public-domain stills as offline placeholders, nothing
+            else. You add files you have the right to use. Cinekive does not clear rights for you —
+            use only assets you're authorized to use.
+          </p>
+        </details>
+        <details>
+          <summary>Can it generate images?</summary>
+          <p>
+            Tagging is the core. It labels real stills. Pro can generate a new still from a reference
+            if you supply your own image-model key. That path is optional.
+          </p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap row">
+      <div>
+        <strong style="color:var(--white)">Cinekive</strong>
+        · Local cinematic still archive
+        <div style="margin-top:0.35rem">
+          Source MIT on
+          <a id="footer-github" href="https://github.com/Gianluca-Improta/cinekive" target="_blank" rel="noreferrer">GitHub</a>
+          · Desktop
+          <a href="https://github.com/Gianluca-Improta/cinekive/releases/latest" target="_blank" rel="noreferrer">releases</a>
+          ·
+          <a
+            id="footer-archive"
+            href="https://app.cinekive.ai/"
+            target="_blank"
+            rel="noreferrer"
+          >Browser gallery (read-only)</a>
+        </div>
+      </div>
+      <div>
+        Pro support:
+        <a id="footer-support" href="mailto:cinekive@agentmail.to">cinekive@agentmail.to</a>
+      </div>
+    </div>
+  </footer>
+
+  <div class="modal-root" id="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+    <div class="modal" role="document">
+      <h3 id="checkout-title">Unlock Cinekive Pro</h3>
+      <p id="checkout-blurb">
+        <span id="checkout-price-line">Pro Annual · $<span data-price-annual>19</span>/year.</span>
+        <span id="checkout-purchase-note">
+          Checkout opens on Gumroad. You get a license key by email. Paste it in Settings → Cinekive Pro.
+          Same installer as Free.
+        </span>
+      </p>
+      <div class="field">
+        <label for="checkout-email">Email (optional)</label>
+        <input id="checkout-email" type="email" autocomplete="email" placeholder="you@studio.com" />
+      </div>
+      <p class="err" id="checkout-error" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="btn-pay">Continue to checkout</button>
+        <button type="button" class="btn btn-muted" data-close-checkout>Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <!-- ========== CONFIG (edit for production) ========== -->
+  <script>
+    window.CINEKIVE_CONFIG = {
+      priceAnnualUsd: 19,
+      priceLifetimeUsd: 99,
+      freeMaxProjects: 3,
+      // Stripe placeholders — Stripe.js is injected only when publishableKey is real
+      stripePublishableKey: "pk_live_REPLACE_ME",
+      stripePriceIdAnnual: "price_REPLACE_ANNUAL",
+      stripePriceIdLifetime: "price_REPLACE_LIFETIME",
+      stripePaymentLinkAnnual: "",
+      stripePaymentLinkLifetime: "",
+      stripePaymentLinkTrial: "",
+      checkoutSessionUrl: "",
+      lemonUrlAnnual: "",
+      lemonUrlLifetime: "https://cinekive.lemonsqueezy.com/checkout/buy/938df13e-96e3-406f-a56f-2a245b790ada",
+      lemonUrlTrial: "",
+      desktopDownload: "https://github.com/Gianluca-Improta/cinekive/releases/latest",
+      githubRepo: "https://github.com/Gianluca-Improta/cinekive",
+      publicUrl: "",
+      onlineArchiveUrl: "https://app.cinekive.ai/",
+      communityUrl: "",
+      supportEmail: "cinekive@agentmail.to",
+    };
+  </script>
+
+  <!-- ========== APP LOGIC ========== -->
+  <script>
+    (function () {
+      "use strict";
+
+      var CFG = window.CINEKIVE_CONFIG;
+      var stripe = null;
+      var checkoutTrigger = null;
+      var checkoutTier = "annual";
+      var lastFocusedBeforeModal = null;
+
+      /* Archive reference stills (local). PLACEHOLDER: replace with product UI screenshots
+         when supplied — keep ratio + AI tags caption pattern; update alt to match real content. */
+      var DEMO = [
+        {
+          id: "1",
+          ratio: "2.39",
+          label: "2.39:1 · archive",
+          src: "./stills/archive-01.jpg",
+          alt: "Close-up interior still with practical shaft light",
+          tags: "AI tags: close-up · practical shaft light · intimate interior · warm key",
+        },
+        {
+          id: "2",
+          ratio: "2.39",
+          label: "2.39:1 · archive",
+          src: "./stills/archive-02.jpg",
+          alt: "Golden-hour forest backlight, anamorphic flare",
+          tags: "AI tags: golden hour · forest backlight · anamorphic · flare",
+        },
+        {
+          id: "3",
+          ratio: "2.39",
+          label: "2.39:1 · archive",
+          src: "./stills/archive-03.jpg",
+          alt: "Night interior with warm practicals and cool fill",
+          tags: "AI tags: night interior · warm practicals · cool fill · period set",
+        },
+        {
+          id: "4",
+          ratio: "2.39",
+          label: "2.39:1 · archive",
+          src: "./stills/archive-04.jpg",
+          alt: "Frame-within-frame silhouette against a window",
+          tags: "AI tags: frame within frame · silhouette · window backlight · quiet drama",
+        },
+        {
+          id: "5",
+          ratio: "2.39",
+          label: "2.39:1 · archive",
+          src: "./stills/archive-05.jpg",
+          alt: "Kitchen night scene with tungsten and smoke",
+          tags: "AI tags: kitchen night · tungsten · smoke · 35mm grain",
+        },
+        {
+          id: "6",
+          ratio: "2.39",
+          label: "2.39:1 · archive",
+          src: "./stills/archive-06.jpg",
+          alt: "Multi-exposure still with amber key and teal shadow",
+          tags: "AI tags: multi-exposure · warm amber · teal shadow · psychological",
+        },
+      ];
+
+      /* Product UI screenshots from a filled local library. */
+      var SHOWCASE = [
+        {
+          id: "sc1",
+          src: "./stills/ui/ui-discovery.jpg",
+          caption: "Discovery across your archive",
+          alt: "Cinekive Discovery grid filled with cinematic stills",
+        },
+        {
+          id: "sc2",
+          src: "./stills/ui/ui-search.jpg",
+          caption: "Search by craft words (light, lens, mood)",
+          alt: "Cinekive search results filtered by craft tags",
+        },
+        {
+          id: "sc3",
+          src: "./stills/ui/ui-commercials.jpg",
+          caption: "Commercial shelves ready for a brief",
+          alt: "Cinekive commercial shelves with hero stills grid",
+        },
+        {
+          id: "sc4",
+          src: "./stills/ui/ui-moodboard.jpg",
+          caption: "Moodboard canvas with PNG / PDF export",
+          alt: "Cinekive moodboard with still on canvas and project rail",
+        },
+        {
+          id: "sc5",
+          src: "./stills/ui/ui-archives.jpg",
+          caption: "Archive hubs you add from sources you can access",
+          alt: "Cinekive Archives page for hubs you control on disk",
+        },
+      ];
+
+      function $(sel, root) {
+        return (root || document).querySelector(sel);
+      }
+      function $all(sel, root) {
+        return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+      }
+
+      function toast(msg) {
+        var el = $("#toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        clearTimeout(toast._t);
+        toast._t = setTimeout(function () {
+          el.classList.remove("show");
+        }, Math.min(9000, 3200 + String(msg).length * 35));
+      }
+
+      function applyPriceLabels() {
+        $all("[data-price-annual]").forEach(function (n) {
+          n.textContent = String(CFG.priceAnnualUsd);
+        });
+        $all("[data-price-lifetime]").forEach(function (n) {
+          n.textContent = String(CFG.priceLifetimeUsd);
+        });
+        $all("[data-free-max-projects]").forEach(function (n) {
+          n.textContent = String(CFG.freeMaxProjects != null ? CFG.freeMaxProjects : 3);
+        });
+      }
+
+      function applyPublicUrl() {
+        var pub = (CFG.publicUrl || "").trim();
+        if (!pub) return;
+        var canon = document.querySelector('link[rel="canonical"]');
+        if (canon) canon.setAttribute("href", pub);
+        var ogUrl = document.querySelector('meta[property="og:url"]');
+        if (ogUrl) ogUrl.setAttribute("content", pub);
+        var schema = document.querySelector('script[type="application/ld+json"]');
+        if (schema) {
+          try {
+            var data = JSON.parse(schema.textContent);
+            data.url = pub;
+            schema.textContent = JSON.stringify(data, null, 2);
+          } catch (e) {}
+        }
+      }
+
+      function applyDownloadUrls() {
+        var url = CFG.desktopDownload;
+        ["#cta-download", "#nav-download", "#cta-app-download"].forEach(function (sel) {
+          var el = $(sel);
+          if (el) el.setAttribute("href", url);
+        });
+        $all('a[href*="releases/latest"]').forEach(function (a) {
+          if (
+            a.id === "cta-download" ||
+            a.id === "nav-download" ||
+            a.id === "cta-app-download" ||
+            a.closest(".plan") ||
+            a.closest(".pricing-cta-row") ||
+            a.closest(".showcase-cta")
+          ) {
+            a.setAttribute("href", url);
+          }
+        });
+        var archive = CFG.onlineArchiveUrl || "";
+        ["#footer-archive", "#faq-archive"].forEach(function (sel) {
+          var el = $(sel);
+          if (!el) return;
+          if (archive) {
+            el.setAttribute("href", archive);
+            el.hidden = false;
+          } else {
+            el.hidden = true;
+          }
+        });
+        var community = (CFG.communityUrl || "").trim();
+        $all("[data-community-link]").forEach(function (el) {
+          if (/^https?:\/\//i.test(community)) {
+            el.setAttribute("href", community);
+            el.hidden = false;
+          } else {
+            el.hidden = true;
+          }
+        });
+        var support = $("#footer-support");
+        if (support && CFG.supportEmail) {
+          support.setAttribute("href", "mailto:" + CFG.supportEmail);
+          support.textContent = CFG.supportEmail;
+        }
+        if (CFG.githubRepo) {
+          var gh = $("#footer-github");
+          if (gh) gh.setAttribute("href", CFG.githubRepo);
+        }
+      }
+
+      function resolveCheckoutTier(raw) {
+        var t = String(raw || "").toLowerCase();
+        if (t === "lifetime" || t === "annual" || t === "trial") return t;
+        return "annual";
+      }
+
+      function syncCheckoutCopy(tier) {
+        var title = $("#checkout-title");
+        var priceLine = $("#checkout-price-line");
+        var purchaseNote = $("#checkout-purchase-note");
+        if (!title || !priceLine) return;
+        priceLine.textContent = "";
+        if (purchaseNote) purchaseNote.hidden = tier === "trial";
+        if (tier === "trial") {
+          title.textContent = "Start your Pro trial";
+          priceLine.textContent =
+            "Start your 14-day free trial of Cinekive Pro. Add a card now; you won't be charged until day 15, and you can cancel anytime before then from your Gumroad account. If the trial ends without converting, Cinekive keeps working on the Free Desktop tier forever. You just lose access to the Pro-only tools until you subscribe or buy Lifetime.";
+        } else if (tier === "lifetime") {
+          title.textContent = "Unlock Pro Lifetime";
+          priceLine.appendChild(document.createTextNode("Pro Lifetime · $"));
+          var life = document.createElement("span");
+          life.setAttribute("data-price-lifetime", "");
+          life.textContent = String(CFG.priceLifetimeUsd);
+          priceLine.appendChild(life);
+          priceLine.appendChild(document.createTextNode(" one-time."));
+        } else {
+          title.textContent = "Unlock Pro Annual";
+          priceLine.appendChild(document.createTextNode("Pro Annual · $"));
+          var ann = document.createElement("span");
+          ann.setAttribute("data-price-annual", "");
+          ann.textContent = String(CFG.priceAnnualUsd);
+          priceLine.appendChild(ann);
+          priceLine.appendChild(document.createTextNode("/year."));
+        }
+      }
+
+      /**
+       * Tradeoff note: Blob-URL service workers / manifests are unreliable outside Chromium
+       * (Firefox/Safari install criteria + same-origin scoping). We register the static
+       * ./sw.js and link ./manifest.json from disk instead. That means this folder is no
+       * longer a single physical file for installability — index.html + sw.js +
+       * manifest.json + icon.svg must be served together. Marketing copy can still be
+       * reviewed from index.html alone.
+       */
+      function registerServiceWorker() {
+        if (!("serviceWorker" in navigator)) return;
+        navigator.serviceWorker.register("./sw.js").catch(function (err) {
+          console.warn("SW register failed (serve landing/ over http(s), not file://):", err);
+        });
+      }
+
+      function startHeroRotator() {
+        var stage = $("#hero-stage");
+        var caption = $("#hero-caption");
+        var ratioEl = $("#hero-ratio");
+        var dots = $("#hero-dots");
+        if (!stage || !DEMO.length) return;
+
+        var idx = 0;
+        var timer = null;
+        var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var imgs = DEMO.map(function (d, i) {
+          var img = document.createElement("img");
+          img.src = d.src;
+          img.alt = d.alt || "Archive reference still";
+          img.width = 1600;
+          img.height = 900;
+          if (i === 0) img.className = "is-active";
+          if (i > 0) img.loading = "lazy";
+          stage.appendChild(img);
+          return img;
+        });
+
+        function show(i) {
+          idx = (i + DEMO.length) % DEMO.length;
+          imgs.forEach(function (img, n) {
+            img.classList.toggle("is-active", n === idx);
+          });
+          if (caption) caption.textContent = DEMO[idx].tags;
+          if (ratioEl) {
+            ratioEl.textContent = DEMO[idx].ratio === "2.39" ? "2.39:1" : DEMO[idx].ratio;
+          }
+          if (dots) {
+            $all("button", dots).forEach(function (b, n) {
+              b.setAttribute("aria-selected", n === idx ? "true" : "false");
+            });
+          }
+        }
+
+        function arm() {
+          if (reduced || DEMO.length < 2) return;
+          clearInterval(timer);
+          timer = setInterval(function () {
+            show(idx + 1);
+          }, 4500);
+        }
+
+        dots.textContent = "";
+        DEMO.forEach(function (_, i) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.setAttribute("role", "tab");
+          b.setAttribute("aria-label", "Show still " + (i + 1));
+          b.setAttribute("aria-selected", i === 0 ? "true" : "false");
+          b.addEventListener("click", function () {
+            show(i);
+            arm();
+          });
+          dots.appendChild(b);
+        });
+
+        show(0);
+        arm();
+
+        stage.addEventListener("mouseenter", function () {
+          clearInterval(timer);
+        });
+        stage.addEventListener("mouseleave", arm);
+        stage.addEventListener("focusin", function () {
+          clearInterval(timer);
+        });
+        stage.addEventListener("focusout", arm);
+      }
+
+      function startShowcaseRotator() {
+        var stage = $("#showcase-stage");
+        var caption = $("#showcase-caption");
+        var dots = $("#showcase-dots");
+        if (!stage || !SHOWCASE.length) return;
+
+        var idx = 0;
+        var timer = null;
+        var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var failed = 0;
+        var slides = SHOWCASE.map(function (d, i) {
+          var node;
+          if (d.src) {
+            node = document.createElement("img");
+            node.src = d.src;
+            node.alt = d.alt || d.caption || "Product screenshot";
+            node.width = 1600;
+            node.height = 1000;
+            if (i > 0) node.loading = "lazy";
+            node.addEventListener("error", function () {
+              failed += 1;
+              node.remove();
+              slides[i] = null;
+              if (failed >= SHOWCASE.length) {
+                stage.textContent = "";
+                var ph = document.createElement("div");
+                ph.className = "slide-placeholder is-active";
+                ph.setAttribute("role", "img");
+                ph.setAttribute("aria-label", "Screenshot placeholder");
+                var mark = document.createElement("strong");
+                mark.textContent = "Screenshots coming soon";
+                var line = document.createElement("span");
+                line.textContent = "Product tour assets missing";
+                ph.appendChild(mark);
+                ph.appendChild(line);
+                stage.appendChild(ph);
+                if (caption) caption.textContent = "See the desktop app after install";
+                if (dots) dots.textContent = "";
+                clearInterval(timer);
+              }
+            });
+          } else {
+            node = document.createElement("div");
+            node.className = "slide-placeholder";
+            node.setAttribute("role", "img");
+            node.setAttribute("aria-label", d.alt || "Screenshot placeholder");
+            var mark = document.createElement("strong");
+            mark.textContent = "Screenshot placeholder";
+            var line = document.createElement("span");
+            line.textContent = "awaiting asset";
+            node.appendChild(mark);
+            node.appendChild(line);
+          }
+          if (i === 0) node.classList.add("is-active");
+          stage.appendChild(node);
+          return node;
+        });
+
+        function show(i) {
+          idx = (i + SHOWCASE.length) % SHOWCASE.length;
+          slides.forEach(function (node, n) {
+            node.classList.toggle("is-active", n === idx);
+          });
+          if (caption) caption.textContent = SHOWCASE[idx].caption;
+          if (dots) {
+            $all("button", dots).forEach(function (b, n) {
+              b.setAttribute("aria-selected", n === idx ? "true" : "false");
+            });
+          }
+        }
+
+        function arm() {
+          if (reduced || SHOWCASE.length < 2) return;
+          clearInterval(timer);
+          timer = setInterval(function () {
+            show(idx + 1);
+          }, 5200);
+        }
+
+        dots.textContent = "";
+        SHOWCASE.forEach(function (d, i) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.setAttribute("role", "tab");
+          b.setAttribute("aria-label", d.caption || "Show screenshot " + (i + 1));
+          b.setAttribute("aria-selected", i === 0 ? "true" : "false");
+          b.addEventListener("click", function () {
+            show(i);
+            arm();
+          });
+          dots.appendChild(b);
+        });
+
+        show(0);
+        arm();
+
+        stage.addEventListener("mouseenter", function () {
+          clearInterval(timer);
+        });
+        stage.addEventListener("mouseleave", arm);
+        stage.addEventListener("focusin", function () {
+          clearInterval(timer);
+        });
+        stage.addEventListener("focusout", arm);
+      }
+
+      function bindNav() {
+        var toggle = $("#nav-toggle");
+        var links = $("#primary-nav");
+        function setOpen(open) {
+          links.classList.toggle("open", open);
+          toggle.classList.toggle("is-open", open);
+          document.body.classList.toggle("nav-open", open);
+          toggle.setAttribute("aria-expanded", open ? "true" : "false");
+          toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+        }
+        toggle.addEventListener("click", function () {
+          setOpen(!links.classList.contains("open"));
+        });
+        links.addEventListener("click", function (e) {
+          if (e.target.closest("a,button") && window.matchMedia("(max-width: 1099px)").matches) {
+            setOpen(false);
+          }
+        });
+        window.addEventListener("resize", function () {
+          if (!window.matchMedia("(max-width: 1099px)").matches) setOpen(false);
+        });
+      }
+
+      function renderDemo() {
+        var grid = $("#demo-grid");
+        if (!grid) return;
+        grid.textContent = "";
+        DEMO.forEach(function (d) {
+          var article = document.createElement("article");
+          article.className = "card";
+          article.setAttribute("data-ratio", "2.39");
+          article.tabIndex = 0;
+
+          var tag = document.createElement("span");
+          tag.className = "card-tag";
+          tag.textContent = d.label || "2.39:1 · archive";
+
+          var img = document.createElement("img");
+          img.src = d.src;
+          img.alt = d.alt || "Archive reference still";
+          img.loading = "lazy";
+          img.width = 900;
+          img.height = 377;
+          img.addEventListener("error", function () {
+            if (article.parentNode) article.parentNode.removeChild(article);
+          });
+
+          var caption = document.createElement("p");
+          caption.className = "card-caption";
+          caption.textContent = d.tags;
+
+          article.appendChild(tag);
+          article.appendChild(img);
+          article.appendChild(caption);
+          grid.appendChild(article);
+        });
+      }
+
+      function getFocusable(container) {
+        return $all(
+          'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+          container
+        ).filter(function (el) {
+          return el.offsetParent !== null || el === document.activeElement;
+        });
+      }
+
+      function trapFocus(e) {
+        if (e.key !== "Tab") return;
+        var modal = $(".modal", $("#checkout-modal"));
+        var nodes = getFocusable(modal);
+        if (!nodes.length) return;
+        var first = nodes[0];
+        var last = nodes[nodes.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+
+      function stripeCheckoutActive() {
+        var hasLink = Boolean(
+          CFG.stripePaymentLinkAnnual ||
+            CFG.stripePaymentLinkLifetime ||
+            CFG.stripePaymentLinkTrial ||
+            CFG.stripePaymentLink
+        );
+        var hasSession = Boolean(CFG.checkoutSessionUrl && stripeKeyReady());
+        return hasLink || hasSession;
+      }
+
+      function lemonForTier(tier) {
+        var t = resolveCheckoutTier(tier);
+        if (t === "lifetime") return CFG.lemonUrlLifetime || CFG.lemonUrl || "";
+        return CFG.lemonUrlAnnual || "";
+      }
+
+      function openCheckoutModal(trigger) {
+        checkoutTrigger = trigger || document.activeElement;
+        lastFocusedBeforeModal = checkoutTrigger;
+        checkoutTier = resolveCheckoutTier(
+          checkoutTrigger && checkoutTrigger.getAttribute
+            ? checkoutTrigger.getAttribute("data-open-checkout")
+            : "annual"
+        );
+        // Lemon Squeezy when Stripe is not configured. Annual stays closed until that variant is live.
+        if (!stripeCheckoutActive()) {
+          var lemon = lemonForTier(checkoutTier);
+          if (!lemon) {
+            toast("Yearly billing isn't on sale yet. Lifetime is $99 once — use Unlock Lifetime.");
+            return;
+          }
+          window.open(lemon, "_blank", "noopener,noreferrer");
+          toast("Checkout opened. Your license key arrives by email — paste it in Settings → Cinekive Pro.");
+          return;
+        }
+        syncCheckoutCopy(checkoutTier);
+        $("#checkout-modal").classList.add("open");
+        $("#checkout-error").textContent = "";
+        document.addEventListener("keydown", trapFocus);
+        setTimeout(function () {
+          $("#checkout-email").focus();
+        }, 0);
+      }
+
+      function closeCheckoutModal() {
+        $("#checkout-modal").classList.remove("open");
+        document.removeEventListener("keydown", trapFocus);
+        if (lastFocusedBeforeModal && typeof lastFocusedBeforeModal.focus === "function") {
+          lastFocusedBeforeModal.focus();
+        }
+        lastFocusedBeforeModal = null;
+      }
+
+      function setPaying(busy) {
+        var btn = $("#btn-pay");
+        btn.disabled = busy;
+        btn.textContent = "";
+        if (busy) {
+          var spin = document.createElement("span");
+          spin.className = "spin";
+          spin.setAttribute("aria-hidden", "true");
+          btn.appendChild(spin);
+          var label = document.createElement("span");
+          label.className = "btn-label";
+          label.textContent = "Redirecting…";
+          btn.appendChild(label);
+        } else {
+          btn.textContent = "Continue to checkout";
+        }
+      }
+
+      function stripeKeyReady() {
+        var key = CFG.stripePublishableKey || "";
+        return Boolean(key && key.indexOf("REPLACE") === -1);
+      }
+
+      /** Load Stripe.js only when a real publishable key is configured. */
+      function ensureStripeJs() {
+        return new Promise(function (resolve, reject) {
+          if (!stripeKeyReady()) {
+            resolve(null);
+            return;
+          }
+          if (window.Stripe) {
+            resolve(window.Stripe);
+            return;
+          }
+          var s = document.createElement("script");
+          s.src = "https://js.stripe.com/v3/";
+          s.async = true;
+          s.onload = function () {
+            resolve(window.Stripe);
+          };
+          s.onerror = function () {
+            reject(new Error("Stripe.js failed to load."));
+          };
+          document.head.appendChild(s);
+        });
+      }
+
+      async function handleProCheckout(email) {
+        var err = $("#checkout-error");
+        err.textContent = "";
+        var tier = resolveCheckoutTier(checkoutTier);
+        var isLifetime = tier === "lifetime";
+        var isTrial = tier === "trial";
+
+        var paymentLink = isTrial
+          ? CFG.stripePaymentLinkTrial || CFG.stripePaymentLinkAnnual || CFG.stripePaymentLink
+          : isLifetime
+            ? CFG.stripePaymentLinkLifetime || CFG.stripePaymentLink
+            : CFG.stripePaymentLinkAnnual || CFG.stripePaymentLink;
+        if (paymentLink) {
+          var link = paymentLink;
+          if (email) {
+            link +=
+              (link.indexOf("?") >= 0 ? "&" : "?") +
+              "prefilled_email=" +
+              encodeURIComponent(email);
+          }
+          window.location.href = link;
+          return;
+        }
+
+        if (CFG.checkoutSessionUrl && stripeKeyReady()) {
+          var StripeCtor = await ensureStripeJs();
+          if (!StripeCtor) throw new Error("Stripe.js unavailable.");
+          if (!stripe) stripe = StripeCtor(CFG.stripePublishableKey);
+          var priceId = isLifetime
+            ? CFG.stripePriceIdLifetime || CFG.stripePriceId
+            : CFG.stripePriceIdAnnual || CFG.stripePriceId;
+          var res = await fetch(CFG.checkoutSessionUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: email || undefined,
+              priceId: priceId,
+              tier: tier,
+            }),
+          });
+          var data = await res.json().catch(function () {
+            return {};
+          });
+          if (!res.ok || !data.sessionId) {
+            throw new Error(data.message || data.error || "Could not create checkout session.");
+          }
+          var result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+          if (result.error) throw new Error(result.error.message);
+          return;
+        }
+
+        var lemon = isLifetime ? (CFG.lemonUrlLifetime || "") : (CFG.lemonUrlAnnual || "");
+        if (!lemon) throw new Error("Yearly billing isn't on sale yet. Lifetime checkout is live.");
+        window.open(lemon, "_blank", "noopener,noreferrer");
+        toast(
+          "Check your inbox for your Pro license key. Paste it into the desktop app under Settings → Cinekive Pro."
+        );
+        closeCheckoutModal();
+      }
+
+      function bindCheckout() {
+        $all("[data-open-checkout]").forEach(function (el) {
+          el.addEventListener("click", function () {
+            openCheckoutModal(el);
+          });
+        });
+        $all("[data-close-checkout]").forEach(function (el) {
+          el.addEventListener("click", closeCheckoutModal);
+        });
+        $("#checkout-modal").addEventListener("click", function (e) {
+          if (e.target === $("#checkout-modal")) closeCheckoutModal();
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && $("#checkout-modal").classList.contains("open")) {
+            closeCheckoutModal();
+          }
+        });
+        $("#btn-pay").addEventListener("click", async function () {
+          var email = ($("#checkout-email").value || "").trim();
+          if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            $("#checkout-error").textContent = "Enter a valid email, or leave blank.";
+            return;
+          }
+          setPaying(true);
+          try {
+            await handleProCheckout(email);
+          } catch (ex) {
+            $("#checkout-error").textContent = ex.message || "Checkout failed.";
+          } finally {
+            setPaying(false);
+          }
+        });
+      }
+
+      function boot() {
+        applyPriceLabels();
+        applyPublicUrl();
+        applyDownloadUrls();
+        registerServiceWorker();
+        bindNav();
+        startHeroRotator();
+        startShowcaseRotator();
+        renderDemo();
+        bindCheckout();
+      }
+
+      window.handleProCheckout = handleProCheckout;
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
+</body>
+</html>

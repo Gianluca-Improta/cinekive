@@ -222,7 +222,7 @@ def create_app() -> FastAPI:
             "Local-first cinematic visual library. Ingest films, stills, GIFs, and YouTube clips; "
             "search by craft, color, and meaning. 100% offline after model download."
         ),
-        version="0.3.0",
+        version="0.5.3",
         lifespan=lifespan,
     )
     app.add_middleware(

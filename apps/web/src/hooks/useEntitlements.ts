@@ -64,4 +64,5 @@ export function useRefreshEntitlements() {
 }
 
 export const PRO_UPGRADE_URL =
-  process.env.NEXT_PUBLIC_PRO_URL || "https://gianlucaimprota.gumroad.com/l/cinekive-pro";
+  process.env.NEXT_PUBLIC_PRO_URL ||
+  "https://cinekive.lemonsqueezy.com/checkout/buy/938df13e-96e3-406f-a56f-2a245b790ada";

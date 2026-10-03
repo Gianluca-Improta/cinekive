@@ -1,5 +1,7 @@
 # Cinekive Pro on Gumroad
 
+> Sales moved to Lemon Squeezy. See [LEMONSQUEEZY.md](LEMONSQUEEZY.md). This file stays so older links still explain the legacy key path. New checkouts do not use Gumroad. Existing Gumroad keys still activate if `GUMROAD_PRODUCT_PERMALINK` or `GUMROAD_PRODUCT_ID` is set on the API.
+
 One-time license for the **desktop** app. Source stays MIT, but Free is now the
 default everywhere: installers, Docker, and source builds all start Free, and Pro
 requires a real `license.json` (Gumroad key or signed trial key).

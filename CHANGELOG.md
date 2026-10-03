@@ -2,6 +2,14 @@
 
 Notable changes per release. Dates are UTC.
 
+## Unreleased
+
+- Paid Pro activates through Lemon Squeezy. Lifetime ($99) is the live checkout. Annual ($19/year) stays closed until that subscription variant is published. `CK-TRIAL-` keys are unchanged. Legacy Gumroad keys still verify when Gumroad product env vars are set.
+- Deactivating Pro frees the Lemon Squeezy device seat.
+- Share tunnel asks for a rights confirmation before the public link.
+- Cloud VLM defaults off in Docker Compose.
+- Version strings on the API package and OpenAPI schema match 0.5.3.
+
 ## v0.5.3 — 2026-09-08
 
 ### Fixed

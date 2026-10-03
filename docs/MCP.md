@@ -10,7 +10,7 @@ In-app **Craft chat** (left sidebar) is available to everyone with a local VLM �
 pip install -e packages/cinekive-mcp
 ```
 
-Ensure the API is up (`http://127.0.0.1:8000`) and Pro is active — activate a Gumroad
+Ensure the API is up (`http://127.0.0.1:8000`) and Pro is active — activate a Lemon Squeezy
 or trial key under **Settings → Cinekive Pro**. For local development only, you can
 set `CINEKIVE_TIER=pro` together with `CINEKIVE_ALLOW_DEV_LICENSE=true`; packaged
 builds disable that path.

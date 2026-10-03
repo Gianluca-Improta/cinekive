@@ -1,4 +1,4 @@
-"""Persist subscription credentials for gated archive mirrors (local only)."""
+"""Persist optional source logins locally (MovieStillsDB donator login). Passwords stay on disk."""
 
 from __future__ import annotations
 

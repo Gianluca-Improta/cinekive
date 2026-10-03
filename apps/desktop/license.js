@@ -1,6 +1,6 @@
 /**
  * Cinekive Pro license store (desktop).
- * Activates via Gumroad license key → API /license/activate → license.json
+ * Activates via Lemon Squeezy (or legacy Gumroad) key → API /license/activate → license.json
  */
 
 const fs = require("fs");
@@ -11,7 +11,8 @@ const crypto = require("crypto");
 const { userDataRoot } = require("./paths");
 
 const PRO_URL =
-  process.env.CINEKIVE_PRO_URL || "https://gianlucaimprota.gumroad.com/l/cinekive-pro";
+  process.env.CINEKIVE_PRO_URL ||
+  "https://cinekive.lemonsqueezy.com/checkout/buy/938df13e-96e3-406f-a56f-2a245b790ada";
 
 function licensePath() {
   return path.join(userDataRoot(), "license.json");

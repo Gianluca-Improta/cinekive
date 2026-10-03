@@ -425,13 +425,13 @@ function startShareTunnel() {
     dialog
       .showMessageBox({
         type: "info",
-        buttons: ["Get Pro — $19", "Cancel"],
+        buttons: ["Get Pro", "Cancel"],
         defaultId: 0,
         cancelId: 1,
         title: "Cinekive Pro",
         message: "Public view links are a Pro feature",
         detail:
-          "Phone-on-WiFi (LAN) stays free. Temporary public tunnels are included with Cinekive Pro ($19 one-time).",
+          "Phone-on-WiFi (LAN) stays free. Temporary public tunnels are included with Cinekive Pro (Lifetime, or Annual when that plan is on sale).",
       })
       .then((r) => {
         if (r.response === 0) shell.openExternal(lic.PRO_URL);
@@ -446,6 +446,17 @@ function startShareTunnel() {
     });
     return;
   }
+  const rights = dialog.showMessageBoxSync({
+    type: "warning",
+    buttons: ["I am authorized to share these frames", "Cancel"],
+    defaultId: 1,
+    cancelId: 1,
+    title: "Share these frames?",
+    message: "This link is public while the tunnel runs.",
+    detail:
+      "Cinekive does not clear rights. Continue only if you are authorized to show every frame someone could open.",
+  });
+  if (rights !== 0) return;
   const bin = process.platform === "win32" ? "cloudflared.exe" : "cloudflared";
   try {
     shareProc = spawn(bin, ["tunnel", "--url", WEB_URL], {

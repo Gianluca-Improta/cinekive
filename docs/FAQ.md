@@ -82,7 +82,7 @@ UI packs: English, Chinese, Spanish, French, German, Japanese. Shot/craft taxono
 
 ## Free vs Pro?
 
-| | Free | Pro ($19 one-time) |
+| | Free | Pro (Lifetime $99) |
 |--|------|---------------------|
 | Search, ingest, single export, LAN | Yes | Yes |
 | Moodboard canvas | — | Unlocked |
@@ -92,10 +92,10 @@ UI packs: English, Chinese, Spanish, French, German, Japanese. Shot/craft taxono
 | Continuous enrich, Agent API, unlimited projects | Soft / locked | Unlocked |
 | Support | GitHub | Email cinekive@agentmail.to |
 
-Same desktop installer. Buy on [Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro), then **Settings → Cinekive Pro → Activate**. Early-bird $12 for the first 100 buyers when offered.
+Same desktop installer. Buy Lifetime on [Lemon Squeezy](https://cinekive.lemonsqueezy.com/checkout/buy/938df13e-96e3-406f-a56f-2a245b790ada), then **Settings → Cinekive Pro → Activate**. Annual ($19/year) is not on sale until that subscription is published.
 
 Free is the default everywhere — installers, Docker, and builds from source. Pro
-needs a real license file: a Gumroad key or a signed 14-day trial key. Setting
+needs a real license file: a Lemon Squeezy key or a signed 14-day trial key. Setting
 `CINEKIVE_TIER=pro` does nothing unless you also opt in with
 `CINEKIVE_ALLOW_DEV_LICENSE=true`, which packaged builds hard-disable.
 
@@ -108,4 +108,4 @@ extend it, and each key burns on first activation. Ask at cinekive@agentmail.to.
 
 ## How do I activate Pro offline?
 
-Activate once while online (Gumroad verify). After that, a signed `license.json` keeps Pro working offline. After ~30 days you may be asked to re-verify when connected; you are not locked out immediately.
+Activate once while online (Lemon Squeezy). After that, a signed `license.json` keeps Pro working offline. After about 14 days you may be asked to re-verify when connected; you are not locked out immediately. Deactivating Pro also frees that device seat on the store.

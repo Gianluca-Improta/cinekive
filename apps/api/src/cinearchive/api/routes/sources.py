@@ -1,4 +1,4 @@
-"""Bootstrap source archives — ShotDeck, FilmGrab, EyeCandy."""
+"""Bootstrap source archives — FilmGrab, EyeCandy, MovieStillsDB."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ router = APIRouter(tags=["sources"])
 
 
 class SourceIngestRequest(BaseModel):
-    source: str = Field(description="shotdeck | filmgrab | eyecandy")
+    source: str = Field(description="filmgrab | eyecandy | moviestillsdb")
     recursive: bool = True
 
 
@@ -106,11 +106,9 @@ async def sources_status(
         "suggestions": CATALOG_SUGGESTIONS,
         "mirror_runs": mirror_runs,
         "credentials": cred_status,
-        "shotdeck_mirror_run": mirror_runs.get("shotdeck") or {},
-        "shotdeck_credentials_configured": cred_status.get("shotdeck", {}).get("configured", False),
         "note": (
-            "Archives hub — your libraries and mirrors fill the grid; "
-            "a short curated list is for seeding only."
+            "Archives hub — your libraries and public sources fill the grid; "
+            "a short curated list is for seeding only. Ingest files you are authorized to use."
         ),
     }
 

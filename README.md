@@ -67,14 +67,16 @@ If this saves you time, a [GitHub star](https://github.com/Gianluca-Improta/cine
 
 ### Free vs Pro
 
-Same installer, and the same code you see in this repo. Pro is a **one-time**
-[Gumroad license](https://gianlucaimprota.gumroad.com/l/cinekive-pro) ($19, early-bird $12).
+Same installer, and the same code you see in this repo. Pro Lifetime is **$99 once**
+on [Lemon Squeezy](https://cinekive.lemonsqueezy.com/checkout/buy/938df13e-96e3-406f-a56f-2a245b790ada).
+Annual ($19/year) is listed but not on sale until that subscription variant is live.
+Testers can use a no-card 14-day `CK-TRIAL-` key.
 
 **Free is the default everywhere** — installers, `docker compose`, and builds from
-source alike. Pro unlocks with a real license: a Gumroad key or a signed 14-day
+source alike. Pro unlocks with a real license: a Lemon Squeezy key or a signed 14-day
 trial key. There is no environment variable that flips Pro on.
 
-| | Free (Community) | Pro ($19 once) |
+| | Free (Community) | Pro (Lifetime $99) |
 |--|------------------|----------------|
 | Promise | Your local cinematic archive | Studio workflow unlocked |
 | Search + ingest | Yes | Yes |
@@ -202,7 +204,7 @@ New in 0.5.3 — see [CHANGELOG.md](CHANGELOG.md):
   downgrading every visual query to filename matching; scores are now calibrated so
   a strong look match outranks an incidental title hit
 - **Free by default everywhere** — source builds no longer unlock Pro; Pro needs a
-  real Gumroad or signed trial license
+  real Lemon Squeezy or signed trial license
 - **14-day trial keys** for testers, with absolute expiry and clock-rollback checks
 - **Offline archive previews** — 12 public-domain film stills bundled, so Seed cards
   render with no network
@@ -212,7 +214,7 @@ Also in the 0.5.x line:
 
 - **Cloud VLM (Pro)** — OpenRouter, ChatGPT/OpenAI, Claude (via OpenRouter), Kimi; local Ollama stays free
 - **Board PNG/PDF export (Pro)** + **folder watcher** auto-ingest
-- **Cinekive Pro** open-core — $19 one-time Gumroad license; Free stays useful
+- **Cinekive Pro** open-core — Lifetime on Lemon Squeezy; Free stays useful
 - **Native engine** — relocatable Python in the engine pack
 - **One-click desktop install** — Windows `.exe` / Mac `.dmg`; native engine by default (no Docker or terminal)
 - **Phone on same WiFi** — browse your library from a phone browser on your LAN
@@ -372,7 +374,7 @@ Built by **[Gianluca Improta](https://gianlucaimprota.com)**.
 
 | Link | For |
 |------|-----|
-| [Cinekive Pro on Gumroad](https://gianlucaimprota.gumroad.com/l/cinekive-pro) | **$19 one-time** — mirrors, batch export, tunnel, continuous enrich |
+| [Cinekive Pro Lifetime](https://cinekive.lemonsqueezy.com/checkout/buy/938df13e-96e3-406f-a56f-2a245b790ada) | **$99 once** — archive pull, batch export, tunnel, continuous enrich |
 | [framechain.ai](https://framechain.ai) | Cheap canvas AI video generation |
 | [gianlucaimprota.com](https://gianlucaimprota.com) | Director / maker portfolio |
 | [gemimedia.cn](https://gemimedia.cn) | Video production |

@@ -2,8 +2,9 @@
 
 Open-core model:
 - Default tier is ``free`` with soft feature gates — including source builds.
-- Pro unlocks only via ``license.json``: a Gumroad activation or a signed
-  14-day trial key. There is no environment-variable path to Pro.
+- Pro unlocks only via ``license.json``: a Lemon Squeezy activation or a signed
+  14-day trial key. Legacy Gumroad keys still verify when that product is configured.
+  There is no environment-variable path to Pro.
 - ``CINEKIVE_TIER=pro`` is honoured only when ``CINEKIVE_ALLOW_DEV_LICENSE`` is
   explicitly enabled, which packaged builds hard-set to ``false``.
 
@@ -56,17 +57,21 @@ FREE_FEATURES: tuple[str, ...] = (
 
 FREE_MAX_PROJECTS = 3
 
-# Offline Pro grace / re-verify cadence — see gumroad_license.py (defaults: 14 days).
+# Offline Pro grace / re-verify cadence — see lemonsqueezy_license.py (defaults: 14 days).
 try:
-    from cinearchive.services.gumroad_license import (
+    from cinearchive.services.lemonsqueezy_license import (
         DEVICE_LIMIT,
         OFFLINE_GRACE_SEC,
         REVERIFY_INTERVAL_SEC,
+        checkout_url,
     )
 except Exception:  # pragma: no cover
     DEVICE_LIMIT = 3
     OFFLINE_GRACE_SEC = 14 * 24 * 3600
     REVERIFY_INTERVAL_SEC = 14 * 24 * 3600
+
+    def checkout_url(kind: str = "lifetime") -> str:
+        return "https://cinekive.lemonsqueezy.com"
 
 # Not DRM — keeps casual license.json edits from flipping tier without a key.
 _SIGNING_SECRET = os.environ.get(
@@ -261,7 +266,7 @@ def resolve_tier(settings: Settings | None = None) -> tuple[str, dict[str, Any]]
                 }
 
     # Free is the default everywhere, including source builds and plain Docker.
-    # Pro requires a real license.json (Gumroad activation or signed trial key);
+    # Pro requires a real license.json (Lemon Squeezy activation or signed trial key);
     # the previous "unset enforce flag means unlocked" path gave the public repo
     # Pro for free, so it is gone. Local dev opts in via CINEKIVE_ALLOW_DEV_LICENSE.
     if _dev_license_allowed() and (os.environ.get("CINEKIVE_TIER") or "").strip().lower() == "pro":
@@ -298,12 +303,11 @@ def entitlements_payload(settings: Settings | None = None) -> dict[str, Any]:
         "limits": {
             "max_projects": None if tier == "pro" else FREE_MAX_PROJECTS,
         },
-        "upgrade_url": os.environ.get(
-            "CINEKIVE_PRO_URL",
-            "https://gianlucaimprota.gumroad.com/l/cinekive-pro",
-        ),
-        "price_usd": 19,
-        "early_bird_usd": 12,
+        "upgrade_url": checkout_url("lifetime"),
+        "upgrade_url_annual": checkout_url("annual"),
+        "price_usd": 99,
+        "price_annual_usd": 19,
+        "price_lifetime_usd": 99,
         "support_email": os.environ.get("CINEKIVE_SUPPORT_EMAIL", "cinekive@agentmail.to"),
         "version": APP_VERSION,
         "device_limit": DEVICE_LIMIT,

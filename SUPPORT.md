@@ -11,7 +11,7 @@
 | Security | [SECURITY.md](SECURITY.md) |
 | Full walkthrough | [docs/GUIDE.md](docs/GUIDE.md) |
 | Desktop install | [docs/DESKTOP.md](docs/DESKTOP.md) · [Releases](https://github.com/Gianluca-Improta/cinekive/releases/latest) |
-| Buy Pro | [Gumroad — Cinekive Pro](https://gianlucaimprota.gumroad.com/l/cinekive-pro) · [setup notes](docs/GUMROAD.md) |
+| Buy Pro | [Lemon Squeezy — Lifetime](https://cinekive.lemonsqueezy.com/checkout/buy/938df13e-96e3-406f-a56f-2a245b790ada) · [setup notes](docs/LEMONSQUEEZY.md) |
 | FAQ | [docs/FAQ.md](docs/FAQ.md) |
 
 ## Before you post

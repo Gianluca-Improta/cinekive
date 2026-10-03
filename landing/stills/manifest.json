@@ -1,0 +1,56 @@
+[
+  {
+    "id": "1",
+    "ratio": "4:3",
+    "label": "4:3 \u00b7 archive",
+    "src": "./stills/archive-01.jpg",
+    "tags": "AI tags: close-up \u00b7 practical shaft light \u00b7 intimate interior \u00b7 warm key \u00b7 archive reference still",
+    "bytes": 68977,
+    "shot_id": "S9DJO6GV"
+  },
+  {
+    "id": "2",
+    "ratio": "2.39",
+    "label": "2.39:1 \u00b7 archive",
+    "src": "./stills/archive-02.jpg",
+    "tags": "AI tags: golden hour \u00b7 forest backlight \u00b7 anamorphic \u00b7 flare \u00b7 archive reference still",
+    "bytes": 315835,
+    "shot_id": "MMS6KV0B"
+  },
+  {
+    "id": "3",
+    "ratio": "2.39",
+    "label": "2.39:1 \u00b7 archive",
+    "src": "./stills/archive-03.jpg",
+    "tags": "AI tags: night interior \u00b7 warm practicals \u00b7 cool fill \u00b7 period set \u00b7 archive reference still",
+    "bytes": 60491,
+    "shot_id": "UJ0R61NM"
+  },
+  {
+    "id": "4",
+    "ratio": "2.39",
+    "label": "2.39:1 \u00b7 archive",
+    "src": "./stills/archive-04.jpg",
+    "tags": "AI tags: frame within frame \u00b7 silhouette \u00b7 window backlight \u00b7 quiet drama \u00b7 archive reference still",
+    "bytes": 50442,
+    "shot_id": "70ACITG3"
+  },
+  {
+    "id": "5",
+    "ratio": "2.39",
+    "label": "2.39:1 \u00b7 archive",
+    "src": "./stills/archive-05.jpg",
+    "tags": "AI tags: kitchen night \u00b7 tungsten \u00b7 smoke \u00b7 35mm grain \u00b7 archive reference still",
+    "bytes": 70599,
+    "shot_id": "X5TJ8ZGJ"
+  },
+  {
+    "id": "6",
+    "ratio": "2.39",
+    "label": "2.39:1 \u00b7 archive",
+    "src": "./stills/archive-06.jpg",
+    "tags": "AI tags: multi-exposure \u00b7 warm amber \u00b7 teal shadow \u00b7 psychological \u00b7 archive reference still",
+    "bytes": 99079,
+    "shot_id": "BMZXJ0EH"
+  }
+]

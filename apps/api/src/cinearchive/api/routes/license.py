@@ -1,4 +1,4 @@
-"""License / Pro activation routes — Gumroad verify, no Cinekive accounts."""
+"""License / Pro activation routes — Lemon Squeezy, trials, no Cinekive accounts."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from cinearchive.api.deps import get_settings
 from cinearchive.config import Settings
 from cinearchive.services import entitlements as ent
 from cinearchive.services import gumroad_license as gum
+from cinearchive.services import lemonsqueezy_license as ls
 
 router = APIRouter(prefix="/license", tags=["license"])
 
@@ -49,20 +50,28 @@ def _machine_already_registered(doc: dict[str, Any] | None, machine_id: str | No
 async def get_entitlements(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
     # Opportunistic online re-check when past interval (does not consume device uses).
     doc = ent._read_license_doc(settings)
-    if (
-        doc
-        and str(doc.get("tier") or "").lower() == "pro"
-        and doc.get("licenseKey")
-        and doc.get("source") == "gumroad"
-        and gum.gumroad_configured()
-    ):
+    if doc and str(doc.get("tier") or "").lower() == "pro" and doc.get("licenseKey"):
         verified_at = float(doc.get("verifiedAt") or doc.get("activatedAt") or 0)
-        if verified_at and (time.time() - verified_at) >= gum.REVERIFY_INTERVAL_SEC:
+        due = verified_at and (time.time() - verified_at) >= ls.REVERIFY_INTERVAL_SEC
+        if due and doc.get("source") == "lemonsqueezy" and doc.get("instanceId") and ls.lemonsqueezy_configured():
             try:
-                result = await gum.verify_license_key(
+                result = await ls.validate_license_key(
                     str(doc["licenseKey"]),
-                    increment_uses=False,
+                    instance_id=str(doc["instanceId"]),
                 )
+                if result.get("success"):
+                    doc["verifiedAt"] = time.time()
+                    doc["usesCount"] = result.get("uses")
+                    if result.get("email"):
+                        doc["email"] = result.get("email")
+                    ent.write_license(doc, settings)
+                elif result.get("status") in {"expired", "disabled"}:
+                    ent.clear_license(settings)
+            except Exception:
+                pass
+        elif due and doc.get("source") == "gumroad" and gum.gumroad_configured():
+            try:
+                result = await gum.verify_license_key(str(doc["licenseKey"]), increment_uses=False)
                 if result.get("success"):
                     doc["verifiedAt"] = time.time()
                     doc["usesCount"] = result.get("uses")
@@ -70,12 +79,11 @@ async def get_entitlements(settings: Settings = Depends(get_settings)) -> dict[s
                     if purchase.get("email"):
                         doc["email"] = purchase.get("email")
                     if purchase.get("refunded") or purchase.get("chargebacked"):
-                        # Treat as invalid — clear Pro
                         ent.clear_license(settings)
                     else:
                         ent.write_license(doc, settings)
             except Exception:
-                pass  # stay on cached verifiedAt / grace logic
+                pass
     return ent.entitlements_payload(settings)
 
 
@@ -84,7 +92,7 @@ async def reverify_license(
     body: ReverifyBody | None = None,
     settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
-    """Re-check Gumroad without incrementing uses (online keepalive)."""
+    """Re-check Lemon Squeezy (or a legacy Gumroad key) without a new seat."""
     body = body or ReverifyBody()
     doc = ent._read_license_doc(settings)
     if not doc or str(doc.get("tier") or "").lower() != "pro" or not doc.get("licenseKey"):
@@ -127,17 +135,48 @@ async def reverify_license(
             "time_source": check.get("time_source"),
         }
 
-    if not gum.gumroad_configured():
-        if _license_enforce():
+    if doc.get("source") == "lemonsqueezy" and doc.get("instanceId") and ls.lemonsqueezy_configured():
+        try:
+            result = await ls.validate_license_key(
+                str(doc["licenseKey"]),
+                instance_id=str(doc["instanceId"]),
+            )
+        except Exception as exc:
             return {
                 "ok": False,
-                "error": "gumroad_unconfigured",
-                "message": "Cannot re-verify: Gumroad is not configured on this build.",
+                "error": "verify_unreachable",
+                "message": f"Could not reach Lemon Squeezy ({exc}). Pro stays active until the offline grace window ends.",
+                "entitlements": ent.entitlements_payload(settings),
+                "grace_sec": ls.OFFLINE_GRACE_SEC,
+            }
+        if not result.get("success"):
+            if result.get("status") in {"expired", "disabled"}:
+                ent.clear_license(settings)
+            return {
+                "ok": False,
+                "error": "invalid_license",
+                "message": result.get("message") or "License is no longer valid.",
                 "entitlements": ent.entitlements_payload(settings),
             }
         doc["verifiedAt"] = time.time()
+        doc["usesCount"] = result.get("uses")
+        doc["deviceLimit"] = result.get("limit") or doc.get("deviceLimit")
+        if result.get("email"):
+            doc["email"] = result.get("email")
+        if result.get("expires_at"):
+            doc["expiresAt"] = result.get("expires_at")
+        if body.machine_id:
+            doc["machineIds"] = _merge_machine_ids(doc.get("machineIds"), body.machine_id)
         ent.write_license(doc, settings)
-        return {"ok": True, "entitlements": ent.entitlements_payload(settings), "warning": "gumroad_unconfigured"}
+        return {"ok": True, "entitlements": ent.entitlements_payload(settings), "uses": result.get("uses")}
+
+    if not gum.gumroad_configured():
+        return {
+            "ok": False,
+            "error": "license_unconfigured",
+            "message": "This license has no Lemon Squeezy instance to re-check, and Gumroad is not configured.",
+            "entitlements": ent.entitlements_payload(settings),
+        }
 
     try:
         result = await gum.verify_license_key(str(doc["licenseKey"]), increment_uses=False)
@@ -145,7 +184,7 @@ async def reverify_license(
         return {
             "ok": False,
             "error": "verify_unreachable",
-            "message": f"Could not reach Gumroad ({exc}). Pro stays active until the offline grace window ends.",
+            "message": f"Could not reach the license server ({exc}). Pro stays active until the offline grace window ends.",
             "entitlements": ent.entitlements_payload(settings),
             "grace_sec": gum.OFFLINE_GRACE_SEC,
         }
@@ -201,7 +240,7 @@ async def activate_license(
     body: ActivateBody,
     settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
-    """Activate Cinekive Pro with a Gumroad license key (or offline signed / dev key)."""
+    """Activate Cinekive Pro with a Lemon Squeezy key, a CK-TRIAL key, or a dev key."""
     key = body.license_key.strip()
     email = (body.email or "").strip() or None
     machine_id = (body.machine_id or "").strip() or None
@@ -301,70 +340,181 @@ async def activate_license(
         }
 
     existing = ent._read_license_doc(settings)
+    if ls.lemonsqueezy_configured():
+        lemon = await _activate_lemonsqueezy(key, email, machine_id, existing, settings)
+        if lemon.get("ok") or lemon.get("error") != "invalid_license":
+            return lemon
+        # A key Lemon rejects may still be a legacy Gumroad key.
+        if not gum.gumroad_configured():
+            return lemon
+
+    if gum.gumroad_configured():
+        return await _activate_gumroad(key, email, machine_id, existing, settings)
+
+    return {
+        "ok": False,
+        "error": "license_unconfigured",
+        "message": (
+            "This build cannot verify paid licenses. "
+            "Use a CK-TRIAL-… key from the maintainer, or a release build with Lemon Squeezy enabled."
+        ),
+    }
+
+
+def _offline_cached(existing: dict[str, Any] | None, key: str, settings: Settings, exc: Exception) -> dict[str, Any] | None:
+    if existing and existing.get("licenseKey") == key and str(existing.get("tier") or "") == "pro":
+        path = ent.license_file_path(settings)
+        payload = ent.entitlements_payload(settings)
+        payload["offline"] = True
+        return {
+            "ok": True,
+            "entitlements": payload,
+            "path": str(path),
+            "warning": str(exc),
+            "message": "Offline — using cached license until the 14-day grace window ends.",
+        }
+    return None
+
+
+async def _activate_lemonsqueezy(
+    key: str,
+    email: str | None,
+    machine_id: str | None,
+    existing: dict[str, Any] | None,
+    settings: Settings,
+) -> dict[str, Any]:
+    """Validate the stored instance, or activate a new one (consumes a seat)."""
+    same_key = bool(existing and str(existing.get("licenseKey") or "") == key)
+    instance_id = str(existing.get("instanceId") or "") if same_key else ""
+    prior_ids = existing.get("machineIds") if same_key else []
+
+    if instance_id:
+        try:
+            result = await ls.validate_license_key(key, instance_id=instance_id)
+        except Exception as exc:
+            cached = _offline_cached(existing, key, settings, exc)
+            if cached:
+                return cached
+            return {
+                "ok": False,
+                "error": "verify_unreachable",
+                "message": f"Could not reach Lemon Squeezy ({exc}). Check your connection and try again.",
+            }
+        if result.get("success"):
+            return _write_lemon(key, email, machine_id, existing, settings, result, prior_ids, new_instance=False)
+        if result.get("status") in {"expired", "disabled"}:
+            return {
+                "ok": False,
+                "error": "license_revoked",
+                "message": result.get("message") or "This license is no longer active.",
+            }
+
+    instance_name = machine_id or "Cinekive"
+    try:
+        result = await ls.activate_license_key(key, instance_name=instance_name)
+    except Exception as exc:
+        cached = _offline_cached(existing, key, settings, exc)
+        if cached:
+            return cached
+        return {
+            "ok": False,
+            "error": "verify_unreachable",
+            "message": f"Could not reach Lemon Squeezy ({exc}). Check your connection and try again.",
+        }
+    if not result.get("success"):
+        return {
+            "ok": False,
+            "error": "invalid_license",
+            "message": str(result.get("message") or "Invalid license key"),
+        }
+    limit = int(result.get("limit") or ls.DEVICE_LIMIT)
+    uses = int(result.get("uses") or 0)
+    if uses > limit and result.get("instance_id"):
+        try:
+            await ls.deactivate_license_key(key, instance_id=str(result["instance_id"]))
+        except Exception:
+            pass
+        return {
+            "ok": False,
+            "error": "device_limit",
+            "message": ls.device_limit_exceeded_message(uses, limit),
+            "uses": uses,
+            "device_limit": limit,
+        }
+    return _write_lemon(key, email, machine_id, existing, settings, result, prior_ids, new_instance=True)
+
+
+def _write_lemon(
+    key: str,
+    email: str | None,
+    machine_id: str | None,
+    existing: dict[str, Any] | None,
+    settings: Settings,
+    result: dict[str, Any],
+    prior_ids: Any,
+    *,
+    new_instance: bool,
+) -> dict[str, Any]:
+    same_key = bool(existing and str(existing.get("licenseKey") or "") == key)
+    doc = {
+        "tier": "pro",
+        "licenseKey": key,
+        "email": result.get("email") or email,
+        "product": result.get("product_name") or "Cinekive Pro",
+        "activatedAt": float(existing.get("activatedAt") or time.time()) if same_key else time.time(),
+        "verifiedAt": time.time(),
+        "machineIds": _merge_machine_ids(prior_ids, machine_id),
+        "source": "lemonsqueezy",
+        "instanceId": result.get("instance_id") or (existing.get("instanceId") if same_key else None),
+        "productId": result.get("product_id"),
+        "variantId": result.get("variant_id"),
+        "variantName": result.get("variant_name"),
+        "orderId": result.get("order_id"),
+        "expiresAt": result.get("expires_at"),
+        "usesCount": result.get("uses"),
+        "deviceLimit": result.get("limit") or ls.DEVICE_LIMIT,
+        "incrementedOnActivate": new_instance,
+    }
+    path = ent.write_license(doc, settings)
+    return {
+        "ok": True,
+        "entitlements": ent.entitlements_payload(settings),
+        "path": str(path),
+        "uses": result.get("uses"),
+        "device_limit": doc["deviceLimit"],
+    }
+
+
+async def _activate_gumroad(
+    key: str,
+    email: str | None,
+    machine_id: str | None,
+    existing: dict[str, Any] | None,
+    settings: Settings,
+) -> dict[str, Any]:
+    """Legacy Gumroad keys already sold. New checkouts go through Lemon Squeezy."""
     already_here = (
         existing
         and str(existing.get("licenseKey") or "") == key
         and _machine_already_registered(existing, machine_id)
     )
-
-    if not gum.gumroad_configured():
-        if enforce:
-            return {
-                "ok": False,
-                "error": "gumroad_unconfigured",
-                "message": (
-                    "This build cannot verify paid licenses (Gumroad not configured). "
-                    "Use a CK-TRIAL-… key from the maintainer, or a release build with Gumroad wired."
-                ),
-            }
-        # Self-hosted without Gumroad product — accept key for testing
-        doc = {
-            "tier": "pro",
-            "licenseKey": key,
-            "email": email,
-            "product": "Cinekive Pro",
-            "activatedAt": time.time(),
-            "verifiedAt": time.time(),
-            "machineIds": _merge_machine_ids(
-                existing.get("machineIds") if existing and existing.get("licenseKey") == key else [],
-                machine_id,
-            ),
-            "source": "manual",
-            "usesCount": 0,
-            "deviceLimit": gum.DEVICE_LIMIT,
-        }
-        path = ent.write_license(doc, settings)
-        return {"ok": True, "entitlements": ent.entitlements_payload(settings), "path": str(path)}
-
-    # Probe uses without consuming a seat when this machine is already registered.
     try:
         probe = await gum.verify_license_key(key, increment_uses=False)
     except Exception as exc:
-        if existing and existing.get("licenseKey") == key and existing.get("tier") == "pro":
-            # Network down — keep cached Pro; do not refresh verifiedAt (grace still applies)
-            path = ent.license_file_path(settings)
-            payload = ent.entitlements_payload(settings)
-            payload["offline"] = True
-            return {
-                "ok": True,
-                "entitlements": payload,
-                "path": str(path),
-                "warning": str(exc),
-                "message": "Offline — using cached license until the 14-day grace window ends.",
-            }
+        cached = _offline_cached(existing, key, settings, exc)
+        if cached:
+            return cached
         return {
             "ok": False,
             "error": "verify_unreachable",
-            "message": f"Could not reach Gumroad ({exc}). Check your connection and try again.",
+            "message": f"Could not reach the license server ({exc}). Check your connection and try again.",
         }
-
     if not probe.get("success"):
         return {
             "ok": False,
             "error": "invalid_license",
             "message": str(probe.get("message") or "Invalid license key"),
         }
-
     purchase = probe.get("purchase") or {}
     uses = int(probe.get("uses") or 0)
     if purchase.get("refunded") or purchase.get("chargebacked"):
@@ -373,7 +523,6 @@ async def activate_license(
             "error": "license_revoked",
             "message": "This purchase was refunded or charged back.",
         }
-
     if not already_here and uses >= gum.DEVICE_LIMIT:
         return {
             "ok": False,
@@ -382,8 +531,6 @@ async def activate_license(
             "uses": uses,
             "device_limit": gum.DEVICE_LIMIT,
         }
-
-    increment_done = False
     if not already_here:
         try:
             activated = await gum.verify_license_key(key, increment_uses=True)
@@ -391,7 +538,7 @@ async def activate_license(
             return {
                 "ok": False,
                 "error": "verify_unreachable",
-                "message": f"Could not reach Gumroad to register this device ({exc}).",
+                "message": f"Could not reach the license server to register this device ({exc}).",
             }
         if not activated.get("success"):
             return {
@@ -401,7 +548,6 @@ async def activate_license(
             }
         uses = int(activated.get("uses") or uses + 1)
         purchase = activated.get("purchase") or purchase
-        increment_done = True
         if uses > gum.DEVICE_LIMIT:
             return {
                 "ok": False,
@@ -410,17 +556,11 @@ async def activate_license(
                 "uses": uses,
                 "device_limit": gum.DEVICE_LIMIT,
             }
-
-    gumroad_email = purchase.get("email") or email
-    prior_ids = (
-        existing.get("machineIds")
-        if existing and str(existing.get("licenseKey") or "") == key
-        else []
-    )
+    prior_ids = existing.get("machineIds") if existing and str(existing.get("licenseKey") or "") == key else []
     doc = {
         "tier": "pro",
         "licenseKey": key,
-        "email": gumroad_email,
+        "email": purchase.get("email") or email,
         "product": purchase.get("product_name") or "Cinekive Pro",
         "activatedAt": float(existing.get("activatedAt") or time.time())
         if existing and existing.get("licenseKey") == key
@@ -431,7 +571,6 @@ async def activate_license(
         "purchase_id": purchase.get("id"),
         "usesCount": uses,
         "deviceLimit": gum.DEVICE_LIMIT,
-        "incrementedOnActivate": increment_done,
     }
     path = ent.write_license(doc, settings)
     return {
@@ -450,5 +589,26 @@ async def deactivate_license(
 ) -> dict[str, Any]:
     if not body.confirm:
         return {"ok": False, "error": "confirm_required"}
+    doc = ent._read_license_doc(settings)
+    warning = None
+    if (
+        doc
+        and doc.get("source") == "lemonsqueezy"
+        and doc.get("licenseKey")
+        and doc.get("instanceId")
+        and ls.lemonsqueezy_configured()
+    ):
+        try:
+            remote = await ls.deactivate_license_key(
+                str(doc["licenseKey"]),
+                instance_id=str(doc["instanceId"]),
+            )
+            if not remote.get("success"):
+                warning = remote.get("message") or "Local Pro was removed. The store seat may still be in use."
+        except Exception as exc:
+            warning = f"Local Pro was removed. Could not free the store seat ({exc})."
     ent.clear_license(settings)
-    return {"ok": True, "entitlements": ent.entitlements_payload(settings)}
+    payload: dict[str, Any] = {"ok": True, "entitlements": ent.entitlements_payload(settings)}
+    if warning:
+        payload["warning"] = warning
+    return payload

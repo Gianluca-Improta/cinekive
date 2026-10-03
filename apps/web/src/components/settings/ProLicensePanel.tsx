@@ -123,7 +123,7 @@ export function ProLicensePanel() {
         )}
       </div>
       <p className="text-xs text-cinema-muted">
-        Annual or Lifetime unlock via license key. Automated archive pull, cloud VLM, batch + board
+        Lifetime unlock via a Lemon Squeezy license key (Annual when that plan is on sale). Automated archive pull, cloud VLM, batch + board
         export, folder watcher, continuous enrich, share tunnel. Each Pro key covers up to{" "}
         {deviceLimit} devices. Free Desktop keeps working if Pro is inactive.
       </p>

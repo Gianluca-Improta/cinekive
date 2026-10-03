@@ -1,0 +1,17 @@
+{
+  "name": "Cinekive",
+  "short_name": "Cinekive",
+  "description": "AI-tagged cinematic still archive — real film stills organized by craft tags",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B0C10",
+  "theme_color": "#0B0C10",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

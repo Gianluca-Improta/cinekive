@@ -333,7 +333,8 @@ function buildPythonEnv(root, dataDir, libraryPath, { lanAccess = true, vlmEnabl
     CINEKIVE_LICENSE_PATH: path.join(require("./paths").userDataRoot(), "license.json"),
     CINEKIVE_USER_DATA: require("./paths").userDataRoot(),
     CINEKIVE_PRO_URL:
-      process.env.CINEKIVE_PRO_URL || "https://gianlucaimprota.gumroad.com/l/cinekive-pro",
+      process.env.CINEKIVE_PRO_URL ||
+      "https://cinekive.lemonsqueezy.com/checkout/buy/938df13e-96e3-406f-a56f-2a245b790ada",
     GUMROAD_PRODUCT_ID: process.env.GUMROAD_PRODUCT_ID || "",
     GUMROAD_PRODUCT_PERMALINK:
       process.env.GUMROAD_PRODUCT_PERMALINK || "cinekive-pro,cinekive-pro-annual",
