@@ -101,7 +101,23 @@ PY_BIN="$PY/bin/python3"
 [[ -x "$PY_BIN" ]] || { echo "python missing after extract"; exit 1; }
 chmod -R u+w "$PY" || true
 
-"$PY_BIN" -c "import sys; print(sys.executable); assert 'hostedtoolcache' not in sys.executable.lower() and '/Users/runner' not in sys.executable"
+# sys.executable on GitHub Actions lives under /Users/runner/work. That path is
+# where the relocatable build was extracted, not proof the interpreter is pinned.
+# A broken venv records the foreign home in pyvenv.cfg instead.
+"$PY_BIN" - <<'PY'
+import sys
+from pathlib import Path
+prefix = Path(sys.prefix).resolve()
+cfg = prefix / "pyvenv.cfg"
+if cfg.is_file():
+    text = cfg.read_text(encoding="utf-8", errors="replace").lower().replace("\\", "/")
+    bad = ("hostedtoolcache", "/users/runner", "/home/runner")
+    if any(mark in text for mark in bad):
+        raise SystemExit("pyvenv.cfg is pinned to the build machine:\n" + text)
+if not (prefix / "lib").is_dir():
+    raise SystemExit(f"standalone Python layout missing lib/ under {prefix}")
+print("relocatable", Path(sys.executable).resolve())
+PY
 
 echo "Installing API deps into relocatable Python (torch CPU)…"
 "$PY_BIN" -m ensurepip --upgrade

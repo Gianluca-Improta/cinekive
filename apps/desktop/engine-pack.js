@@ -34,7 +34,7 @@ function appVersion() {
   try {
     return JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")).version;
   } catch {
-    return "0.5.1";
+    return "0.5.3";
   }
 }
 

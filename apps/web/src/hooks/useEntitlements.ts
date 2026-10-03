@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getApiUrl } from "@/lib/api-client";
 
 export type Entitlements = {
   tier: "free" | "pro" | string;
@@ -27,17 +28,8 @@ export type Entitlements = {
   device_limit?: number;
 };
 
-function apiBase(): string {
-  const fallback = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  if (typeof window === "undefined") return fallback;
-  const host = window.location.hostname;
-  if (host === "localhost" || host === "127.0.0.1") return fallback;
-  const proto = window.location.protocol === "https:" ? "https:" : "http:";
-  return `${proto}//${host}:8000`;
-}
-
 async function fetchEntitlements(): Promise<Entitlements> {
-  const res = await fetch(`${apiBase()}/license/entitlements`, { cache: "no-store" });
+  const res = await fetch(`${getApiUrl()}/license/entitlements`, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load entitlements");
   return res.json();
 }

@@ -27,6 +27,20 @@ Double-click app. No terminal required. **Docker is optional** on Windows and Ma
 
 Engine data: `%APPDATA%\Cinekive\data` (Windows) / `~/Library/Application Support/Cinekive` (Mac) / `~/.config/Cinekive` (Linux). Stills stay in the folder you chose.
 
+A public view link is browse-only. The phone-on-WiFi address on your LAN can still ingest.
+
+### Signing a release
+
+Installers are unsigned until GitHub Actions secrets are set. Unsigned builds still ship. With the secrets, the same workflow signs them:
+
+| Secret | Used for |
+|--------|----------|
+| `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD` | Windows Authenticode (base64 `.pfx` and its password) |
+| `CSC_LINK` / `CSC_KEY_PASSWORD` | macOS Developer ID Application (base64 `.p12`) |
+| `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` | macOS notarization, only when `CSC_LINK` is also set |
+
+There is no certificate in this repository. SmartScreen and Gatekeeper warnings stay until those secrets exist on the repo.
+
 ### Free vs Pro
 
 The installer is the same binary, and building from source gives you the same Free tier. **Free** includes search, ingest, single-shot export, LAN phone URL, and **local Ollama** (+ Craft chat in the sidebar). **Pro** (paid license) unlocks the **moodboard canvas**, automated archive pull, continuous enrich, **cloud VLM** (OpenRouter / ChatGPT / Claude / Kimi), batch export, **board PNG/PDF**, **folder watcher**, share tunnel, Agent API, **MCP server** (`cinekive-mcp`), global dedupe, and unlimited projects.

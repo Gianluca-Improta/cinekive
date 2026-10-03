@@ -4,6 +4,10 @@ Notable changes per release. Dates are UTC.
 
 ## Unreleased
 
+- macOS engine packs no longer fail the relocatable-Python check just because the CI checkout lives under `/Users/runner`.
+- Existing libraries get missing columns from a numbered schema list (`cinekive_schema.version`), instead of an unversioned alter loop.
+- A public share link is read-only. LAN and localhost can still ingest and edit.
+- Desktop CI signs Windows and macOS builds when the signing secrets are set. Without them the installers stay unsigned.
 - Paid Pro activates through Lemon Squeezy. Lifetime ($99) is the live checkout. Annual ($19/year) stays closed until that subscription variant is published. `CK-TRIAL-` keys are unchanged. Legacy Gumroad keys still verify when Gumroad product env vars are set.
 - Deactivating Pro frees the Lemon Squeezy device seat.
 - Share tunnel asks for a rights confirmation before the public link.

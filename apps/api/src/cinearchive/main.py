@@ -8,6 +8,11 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
+from cinearchive.api.public_access import is_public_tunnel
 from qdrant_client import QdrantClient
 from sqlalchemy import text
 
@@ -38,80 +43,13 @@ logger = get_logger(__name__)
 
 
 async def _sqlite_add_columns() -> None:
-    """Best-effort ALTER TABLE for Phase 1/2 columns on existing SQLite DBs."""
-    alters = [
-        ("projects", "vlm_enrichment", "BOOLEAN DEFAULT 0"),
-        ("projects", "watch_folder", "VARCHAR(1024)"),
-        ("projects", "watch_enabled", "BOOLEAN DEFAULT 0"),
-        ("projects", "brief", "TEXT"),
-        ("projects", "feeling", "VARCHAR(512)"),
-        ("projects", "references_text", "TEXT"),
-        ("projects", "kind", "VARCHAR(32) DEFAULT 'commercial'"),
-        ("projects", "form_factor", "VARCHAR(32)"),
-        ("projects", "aspect_ratio", "VARCHAR(16)"),
-        ("shots", "shot_type", "VARCHAR(64)"),
-        ("shots", "camera_movement", "VARCHAR(64)"),
-        ("shots", "lighting_style", "VARCHAR(64)"),
-        ("shots", "mood_vibe", "VARCHAR(128)"),
-        ("shots", "creative_intent", "TEXT"),
-        ("shots", "tags_json", "JSON DEFAULT '[]'"),
-        ("shots", "enrichment_version", "INTEGER DEFAULT 0"),
-        ("shots", "notes", "TEXT"),
-        ("shots", "is_favorite", "BOOLEAN DEFAULT 0"),
-        ("shots", "content_format", "VARCHAR(64)"),
-        ("shots", "emotion", "VARCHAR(64)"),
-        ("shots", "sequence_id", "VARCHAR(36)"),
-        ("shots", "frame_role", "VARCHAR(16)"),
-        ("shots", "hero_score", "FLOAT DEFAULT 0"),
-        ("shots", "is_hero", "BOOLEAN DEFAULT 0"),
-        ("shots", "is_moving", "BOOLEAN DEFAULT 0"),
-        ("shots", "grade_reason", "VARCHAR(255)"),
-        ("shots", "phash", "VARCHAR(64)"),
-        ("shots", "is_duplicate", "BOOLEAN DEFAULT 0"),
-        ("shots", "duplicate_of", "VARCHAR(36)"),
-        ("shots", "source_filename", "VARCHAR(512)"),
-        ("shots", "source_title", "VARCHAR(512)"),
-        ("shots", "source_meta_json", "JSON DEFAULT '{}'"),
-        ("shots", "camera_angle", "VARCHAR(64)"),
-        ("shots", "composition", "VARCHAR(128)"),
-        ("shots", "subject", "VARCHAR(255)"),
-        ("shots", "lens_look", "VARCHAR(64)"),
-        ("shots", "color_grade", "VARCHAR(64)"),
-        ("shots", "techniques_json", "JSON DEFAULT '[]'"),
-        ("shots", "keyframe_ms", "INTEGER"),
-        ("shots", "source_fps", "FLOAT"),
-        ("shots", "collection_id", "VARCHAR(36)"),
-        ("shots", "dialogue_json", "JSON"),
-        ("shots", "dialogue_text", "TEXT"),
-        ("shots", "era", "VARCHAR(64)"),
-        ("shots", "origin", "VARCHAR(64)"),
-        ("shots", "ism", "VARCHAR(64)"),
-        ("shots", "visual_style", "VARCHAR(64)"),
-        ("shots", "theme", "VARCHAR(64)"),
-        ("shots", "genre", "VARCHAR(64)"),
-        ("shots", "shapes_json", "JSON DEFAULT '[]'"),
-        ("shots", "deleted_at", "DATETIME"),
-        ("collections", "kind", "VARCHAR(32) DEFAULT 'moodboard'"),
-        ("collections", "year", "INTEGER"),
-        ("collections", "content_format", "VARCHAR(64)"),
-        ("collections", "sampling_mode", "VARCHAR(16) DEFAULT 'moments'"),
-        ("collections", "cover_shot_id", "VARCHAR(36)"),
-        ("collections", "meta_json", "JSON DEFAULT '{}'"),
-    ]
+    """Apply numbered column adds and record cinekive_schema.version."""
+    from cinearchive.db.schema_migrate import ensure_schema
+
     async with engine.begin() as conn:
-        for table, column, coltype in alters:
-            try:
-                await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"))
-                logger.info("Added column %s.%s", table, column)
-            except Exception:
-                pass
-        # Title search index (hybrid keyword channel)
-        try:
-            await conn.execute(
-                text("CREATE INDEX IF NOT EXISTS ix_shots_source_title ON shots (source_title)")
-            )
-        except Exception:
-            pass
+        added = await ensure_schema(conn)
+        if added:
+            logger.info("Schema migration added %d column(s)", added)
 
 
 @asynccontextmanager
@@ -214,6 +152,26 @@ async def lifespan(app: FastAPI):
     qdrant.close()
 
 
+class PublicReadOnlyMiddleware(BaseHTTPMiddleware):
+    """Block writes when the client opened a public share tunnel straight to the API."""
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method in {"GET", "HEAD", "OPTIONS"}:
+            return await call_next(request)
+        if is_public_tunnel(
+            request.headers.get("host") or "",
+            request.headers.get("x-forwarded-host") or "",
+            request.headers.get("cf-ray"),
+        ):
+            return JSONResponse(
+                {
+                    "detail": "This public link is read-only. Ingest and edits stay on the machine running Cinekive."
+                },
+                status_code=403,
+            )
+        return await call_next(request)
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
@@ -225,6 +183,7 @@ def create_app() -> FastAPI:
         version="0.5.3",
         lifespan=lifespan,
     )
+    app.add_middleware(PublicReadOnlyMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,

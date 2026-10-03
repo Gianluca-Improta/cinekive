@@ -92,9 +92,19 @@ jobs:
         env:
           CINEKIVE_TRIAL_SECRET: ${{ secrets.CINEKIVE_TRIAL_SECRET }}
           CINEKIVE_LICENSE_SECRET: ${{ secrets.CINEKIVE_LICENSE_SECRET }}
+          # Base64 .pfx. When unset, the build stays unsigned (signAndEditExecutable is false).
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: |
           npm ci
-          npm run dist:win
+          if ($env:WIN_CSC_LINK) {
+            $env:CSC_LINK = $env:WIN_CSC_LINK
+            $env:CSC_KEY_PASSWORD = $env:WIN_CSC_KEY_PASSWORD
+            npx electron-builder --win nsis portable --publish never -c.win.signAndEditExecutable=true
+          } else {
+            npm run dist:win
+          }
+        shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
           name: cinekive-windows
@@ -118,9 +128,20 @@ jobs:
         env:
           CINEKIVE_TRIAL_SECRET: ${{ secrets.CINEKIVE_TRIAL_SECRET }}
           CINEKIVE_LICENSE_SECRET: ${{ secrets.CINEKIVE_LICENSE_SECRET }}
+          # Base64 .p12 Developer ID Application cert. Notarization runs when the Apple secrets are set too.
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           npm ci
-          npx electron-builder --mac dmg zip --x64 --arm64 --publish never
+          if [ -n "$CSC_LINK" ]; then
+            npx electron-builder --mac dmg zip --x64 --arm64 --publish never \
+              -c.mac.hardenedRuntime=true -c.mac.gatekeeperAssess=false
+          else
+            npx electron-builder --mac dmg zip --x64 --arm64 --publish never
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: cinekive-mac

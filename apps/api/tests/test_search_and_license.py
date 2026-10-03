@@ -60,6 +60,28 @@ def test_lemon_accepts_cinekive_product():
     assert out["limit"] == 3
 
 
+def test_pending_columns_skips_present_and_missing_tables():
+    from cinearchive.db.schema_migrate import pending_columns
+
+    existing = {"shots": {"shot_type"}, "projects": set()}
+    pending = pending_columns(existing)
+    tables = {row[0] for row in pending}
+    assert "collections" not in tables
+    assert ("shots", "shot_type", "VARCHAR(64)") not in [
+        (t, c, ty) for t, c, ty in pending if c == "shot_type"
+    ]
+    assert any(c == "camera_angle" for _, c, _ in pending)
+
+
+def test_public_tunnel_detects_cloudflare_only():
+    from cinearchive.api.public_access import is_public_tunnel
+
+    assert is_public_tunnel("abc.trycloudflare.com", "") is True
+    assert is_public_tunnel("127.0.0.1:8000", "") is False
+    assert is_public_tunnel("192.168.1.20:8000", "", "ray") is False
+    assert is_public_tunnel("library.example.com", "", "ray") is True
+
+
 def test_lemon_rejects_disabled():
     data = {
         "valid": False,

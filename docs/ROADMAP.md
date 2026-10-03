@@ -6,7 +6,7 @@ Living document. Prefer [Discussions](https://github.com/Gianluca-Improta/cineki
 
 Shipped: local search and ingest, moodboard canvas, Free-by-default licensing, 14-day trial keys, public archive sources (FilmGrab, EyeCandy, MovieStillsDB), desktop installers.
 
-Not in this release: code-signed installers, a working macOS native engine pack, a search eval harness in CI, Lemon Squeezy annual ($19/year) — Lifetime is the live checkout.
+Not in this release until the next tagged build: a macOS engine zip produced by the fixed pack script, and signed installers (the workflow signs when `CSC_LINK` / `WIN_CSC_LINK` secrets exist; they are not in the repo). Still open: a search eval harness in CI, and Lemon Squeezy annual ($19/year). Lifetime is the live checkout.
 
 ## Already shipped (was listed as v0.4)
 

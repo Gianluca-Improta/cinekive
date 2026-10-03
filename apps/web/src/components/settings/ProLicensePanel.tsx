@@ -8,17 +8,9 @@ import {
   useEntitlements,
   useRefreshEntitlements,
 } from "@/hooks/useEntitlements";
+import { getApiUrl } from "@/lib/api-client";
 
-function apiBase(): string {
-  const fallback = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  if (typeof window === "undefined") return fallback;
-  const host = window.location.hostname;
-  if (host === "localhost" || host === "127.0.0.1") return fallback;
-  const proto = window.location.protocol === "https:" ? "https:" : "http:";
-  return `${proto}//${host}:8000`;
-}
-
-/** Stable per-browser id for seat tracking — never sent to Gumroad, only to local API. */
+/** Stable per-browser id for seat tracking. Sent only to the local API. */
 function localMachineId(): string {
   if (typeof window === "undefined") return "";
   const key = "cinekive.machine_id";
@@ -43,7 +35,7 @@ export function ProLicensePanel() {
 
   const activate = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${apiBase()}/license/activate`, {
+      const res = await fetch(`${getApiUrl()}/license/activate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -68,7 +60,7 @@ export function ProLicensePanel() {
 
   const reverify = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${apiBase()}/license/reverify`, {
+      const res = await fetch(`${getApiUrl()}/license/reverify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ machine_id: machineId || undefined }),
@@ -88,7 +80,7 @@ export function ProLicensePanel() {
 
   const deactivate = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${apiBase()}/license/deactivate`, {
+      const res = await fetch(`${getApiUrl()}/license/deactivate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ confirm: true }),

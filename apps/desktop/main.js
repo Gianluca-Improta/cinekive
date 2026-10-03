@@ -486,7 +486,7 @@ function startShareTunnel() {
           buttons: ["Copy link", "Open", "OK"],
           defaultId: 0,
           message: "View link ready",
-          detail: `${url}\n\nAnyone with this link can browse your library while Cinekive stays open.`,
+          detail: `${url}\n\nAnyone with this link can browse your library while Cinekive stays open. The link is read-only: ingest and edits stay on this machine.`,
         })
         .then((r) => {
           if (r.response === 0) clipboard.writeText(url);
