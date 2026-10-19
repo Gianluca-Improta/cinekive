@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import os
 import time
 from pathlib import Path
@@ -27,7 +28,7 @@ from fastapi import HTTPException
 
 from cinearchive.config import Settings
 
-APP_VERSION = "0.5.3"
+APP_VERSION = "0.6.0"
 
 PRO_FEATURES: tuple[str, ...] = (
     "archive_mirrors",
@@ -74,10 +75,19 @@ except Exception:  # pragma: no cover
         return "https://cinekive.lemonsqueezy.com"
 
 # Not DRM — keeps casual license.json edits from flipping tier without a key.
+# The desktop shell injects a per-install secret (CINEKIVE_LICENSE_SECRET) so a
+# license file only verifies on the machine that activated it. The fallback below
+# only applies to source checkouts that never set the variable.
 _SIGNING_SECRET = os.environ.get(
     "CINEKIVE_LICENSE_SECRET",
     "cinekive-pro-v1-open-core-not-a-vault",
 ).encode("utf-8")
+
+# Secret used by Cinekive <= 0.5.x. Licenses signed with it are migrated to the
+# current secret on startup so existing paid installs keep Pro.
+_LEGACY_SIGNING_SECRET = b"cinekive-pro-v1-open-core-not-a-vault"
+
+logger = logging.getLogger(__name__)
 
 
 def _license_paths(settings: Settings | None = None) -> list[Path]:
@@ -128,12 +138,26 @@ def _sign_payload(payload: dict[str, Any]) -> str:
     return hmac.new(_SIGNING_SECRET, body, hashlib.sha256).hexdigest()
 
 
+def _sign_payload_with(secret: bytes, payload: dict[str, Any]) -> str:
+    body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hmac.new(secret, body, hashlib.sha256).hexdigest()
+
+
 def verify_signature(doc: dict[str, Any]) -> bool:
     sig = doc.get("signature")
     if not sig or not isinstance(sig, str):
         return False
     payload = {k: v for k, v in doc.items() if k != "signature"}
     expected = _sign_payload(payload)
+    return hmac.compare_digest(expected, sig)
+
+
+def _verify_with_legacy_secret(doc: dict[str, Any]) -> bool:
+    sig = doc.get("signature")
+    if not sig or not isinstance(sig, str):
+        return False
+    payload = {k: v for k, v in doc.items() if k != "signature"}
+    expected = _sign_payload_with(_LEGACY_SIGNING_SECRET, payload)
     return hmac.compare_digest(expected, sig)
 
 
@@ -191,8 +215,22 @@ def resolve_tier(settings: Settings | None = None) -> tuple[str, dict[str, Any]]
     if doc:
         tier = str(doc.get("tier") or "free").lower()
         if tier == "pro":
-            if doc.get("signature") and not verify_signature(doc):
-                pass  # fall through — bad signature
+            # A Pro document must carry a signature made with this install's
+            # secret. Hand-edited or copied files fail here and fall back to
+            # Free instead of silently unlocking.
+            if not verify_signature(doc):
+                logger.warning(
+                    "license.json rejected: bad or missing signature (source=%s)",
+                    doc.get("source") or "?",
+                )
+                return "free", {
+                    "source": "license_invalid_signature",
+                    "features": list(FREE_FEATURES),
+                    "license": _public_license(doc),
+                    "needs_reverify": False,
+                    "grace_expired": False,
+                    "error": "bad_signature",
+                }
             else:
                 source = str(doc.get("source") or "")
                 # Trial keys: absolute expiry + trusted time (not local-clock grace alone).
@@ -347,6 +385,30 @@ def write_license(doc: dict[str, Any], settings: Settings | None = None) -> Path
     signed = sign_document(doc)
     write_path.write_text(json.dumps(signed, indent=2), encoding="utf-8")
     return write_path
+
+
+def migrate_license_signature(settings: Settings | None = None) -> bool:
+    """Re-sign a legacy license with the current install secret.
+
+    Cinekive <= 0.5.x signed ``license.json`` with a secret that shipped in the
+    source tree, so the file was portable. Installs that now run with a
+    per-install secret re-sign that file once on startup, which keeps paid
+    users on Pro while stopping a copied/forged file from working elsewhere.
+    """
+    doc = _read_license_doc(settings)
+    if not doc:
+        return False
+    if verify_signature(doc):
+        return False
+    if not _verify_with_legacy_secret(doc):
+        return False
+    payload = {k: v for k, v in doc.items() if k != "signature"}
+    try:
+        write_license(payload, settings)
+    except OSError:
+        return False
+    logger.info("Migrated legacy license signature to the current install secret")
+    return True
 
 
 def clear_license(settings: Settings | None = None) -> bool:

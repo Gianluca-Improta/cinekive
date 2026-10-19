@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install API
+        working-directory: apps/api
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -q --upgrade pip
+          pip install -q -e ".[dev]" || pip install -q -e .
+          pip install -q pytest httpx
+      - name: Pytest
+        working-directory: apps/api
+        run: |
+          . .venv/bin/activate
+          python -m pytest -q
+
+  web:
+    name: Web type-check + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install
+        working-directory: apps/web
+        run: npm ci
+      - name: Type-check
+        working-directory: apps/web
+        run: npx tsc --noEmit
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
+
+  desktop:
+    name: Desktop checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Syntax check
+        working-directory: apps/desktop
+        run: |
+          for f in *.js; do node --check "$f"; done
+      - name: Unit tests
+        working-directory: apps/desktop
+        run: node --test tests/*.test.js

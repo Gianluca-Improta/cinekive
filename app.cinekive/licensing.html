@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B0C10" />
+  <meta
+    name="description"
+    content="How Cinekive Archive licenses and credits real film stills. Every frame requires source and license metadata. Takedown contact included."
+  />
+  <title>Licensing — Cinekive Archive</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">
+          <span class="brand-name">Cinekive Archive</span>
+          <span class="brand-sub">Licensing</span>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a class="text" href="./index.html">Archive</a>
+        <a class="btn btn-ghost" href="./licensing.html" aria-current="page">Licensing</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap page">
+    <p class="label">Rights &amp; credit</p>
+    <h1>Licensing</h1>
+    <p>
+      <strong>Cinekive Archive</strong> is a public, <strong>read-only</strong> inspiration gallery of
+      <strong>real</strong> stills (photographed or otherwise licensed). It is a companion to the
+      Cinekive desktop app — not a substitute for it. AI is used only to categorize and tag craft
+      (camera, lens, lighting, mood), not to generate images.
+    </p>
+
+    <h2>Catalog model</h2>
+    <p>
+      All stills ship in a static <code>frames.json</code> file maintained in the repo (edited via PR).
+      There is no visitor upload path. Each entry must include a non-empty
+      <strong>source</strong> and <strong>license</strong>. Entries missing either field are skipped
+      at load time and warned in the browser console.
+    </p>
+    <ul>
+      <li><strong>Source</strong> is shown on every card so credit stays visible.</li>
+      <li><strong>License</strong> appears in the card overlay with the AI tags.</li>
+      <li>We do not claim ownership of third-party stills in this public archive.</li>
+    </ul>
+
+    <h2>Local lists</h2>
+    <p>
+      Favorites and custom lists are stored only in your browser (IndexedDB). Nothing is synced to a
+      server. Export/import JSON is the supported way to move lists between devices.
+    </p>
+
+    <h2>Sample / demo content</h2>
+    <p>
+      Demo frames shipped with this site use Unsplash photographs under the
+      <a href="https://unsplash.com/license" target="_blank" rel="noreferrer">Unsplash License</a>,
+      with photographer credit in the source field. Replace them with cleared rights before a
+      production deploy.
+    </p>
+
+    <h2>What this site does not do</h2>
+    <ul>
+      <li>No uploads from visitors</li>
+      <li>No user accounts or cloud sync</li>
+      <li>No desktop ingest / moodboard features (use the free Cinekive desktop app)</li>
+    </ul>
+
+    <h2>Takedown</h2>
+    <p>
+      If you believe a still is listed without a proper grant, email
+      <a href="mailto:cinekive@agentmail.to">cinekive@agentmail.to</a> with the frame id, source URL,
+      and your claim. We will remove or correct it.
+    </p>
+
+    <p style="margin-top: 2rem">
+      <a class="btn btn-primary" href="./index.html">Back to archive</a>
+    </p>
+  </main>
+
+  <footer>
+    <div class="wrap row">
+      <div>
+        <a href="./index.html">Archive</a>
+        ·
+        <a href="./licensing.html">Licensing</a>
+      </div>
+      <div>
+        <a href="mailto:cinekive@agentmail.to">cinekive@agentmail.to</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

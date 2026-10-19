@@ -282,7 +282,7 @@ function killTree(child) {
   }
 }
 
-function buildPythonEnv(root, dataDir, libraryPath, { lanAccess = true, vlmEnabled = false } = {}) {
+function buildPythonEnv(root, dataDir, libraryPath, { lanAccess = false, vlmEnabled = false } = {}) {
   const isWin = process.platform === "win32";
   const pyRoot = path.join(root, "python");
   const pyBinDir = isWin ? path.join(pyRoot, "Scripts") : path.join(pyRoot, "bin");
@@ -306,6 +306,7 @@ function buildPythonEnv(root, dataDir, libraryPath, { lanAccess = true, vlmEnabl
 
   const lanIp = lanAccess ? getPrimaryLanIp() : null;
   const lan = getLanUrls(lanAccess);
+  const secrets = require("./paths").readAccessSecrets();
 
   return {
     ...process.env,
@@ -339,7 +340,10 @@ function buildPythonEnv(root, dataDir, libraryPath, { lanAccess = true, vlmEnabl
     GUMROAD_PRODUCT_PERMALINK:
       process.env.GUMROAD_PRODUCT_PERMALINK || "cinekive-pro,cinekive-pro-annual",
     CINEKIVE_TRIAL_SECRET: process.env.CINEKIVE_TRIAL_SECRET || "",
-    CINEKIVE_LICENSE_SECRET: process.env.CINEKIVE_LICENSE_SECRET || "",
+    // Per-install signing key for license.json — a Pro license only verifies here.
+    CINEKIVE_LICENSE_SECRET: secrets.licenseSecret || process.env.CINEKIVE_LICENSE_SECRET || "",
+    // Shared secret demanded from devices that are not on this machine.
+    CINEKIVE_API_TOKEN: secrets.apiToken,
     APPDATA: process.env.APPDATA || require("./paths").userDataRoot(),
   };
 }
@@ -404,7 +408,7 @@ async function startStack({ onStatus } = {}) {
   // If a previous launch already brought everything up, reuse it.
   if ((await ping(API_HEALTH)) && (await ping(WEB_URL))) {
     onStatus?.("Engine already running.");
-    return { webUrl: WEB_URL, mode: "native", lan: getLanUrls(cfg.lanAccess !== false) };
+    return { webUrl: WEB_URL, mode: "native", lan: getLanUrls(cfg.lanAccess === true) };
   }
 
   if (!fs.existsSync(qBin)) {
@@ -438,7 +442,7 @@ async function startStack({ onStatus } = {}) {
     throw err;
   }
 
-  const lanAccess = cfg.lanAccess !== false;
+  const lanAccess = cfg.lanAccess === true;
   const bindHost = getBindHost(lanAccess);
   const lan = getLanUrls(lanAccess);
 

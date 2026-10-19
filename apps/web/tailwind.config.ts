@@ -14,6 +14,8 @@ const config = {
           muted: "var(--cinema-muted)",
           cyan: "var(--cinema-cyan)",
           magenta: "var(--cinema-magenta)",
+          body: "var(--cinema-body)",
+          overlay: "var(--cinema-overlay)",
         },
       },
       fontFamily: {

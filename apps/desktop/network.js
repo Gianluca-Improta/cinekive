@@ -35,7 +35,7 @@ function getPrimaryLanIp() {
   return privateLan?.address || candidates[0]?.address || null;
 }
 
-function buildCorsOrigins(lanIp, lanAccess = true) {
+function buildCorsOrigins(lanIp, lanAccess = false) {
   const origins = new Set(["http://localhost:3000", "http://127.0.0.1:3000"]);
   if (lanAccess && lanIp) {
     origins.add(`http://${lanIp}:3000`);
@@ -43,11 +43,11 @@ function buildCorsOrigins(lanIp, lanAccess = true) {
   return [...origins].join(",");
 }
 
-function getBindHost(lanAccess = true) {
+function getBindHost(lanAccess = false) {
   return lanAccess ? "0.0.0.0" : "127.0.0.1";
 }
 
-function getLanUrls(lanAccess = true) {
+function getLanUrls(lanAccess = false) {
   const ip = lanAccess ? getPrimaryLanIp() : null;
   return {
     ip,

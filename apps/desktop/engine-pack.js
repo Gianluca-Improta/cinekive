@@ -12,6 +12,15 @@ const { readConfig, defaultDataDir } = require("./paths");
 
 const REPO = "Gianluca-Improta/cinekive";
 
+/**
+ * Engine payload format.
+ *
+ * The pack is ~550MB, so it is refreshed only when the *engine* changes — not
+ * when the desktop shell gets a new version. Bump this whenever the engine
+ * payload (Python requirements, qdrant, models) needs a new download.
+ */
+const PACK_FORMAT = "2";
+
 function packAssetName() {
   if (process.platform === "win32") return "engine-win-x64.zip";
   if (process.platform === "darwin") {
@@ -30,6 +39,31 @@ function installedVersion() {
   return fs.readFileSync(marker, "utf8").trim();
 }
 
+/** Engine payload format of the installed pack, or null when not stamped. */
+function installedPackFormat() {
+  const marker = path.join(engineRoot(), "pack-format.txt");
+  if (!fs.existsSync(marker)) return null;
+  return fs.readFileSync(marker, "utf8").trim();
+}
+
+function writePackFormat(root = engineRoot()) {
+  try {
+    fs.writeFileSync(path.join(root, "pack-format.txt"), PACK_FORMAT, "utf8");
+  } catch (_) {
+    /* best effort */
+  }
+}
+
+function compareVersions(a, b) {
+  const pa = String(a || "0").split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = String(b || "0").split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d !== 0) return d > 0 ? 1 : -1;
+  }
+  return 0;
+}
+
 function appVersion() {
   try {
     return JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")).version;
@@ -42,9 +76,21 @@ function appVersion() {
 function needsEngineRefresh() {
   if (!nativeReady()) return true;
   const installed = installedVersion();
-  const wanted = appVersion();
-  if (installed && wanted && installed !== wanted) return true;
   if (!installed) return true;
+
+  // The engine payload is refreshed on its own schedule, not on every app
+  // update — a shell-only release must not pull 550MB again.
+  const format = installedPackFormat();
+  if (format === null) {
+    // Pre-v0.6 install: adopt the current format when the pack looks healthy.
+    if (compareVersions(installed, "0.5.3") >= 0) {
+      writePackFormat();
+    } else {
+      return true;
+    }
+  } else if (format !== PACK_FORMAT) {
+    return true;
+  }
 
   // Broken Windows/macOS venv from CI: pyvenv.cfg / python points at hostedtoolcache
   const root = engineRoot();
@@ -239,6 +285,7 @@ async function ensureEnginePack({ version, force = false, onStatus, onProgress }
     if (fs.existsSync(root)) fs.rmSync(root, { recursive: true, force: true });
     fs.renameSync(staging, root);
     fs.writeFileSync(path.join(root, "version.txt"), ver, "utf8");
+    writePackFormat(root);
   } finally {
     try {
       fs.unlinkSync(tmpZip);
@@ -268,9 +315,13 @@ module.exports = {
   packAssetName,
   packSupported,
   installedVersion,
+  installedPackFormat,
+  writePackFormat,
+  compareVersions,
   releaseDownloadUrl,
   ensureEnginePack,
   nativeReady,
   needsEngineRefresh,
   appVersion,
+  PACK_FORMAT,
 };

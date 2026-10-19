@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 
 from cinearchive.utils.logging import get_logger
@@ -74,6 +75,61 @@ def is_stream_url(url: str) -> bool:
     return False
 
 
+def _is_private_host(host: str) -> bool:
+    """Loopback / private / link-local literal addresses."""
+    h = (host or "").strip().lower()
+    if h in {"localhost", ""} or h.endswith(".local"):
+        return True
+    parts = h.split(".")
+    if len(parts) == 4 and all(p.isdigit() for p in parts):
+        a, b = int(parts[0]), int(parts[1])
+        if a in {10, 127}:
+            return True
+        if a == 192 and b == 168:
+            return True
+        if a == 172 and 16 <= b <= 31:
+            return True
+        if a == 169 and b == 254:
+            return True
+    return False
+
+
+def assert_download_allowed(url: str, settings: Any | None = None) -> None:
+    """Block downloads that point at internal network addresses or unknown hosts.
+
+    The API is reachable from other devices on the LAN, so an unchecked URL
+    would let anyone use this machine to probe the local network.
+    """
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    if not host:
+        raise RuntimeError(f"Cannot download a URL without a host: {url}")
+    if _is_private_host(host):
+        raise RuntimeError(
+            f"Refusing to download from a private or local address: {host}"
+        )
+
+    if settings is not None:
+        allow_any = bool(getattr(settings, "download_allow_any_host", False))
+        if allow_any:
+            return
+        allowed = [
+            h.strip().lower()
+            for h in (getattr(settings, "download_allowed_hosts", "") or "").split(",")
+            if h.strip()
+        ]
+        if allowed:
+            host_matches = any(
+                host == item or host.endswith("." + item) for item in allowed
+            )
+            if not host_matches:
+                raise RuntimeError(
+                    f"'{host}' is not an allowed download source. "
+                    f"Allowed hosts: {', '.join(allowed)}. "
+                    "Change download_allowed_hosts in Settings to allow more."
+                )
+
+
 def _cookie_args() -> list[str]:
     """User-login path for bot-walled sites (YouTube etc.).
 
@@ -110,8 +166,10 @@ def download_stream(
     dest_dir: Path,
     *,
     title_hint: str | None = None,
+    settings: Any | None = None,
 ) -> Path:
     """Download a YouTube/Vimeo/etc URL into dest_dir. Raises RuntimeError on failure."""
+    assert_download_allowed(url, settings)
     dest_dir.mkdir(parents=True, exist_ok=True)
     bin_name = shutil.which("yt-dlp") or shutil.which("youtube-dl")
     out_tmpl = str(dest_dir / "%(title).180B [%(id)s].%(ext)s")

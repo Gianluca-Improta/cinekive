@@ -410,9 +410,12 @@ def start_mirror(
         auth_user, auth_pass = _resolve_credentials(settings, source)
 
     if auth_user and auth_pass:
-        cmd.extend(["--user", auth_user, "--password", auth_pass])
+        # Credentials go through the environment, never argv — a command line is
+        # visible to every process on the machine and lands in process listings.
         env[f"{source.upper()}_USER"] = auth_user
         env[f"{source.upper()}_PASS"] = auth_pass
+        env[f"{source.upper()}_EMAIL"] = auth_user
+        env[f"{source.upper()}_PASSWORD"] = auth_pass
 
     films_arg = (films or "").strip()
     if source == "filmgrab":

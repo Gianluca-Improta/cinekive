@@ -39,6 +39,7 @@ const {
   ensureDataDirs,
   ensureRuntimeSynced,
   userDataRoot,
+  readAccessSecrets,
 } = require("./paths");
 
 const isDev = process.argv.includes("--dev");
@@ -358,7 +359,7 @@ function buildMenu() {
           label: "Copy phone URL (WiFi)…",
           click: () => {
             const cfg = readConfig();
-            const lan = getLanUrls(cfg.lanAccess !== false);
+            const lan = getLanUrls(cfg.lanAccess === true);
             if (!lan.webUrl) {
               dialog.showMessageBox({
                 type: "info",
@@ -369,12 +370,17 @@ function buildMenu() {
               });
               return;
             }
-            clipboard.writeText(lan.webUrl);
+            const token = readAccessSecrets().apiToken;
+            const shareUrl = `${lan.webUrl}#token=${token}`;
+            clipboard.writeText(shareUrl);
             dialog.showMessageBox({
               type: "info",
               title: "Phone on WiFi",
               message: "URL copied",
-              detail: `On your phone (same WiFi), open:\n\n${lan.webUrl}\n\nAPI: ${lan.apiUrl}`,
+              detail:
+                `On your phone (same WiFi), open:\n\n${shareUrl}\n\n` +
+                `The link carries this machine's access token, so other devices on the ` +
+                `network cannot read the library without it.\n\nAPI: ${lan.apiUrl}`,
             });
           },
         },
@@ -412,6 +418,23 @@ function buildMenu() {
         {
           label: "Check for updates…",
           click: () => require("./updater").checkForUpdates({ silent: false }),
+        },
+        {
+          label: "Update engine pack…",
+          click: async () => {
+            try {
+              const { refreshEnginePack } = require("./updater");
+              const res = await refreshEnginePack();
+              dialog.showMessageBox({
+                type: "info",
+                title: "Engine pack",
+                message: res.skipped ? "Engine pack is already current" : "Engine pack updated",
+                detail: `Version ${res.version || "?"}`,
+              });
+            } catch (e) {
+              dialog.showErrorBox("Engine update failed", String(e.message || e));
+            }
+          },
         },
       ],
     },

@@ -4,6 +4,7 @@
 
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const { app } = require("electron");
 
 function isPackaged() {
@@ -95,7 +96,7 @@ function readConfigDefaults() {
     /** "auto" | "docker" | "native" */
     engineMode,
     /** Allow phone/tablet on same WiFi to open http://{lan-ip}:3000 */
-    lanAccess: true,
+    lanAccess: false,
   };
 }
 
@@ -115,6 +116,49 @@ function writeConfig(partial) {
   const next = { ...readConfig(), ...partial, updatedAt: new Date().toISOString() };
   fs.writeFileSync(configPath(), JSON.stringify(next, null, 2), "utf8");
   return next;
+}
+
+/**
+ * Per-install secrets.
+ *
+ * apiToken       — shared secret required from devices that are not on this
+ *                  machine. Only matters when LAN access is enabled.
+ * licenseSecret  — HMAC key used to sign license.json, so a Pro license only
+ *                  verifies on the install that activated it.
+ *
+ * Stored apart from config.json so the settings UI never rewrites them.
+ */
+function accessFilePath() {
+  return path.join(userDataRoot(), "access.json");
+}
+
+function readAccessSecrets() {
+  const p = accessFilePath();
+  let current = {};
+  try {
+    if (fs.existsSync(p)) current = JSON.parse(fs.readFileSync(p, "utf8")) || {};
+  } catch {
+    current = {};
+  }
+  let changed = false;
+  if (!current.apiToken) {
+    current.apiToken = crypto.randomBytes(24).toString("hex");
+    changed = true;
+  }
+  if (!current.licenseSecret) {
+    current.licenseSecret = crypto.randomBytes(32).toString("hex");
+    changed = true;
+  }
+  if (changed) {
+    fs.mkdirSync(userDataRoot(), { recursive: true });
+    fs.writeFileSync(accessFilePath(), JSON.stringify(current, null, 2), "utf8");
+    try {
+      fs.chmodSync(accessFilePath(), 0o600);
+    } catch {
+      /* best effort — Windows ignores POSIX modes */
+    }
+  }
+  return { apiToken: current.apiToken, licenseSecret: current.licenseSecret };
 }
 
 function ensureDataDirs(dataDir, libraryPath) {
@@ -139,5 +183,7 @@ module.exports = {
   defaultLibraryDir,
   readConfig,
   writeConfig,
+  readAccessSecrets,
+  accessFilePath,
   ensureDataDirs,
 };

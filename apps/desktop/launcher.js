@@ -160,7 +160,7 @@ function writeEnvFile({ dataDir, libraryPath }) {
   }
 
   const cfg = readConfig();
-  const lanAccess = cfg.lanAccess !== false;
+  const lanAccess = cfg.lanAccess === true;
   const lanIp = getPrimaryLanIp();
   const cors = buildCorsOrigins(lanIp, lanAccess);
   const lan = getLanUrls(lanAccess);

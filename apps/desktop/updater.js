@@ -254,9 +254,28 @@ async function promptGithubUpdate(gh, { silent = true } = {}) {
   }
 }
 
+/**
+ * Re-download the engine pack for a release.
+ *
+ * The shell and the engine ship separately: a shell update no longer pulls
+ * 550MB on its own. This is the explicit escape hatch when a release ships a
+ * rebuilt engine.
+ */
+async function refreshEnginePack(tag) {
+  const pack = require("./engine-pack");
+  const installed = pack.installedVersion();
+  const version = String(tag || "").replace(/^v/i, "") || pack.appVersion();
+  if (installed && pack.compareVersions(version, installed) <= 0 && !pack.needsEngineRefresh()) {
+    return { ok: true, skipped: true, version: installed };
+  }
+  await pack.ensureEnginePack({ version, force: true });
+  return { ok: true, skipped: false, version };
+}
+
 module.exports = {
   checkForUpdates,
   checkGithubUpdate,
   isNewer,
+  refreshEnginePack,
   RELEASES_PAGE,
 };

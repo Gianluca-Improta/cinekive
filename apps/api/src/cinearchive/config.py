@@ -93,6 +93,15 @@ class Settings(BaseSettings):
     translate_allow_public_fallback: bool = True  # MyMemory when LibreTranslate unset
     translate_timeout_sec: float = 20.0
 
+    # Outbound media downloads (yt-dlp) — only these hosts may be fetched.
+    # Keeps the API from being pointed at internal network addresses.
+    download_allowed_hosts: str = (
+        "youtube.com,youtu.be,vimeo.com,dailymotion.com,tiktok.com,"
+        "instagram.com,twitter.com,x.com,facebook.com,fb.watch,twitch.tv,"
+        "reddit.com,streamable.com,bilibili.com,ted.com"
+    )
+    download_allow_any_host: bool = False
+
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     cors_origins: str = "http://localhost:3000"

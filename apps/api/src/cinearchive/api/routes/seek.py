@@ -101,7 +101,7 @@ async def seek_import_link(
 
     try:
         if is_stream_url(body.url):
-            path = download_stream(body.url, dest, title_hint=body.title)
+            path = download_stream(body.url, dest, title_hint=body.title, settings=settings)
         else:
             seek = InspirationSeek(settings)
             path = await seek.download(

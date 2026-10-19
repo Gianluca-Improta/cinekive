@@ -15,6 +15,7 @@ import {
 import { ShotDetailSheet } from "@/components/shots/ShotDetailSheet";
 import { ShotSelectionBar } from "@/components/shots/ShotSelectionBar";
 import { useSearch, useShots } from "@/hooks/useSearch";
+import { useMode } from "@/lib/modes";
 import { api } from "@/lib/api-client";
 import type { Shot } from "@/lib/types";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -45,6 +46,7 @@ const emptyDial = (): DialFilters => ({
 export default function HomePage() {
   const qc = useQueryClient();
   const { t } = useI18n();
+  const { pack: modePack } = useMode();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Shot | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -293,7 +295,7 @@ export default function HomePage() {
           <GlobalSearchBar
             value={query}
             onChange={onChange}
-            placeholder={t("discovery.searchPlaceholder")}
+            placeholder={modePack.search_placeholder || t("discovery.searchPlaceholder")}
           />
           <FilterDial value={dial} onChange={patchDial} />
           <div className="flex overflow-hidden rounded border border-cinema-border">

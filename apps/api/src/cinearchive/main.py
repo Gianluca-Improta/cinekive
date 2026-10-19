@@ -8,11 +8,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse
 
-from cinearchive.api.public_access import is_public_tunnel
+from cinearchive.api.auth import SecurityMiddleware
 from qdrant_client import QdrantClient
 from sqlalchemy import text
 
@@ -25,6 +22,7 @@ from cinearchive.api.routes import (
     jobs,
     language,
     license,
+    modes,
     projects,
     search,
     seek,
@@ -67,6 +65,15 @@ async def lifespan(app: FastAPI):
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
     from cinearchive.db import models  # noqa: F401
+
+    # A license signed by the pre-0.6 shared secret is re-signed once with this
+    # install's secret, so upgrading never costs a paid user their Pro tier.
+    try:
+        from cinearchive.services.entitlements import migrate_license_signature
+
+        migrate_license_signature(settings)
+    except Exception as exc:
+        logger.warning("License signature migration skipped: %s", exc)
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -152,26 +159,6 @@ async def lifespan(app: FastAPI):
     qdrant.close()
 
 
-class PublicReadOnlyMiddleware(BaseHTTPMiddleware):
-    """Block writes when the client opened a public share tunnel straight to the API."""
-
-    async def dispatch(self, request: Request, call_next):
-        if request.method in {"GET", "HEAD", "OPTIONS"}:
-            return await call_next(request)
-        if is_public_tunnel(
-            request.headers.get("host") or "",
-            request.headers.get("x-forwarded-host") or "",
-            request.headers.get("cf-ray"),
-        ):
-            return JSONResponse(
-                {
-                    "detail": "This public link is read-only. Ingest and edits stay on the machine running Cinekive."
-                },
-                status_code=403,
-            )
-        return await call_next(request)
-
-
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
@@ -180,10 +167,10 @@ def create_app() -> FastAPI:
             "Local-first cinematic visual library. Ingest films, stills, GIFs, and YouTube clips; "
             "search by craft, color, and meaning. 100% offline after model download."
         ),
-        version="0.5.3",
+        version="0.6.0",
         lifespan=lifespan,
     )
-    app.add_middleware(PublicReadOnlyMiddleware)
+    app.add_middleware(SecurityMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -207,6 +194,7 @@ def create_app() -> FastAPI:
     app.include_router(taxonomy.router)
     app.include_router(language.router)
     app.include_router(board.router)
+    app.include_router(modes.router)
     return app
 
 

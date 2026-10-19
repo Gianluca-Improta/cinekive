@@ -6,6 +6,7 @@ import { ActivityLogPanel } from "@/components/jobs/ActivityLogPanel";
 import { IngestPanel } from "@/components/ingest/IngestPanel";
 import { PwaRegister } from "@/components/PwaRegister";
 import { OnboardingTour } from "@/components/OnboardingTour";
+import { AccessGate } from "@/components/AccessGate";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <IngestPanel />
             <PwaRegister />
             <OnboardingTour />
+            <AccessGate />
           </div>
         </Providers>
       </body>

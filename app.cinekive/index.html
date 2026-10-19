@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B0C10" />
+  <meta
+    name="description"
+    content="Cinekive Archive — a public, read-only inspiration gallery of real film stills, tagged by AI. Browse and keep local lists in your browser. Not the desktop app."
+  />
+  <link rel="canonical" href="https://app.cinekive.ai/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Cinekive Archive — real film stills, tagged by AI" />
+  <meta
+    property="og:description"
+    content="Public read-only archive companion to the Cinekive desktop app. Lists stay in your browser only — no uploads, no accounts."
+  />
+  <meta property="og:url" content="https://app.cinekive.ai/" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Cinekive Archive" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Cinekive Archive" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Cinekive Archive — real film stills, tagged by AI</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="./index.html" aria-label="Cinekive Archive home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">
+          <span class="brand-name">Cinekive Archive</span>
+          <span class="brand-sub">Public · Read-only · Not the desktop app</span>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a class="text hide-sm" href="./licensing.html">Licensing</a>
+        <a
+          class="text hide-sm"
+          href="https://github.com/Gianluca-Improta/cinekive/releases/latest"
+          target="_blank"
+          rel="noreferrer"
+        >Desktop app</a>
+        <button type="button" class="btn btn-muted" id="btn-install" hidden>Install archive</button>
+        <a class="btn btn-ghost" href="https://github.com/Gianluca-Improta/cinekive" target="_blank" rel="noreferrer">About Cinekive</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <section class="hero">
+      <p class="label">Inspiration archive · Companion to the desktop app</p>
+      <h1>Real film stills, tagged by AI</h1>
+      <p>
+        Browse a public catalog of photographed or licensed frames. Vision models categorize craft
+        (camera, lens, lighting, mood) — they do not generate images. Lists and favorites live only
+        in <strong>this browser</strong> (IndexedDB). No uploads. No accounts. For search, ingest,
+        and moodboards on your machine, use the
+        <a href="https://github.com/Gianluca-Improta/cinekive/releases/latest" target="_blank" rel="noreferrer">free desktop app</a>.
+      </p>
+    </section>
+
+    <div class="toolbar">
+      <input
+        class="search"
+        id="search"
+        type="search"
+        placeholder="Search tags…"
+        aria-label="Search tags"
+      />
+      <div class="toolbar-actions">
+        <button type="button" class="btn btn-muted" id="btn-lists" aria-expanded="false" aria-controls="lists-panel">
+          Manage lists
+        </button>
+        <button type="button" class="btn btn-ghost" id="btn-export">Export lists</button>
+        <label class="btn btn-ghost file-btn">
+          Import lists
+          <input type="file" id="import-file" accept="application/json,.json" hidden />
+        </label>
+      </div>
+    </div>
+
+    <div class="lists-panel" id="lists-panel" hidden>
+      <p class="label">Local lists (this device only)</p>
+      <div class="lists-row">
+        <input id="list-name" type="text" maxlength="48" placeholder="New list name" aria-label="New list name" />
+        <button type="button" class="btn btn-primary" id="btn-create-list">Create</button>
+      </div>
+      <div class="lists-row">
+        <select id="list-manage" aria-label="List to manage"></select>
+        <button type="button" class="btn btn-muted" id="btn-rename-list">Rename</button>
+        <button type="button" class="btn btn-danger" id="btn-delete-list">Delete</button>
+      </div>
+      <p class="hint">
+        Export/import JSON is how you move lists between devices — nothing syncs to a server.
+      </p>
+    </div>
+
+    <div class="filters" id="list-filters" role="group" aria-label="Filter by list"></div>
+
+    <div class="filters" id="ratio-filters" role="group" aria-label="Aspect ratio">
+      <button type="button" class="chip active" data-filter="all" aria-pressed="true">All ratios</button>
+      <button type="button" class="chip" data-filter="2.39:1" aria-pressed="false">2.39:1</button>
+      <button type="button" class="chip" data-filter="16:9" aria-pressed="false">16:9</button>
+      <button type="button" class="chip" data-filter="4:3" aria-pressed="false">4:3</button>
+      <button type="button" class="chip" data-filter="1:1" aria-pressed="false">1:1</button>
+    </div>
+
+    <div class="meta-bar">
+      <span id="count">Loading…</span>
+      <span>Source credited on every card · <a href="./licensing.html">Licensing</a></span>
+    </div>
+
+    <div class="masonry" id="grid" aria-live="polite"></div>
+  </main>
+
+  <footer>
+    <div class="wrap row">
+      <div>
+        <strong style="color: var(--white)">Cinekive Archive</strong>
+        — public companion · not the desktop product
+        <div style="margin-top: 0.35rem">
+          <a href="./licensing.html">Licensing</a>
+          ·
+          <a href="https://github.com/Gianluca-Improta/cinekive" target="_blank" rel="noreferrer">GitHub</a>
+          ·
+          <a href="https://github.com/Gianluca-Improta/cinekive/releases/latest" target="_blank" rel="noreferrer">Desktop</a>
+        </div>
+      </div>
+      <div>
+        Takedown / support:
+        <a href="mailto:cinekive@agentmail.to">cinekive@agentmail.to</a>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

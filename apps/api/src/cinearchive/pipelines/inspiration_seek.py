@@ -184,7 +184,9 @@ class InspirationSeek:
         from cinearchive.pipelines.media_download import download_stream, is_stream_url
 
         if is_stream_url(candidate.url):
-            path = download_stream(candidate.url, dest_dir, title_hint=candidate.title)
+            path = download_stream(
+                candidate.url, dest_dir, title_hint=candidate.title, settings=self.settings
+            )
             logger.info("Seek stream downloaded %s → %s", candidate.url, path)
             return path
 

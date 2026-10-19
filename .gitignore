@@ -63,3 +63,7 @@ _live_test/
 apps/api/build/
 _ls_list.py
 _reembed_progress.json
+
+# Local design reference mockups and deploy bundles
+framechain-v5.html
+landing/sw.zip

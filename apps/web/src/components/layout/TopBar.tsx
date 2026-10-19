@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Upload, Palette, RefreshCw, HelpCircle, Activity, Crown, UserRound } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { ModeSwitcher } from "@/components/ModeSwitcher";
 import { openIngestPanel } from "@/components/ingest/IngestPanel";
 import { toggleActivityPanel } from "@/components/jobs/ActivityLogPanel";
 import { useEntitlements } from "@/hooks/useEntitlements";
@@ -110,6 +111,7 @@ export function TopBar() {
         </select>
       </label>
       <LanguageSwitcher placement="bottom" />
+      <ModeSwitcher />
       <Link
         href="/settings?tab=license"
         className={cn(

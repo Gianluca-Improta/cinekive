@@ -11,8 +11,46 @@ import type {
 } from "./types";
 import { downloadBlob } from "./download";
 import { BUILTIN_SHELVES, shelfKeyOf } from "./project-shelves";
+import { readAccessToken } from "./access-token";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+/** Raised when the API asks for an access token (another device on the LAN). */
+export class ApiAuthError extends Error {
+  status = 401;
+
+  constructor(message = "This Cinekive instance needs an access token.") {
+    super(message);
+    this.name = "ApiAuthError";
+  }
+}
+
+export function isAuthError(err: unknown): err is ApiAuthError {
+  return err instanceof ApiAuthError;
+}
+
+/** Vocabulary pack for one archive mode (cinematic, architecture, …). */
+export interface ModePack {
+  id: string;
+  label: string;
+  short_label: string;
+  reference_noun: string;
+  reference_noun_plural: string;
+  creator_noun: string;
+  creator_noun_plural: string;
+  hero_line: string;
+  search_placeholder: string;
+  suggestions: string[];
+  facets: string[];
+  category_labels: Record<string, string>;
+  interests: string[];
+  sources: string[];
+}
+
+export interface ModeListResponse {
+  modes: ModePack[];
+  adapters: string[];
+}
 
 /** LAN and loopback keep a direct API port. Anything else is a public share link. */
 export function isPrivateHost(host: string): boolean {
@@ -49,13 +87,20 @@ export function artifactUrl(path: string | null | undefined): string {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${getApiUrl()}${path}`, {
-    ...init,
-    headers: {
-      ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-      ...init?.headers,
-    },
-  });
+  const headers: Record<string, string> = {
+    ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  const token = readAccessToken();
+  if (token) headers["X-Cinekive-Token"] = token;
+
+  const res = await fetch(`${getApiUrl()}${path}`, { ...init, headers });
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("cinekive:auth-required"));
+    }
+    throw new ApiAuthError();
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try {
@@ -444,6 +489,8 @@ export const api = {
     }),
 
   getTaxonomy: () => request<Taxonomy>("/taxonomy"),
+  getModes: () => request<ModeListResponse>("/modes"),
+  getMode: (modeId: string) => request<ModePack>(`/modes/${modeId}`),
 
   updateShot: (
     id: string,

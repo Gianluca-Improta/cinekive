@@ -1,0 +1,73 @@
+[
+  {
+    "id": "frame-001",
+    "src": "https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=1200&q=80",
+    "ratio": "2.39:1",
+    "title": "Neon alley night",
+    "tags": ["anamorphic", "neon", "night exterior", "wet asphalt", "urban"],
+    "source": "Unsplash — Jakob Owens",
+    "license": "Unsplash License (free to use; photographer credit requested)"
+  },
+  {
+    "id": "frame-002",
+    "src": "https://images.unsplash.com/photo-1440404653325-ab127d49abb1?auto=format&fit=crop&w=1200&q=80",
+    "ratio": "16:9",
+    "title": "Desert highway dusk",
+    "tags": ["golden hour", "highway", "landscape", "shallow depth", "warm grade"],
+    "source": "Unsplash — Jakob Owens",
+    "license": "Unsplash License (free to use; photographer credit requested)"
+  },
+  {
+    "id": "frame-003",
+    "src": "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80",
+    "ratio": "4:3",
+    "title": "Theater seats",
+    "tags": ["interior", "tungsten", "35mm grain", "warm", "period"],
+    "source": "Unsplash — Felix Mooneeram",
+    "license": "Unsplash License (free to use; photographer credit requested)"
+  },
+  {
+    "id": "frame-004",
+    "src": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1200&q=80",
+    "ratio": "1:1",
+    "title": "Noir portrait key",
+    "tags": ["Rembrandt lighting", "portrait", "high contrast", "noir", "studio"],
+    "source": "Unsplash — Denise Jans",
+    "license": "Unsplash License (free to use; photographer credit requested)"
+  },
+  {
+    "id": "frame-005",
+    "src": "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=1200&q=80",
+    "ratio": "2.39:1",
+    "title": "Skyline dusk",
+    "tags": ["city skyline", "dusk", "wide", "teal-orange", "establishing"],
+    "source": "Unsplash — Myke Simon",
+    "license": "Unsplash License (free to use; photographer credit requested)"
+  },
+  {
+    "id": "frame-006",
+    "src": "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&w=1200&q=80",
+    "ratio": "16:9",
+    "title": "Silhouette haze",
+    "tags": ["silhouette", "backlight", "haze", "50mm", "studio"],
+    "source": "Unsplash — Jakob Owens",
+    "license": "Unsplash License (free to use; photographer credit requested)"
+  },
+  {
+    "id": "frame-007",
+    "src": "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1200&q=80",
+    "ratio": "16:9",
+    "title": "Film set practicals",
+    "tags": ["film set", "practical lights", "production", "crew", "tungsten"],
+    "source": "Unsplash — Jakob Owens",
+    "license": "Unsplash License (free to use; photographer credit requested)"
+  },
+  {
+    "id": "frame-008",
+    "src": "https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=900&q=70",
+    "ratio": "2.39:1",
+    "title": "Missing license example (skipped)",
+    "tags": ["test"],
+    "source": "Should not render"
+  }
+]

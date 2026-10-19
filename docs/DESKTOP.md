@@ -24,10 +24,38 @@ Double-click app. No terminal required. **Docker is optional** on Windows and Ma
 | Share a live view link | Menu → **Share → Create view link…** |
 | Settings | Menu or in-app sidebar |
 | Check for app updates | Menu → **Help → Check for updates…** (also nudges on launch) |
+| Update the engine pack | Menu → **Help → Update engine pack…** |
 
 Engine data: `%APPDATA%\Cinekive\data` (Windows) / `~/Library/Application Support/Cinekive` (Mac) / `~/.config/Cinekive` (Linux). Stills stay in the folder you chose.
 
-A public view link is browse-only. The phone-on-WiFi address on your LAN can still ingest.
+A public view link is browse-only.
+
+### Network access and the access token
+
+The API listens on this machine only (`127.0.0.1`) by default, so nothing else
+on your network can reach the library.
+
+To browse from a phone or tablet on the same WiFi, turn on **LAN access** in
+Settings. When it is on:
+
+- the API binds to `0.0.0.0` and **asks every non-local device for an access
+  token**;
+- the token is generated per install and stored in
+  `%APPDATA%\Cinekive\access.json`;
+- **Share → Copy phone URL (WiFi)…** copies a link that carries the token, so
+  the phone pairs in one tap — the web app keeps it and sends it with every
+  request;
+- a device arriving without the token gets a "Connect to Cinekive" prompt
+  instead of the library.
+
+Turning LAN access off binds the API back to localhost and stops the token
+from being accepted.
+
+### Engine pack and shell updates
+
+The desktop shell and the engine ship separately. A shell update no longer
+re-downloads the ~550 MB engine pack; the pack is refreshed only when the
+engine payload itself changes, or when you run **Help → Update engine pack…**.
 
 ### Signing a release
 
