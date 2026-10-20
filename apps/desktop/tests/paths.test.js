@@ -108,3 +108,27 @@ test("the native engine pack is Apple Silicon only on macOS", () => {
     Object.defineProperty(process, "arch", { value: realArch, configurable: true });
   }
 });
+
+test("the engine does not follow the user's library folder", () => {
+  withUserData((paths, dir) => {
+    // The user points the data dir somewhere else (another drive).
+    const other = path.join(dir, "other-drive");
+    fs.mkdirSync(other, { recursive: true });
+    paths.writeConfig({ dataDir: other });
+
+    delete require.cache[require.resolve("../engine-native")];
+    const native = require("../engine-native");
+    const root = native.engineRoot();
+    assert.ok(
+      root.startsWith(dir),
+      `the engine should live under the app data dir, got ${root}`
+    );
+    assert.ok(
+      !root.startsWith(other),
+      "the engine must not move when the user moves their data"
+    );
+    // The old location is remembered so an existing install can be migrated.
+    assert.strictEqual(native.legacyEngineRoot(), path.join(other, "engine"));
+    delete require.cache[require.resolve("../engine-native")];
+  });
+});

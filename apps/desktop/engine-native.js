@@ -20,9 +20,48 @@ const WEB_URL = process.env.CINEKIVE_WEB_URL || "http://localhost:3000";
 const API_HEALTH = process.env.CINEKIVE_API_URL || "http://localhost:8000/health";
 const QDRANT_HEALTH = "http://127.0.0.1:6333/readyz";
 
+/**
+ * Where the engine lives.
+ *
+ * The engine (Python, Qdrant, Node, the web UI) is app infrastructure, not
+ * user data, so it must not move when the user points the library at another
+ * drive. It always lives under the app's own data folder.
+ */
 function engineRoot() {
+  return path.join(defaultDataDir(), "engine");
+}
+
+/** The old location, used once to migrate an existing install. */
+function legacyEngineRoot() {
   const cfg = readConfig();
-  return path.join(cfg.dataDir || defaultDataDir(), "engine");
+  const dir = cfg?.dataDir;
+  if (!dir) return null;
+  const legacy = path.join(dir, "engine");
+  return legacy === engineRoot() ? null : legacy;
+}
+
+/**
+ * Move an engine installed under the old data-dir location to the canonical
+ * one, so an existing install does not have to download ~550MB again.
+ */
+function migrateLegacyEngine() {
+  const target = engineRoot();
+  if (fs.existsSync(path.join(target, "version.txt"))) return false;
+  const legacy = legacyEngineRoot();
+  if (!legacy || !fs.existsSync(path.join(legacy, "version.txt"))) return false;
+  try {
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.renameSync(legacy, target);
+    return true;
+  } catch {
+    try {
+      fs.cpSync(legacy, target, { recursive: true });
+      fs.rmSync(legacy, { recursive: true, force: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 function logsDir() {
@@ -216,6 +255,8 @@ function nativeReady() {
  * @returns {{ ok: boolean, reason?: string, message?: string }}
  */
 async function checkNative() {
+  // Pick up an engine that was installed under an older data-dir location.
+  migrateLegacyEngine();
   if (!nativeReady()) {
     return {
       ok: false,
@@ -583,6 +624,8 @@ module.exports = {
   syncWebUiFromBundle,
   bundledWebUiRoot,
   engineRoot,
+  legacyEngineRoot,
+  migrateLegacyEngine,
   logsDir,
   openLogsDir,
   WEB_URL,

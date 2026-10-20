@@ -7,7 +7,7 @@ const path = require("path");
 const http = require("http");
 const https = require("https");
 const { spawn } = require("child_process");
-const { engineRoot, nativeReady } = require("./engine-native");
+const { engineRoot, nativeReady, migrateLegacyEngine } = require("./engine-native");
 const { readConfig, defaultDataDir } = require("./paths");
 
 const REPO = "Gianluca-Improta/cinekive";
@@ -238,6 +238,12 @@ function flattenEngineRoot(destDir) {
  * @param {{ version?: string, force?: boolean, onStatus?: (s: string) => void, onProgress?: (done: number, total: number) => void }} opts
  */
 async function ensureEnginePack({ version, force = false, onStatus, onProgress } = {}) {
+  // An engine installed under an older data-dir location is moved into place
+  // first, so existing installs never re-download ~550MB because the user
+  // moved their library folder.
+  if (migrateLegacyEngine()) {
+    onStatus?.("Moved the existing engine into place");
+  }
   if (!force && nativeReady() && !needsEngineRefresh()) {
     onStatus?.("Native engine ready");
     return { ok: true, alreadyInstalled: true };
