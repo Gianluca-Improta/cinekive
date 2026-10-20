@@ -40,13 +40,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # Node 24 ships npm 11, which matches the committed lock file.
+          # npm 10 rejects it (npm ci fails on the resolved tree).
+          node-version: "24"
       - name: Install
         working-directory: apps/web
-        run: npm ci
+        run: npm ci --legacy-peer-deps
       - name: Type-check
         working-directory: apps/web
         run: npx tsc --noEmit
+      - name: Unit tests
+        working-directory: apps/web
+        run: npm test
       - name: Build
         working-directory: apps/web
         run: npm run build

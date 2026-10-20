@@ -192,16 +192,20 @@ export function ShotDetailSheet({
     const mq = window.matchMedia("(max-width: 767px)");
     const apply = () => {
       if (!mq.matches) return;
-      setMode((m) => {
-        if (m !== "inspector") return m;
-        onModeChange?.("popup");
-        return "popup";
-      });
+      // State updaters must stay pure: React may run them while the parent
+      // renders, and calling back into the parent from there triggers
+      // "Cannot update a component while rendering a different component".
+      setMode((m) => (m === "inspector" ? "popup" : m));
     };
     apply();
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
-  }, [onModeChange]);
+  }, []);
+
+  // Report the mode to the parent from an effect, never from a state updater.
+  useEffect(() => {
+    onModeChange?.(mode);
+  }, [mode, onModeChange]);
 
   // notes/tags/craft already synced above when shot id changes
   useEffect(() => {

@@ -66,7 +66,24 @@ import {
   suggestedTemplateId,
   type LookbookTemplateId,
 } from "@/lib/lookbook-templates";
-import { clampScale, zoomAtFocal, rectsIntersect, type WorldRect } from "@/lib/canvas-nav";
+import { clampScale, zoomAtFocal, rectsIntersect, MIN_SCALE, MAX_SCALE, type WorldRect } from "@/lib/canvas-nav";
+import {
+  CANVAS_H,
+  CANVAS_W,
+  DEFAULT_NODE_W,
+  GEN_NODE_H,
+  GEN_ID_PREFIX,
+  NOTE_ID_PREFIX,
+  TEXT_ID_PREFIX,
+  noteNodeHeight,
+  pickPortSides,
+  portPoint,
+  shotNodeHeight,
+  softCurve,
+  textNodeHeight,
+  viewportCenterWorld,
+  type PortSide,
+} from "@/lib/canvas-geometry";
 import {
   DEFAULT_SHORTCUTS,
   loadShortcuts,
@@ -125,12 +142,6 @@ type Props = {
   projectKind?: string | null;
 };
 
-const CANVAS_W = 20000;
-const CANVAS_H = 20000;
-const DEFAULT_W = 220;
-const MIN_SCALE = 0.08;
-const MAX_SCALE = 2.5;
-
 function storageKey(id: string) {
   return `cinekive.canvas.v2.${id}`;
 }
@@ -151,66 +162,11 @@ function docFromMeta(meta: Record<string, unknown> | undefined | null): CanvasDo
   return normalizeCanvasDoc(canvas);
 }
 
-const GEN_NODE_H = 344;
-
 const LOOK_STRENGTH: Record<"soft" | "balanced" | "close", number> = {
   soft: 0.35,
   balanced: 0.55,
   close: 0.75,
 };
-
-type PortSide = "left" | "right" | "top" | "bottom";
-
-function portPoint(
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  side: PortSide
-): { x: number; y: number } {
-  if (side === "left") return { x, y: y + h / 2 };
-  if (side === "right") return { x: x + w, y: y + h / 2 };
-  if (side === "top") return { x: x + w / 2, y };
-  return { x: x + w / 2, y: y + h };
-}
-
-/** Pick out/in sides from relative node centers (Framechain-style). */
-function pickPortSides(
-  a: { x: number; y: number; w: number; h: number },
-  b: { x: number; y: number; w: number; h: number }
-): { out: PortSide; inn: PortSide } {
-  const acx = a.x + a.w / 2;
-  const acy = a.y + a.h / 2;
-  const bcx = b.x + b.w / 2;
-  const bcy = b.y + b.h / 2;
-  const dx = bcx - acx;
-  const dy = bcy - acy;
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    return dx >= 0 ? { out: "right", inn: "left" } : { out: "left", inn: "right" };
-  }
-  return dy >= 0 ? { out: "bottom", inn: "top" } : { out: "top", inn: "bottom" };
-}
-
-function softCurve(
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number,
-  outSide: PortSide = "right",
-  inSide: PortSide = "left"
-) {
-  const dist = Math.hypot(bx - ax, by - ay);
-  const pull = Math.max(24, Math.min(120, dist * 0.35));
-  const offset = (side: PortSide, x: number, y: number) => {
-    if (side === "left") return { x: x - pull, y };
-    if (side === "right") return { x: x + pull, y };
-    if (side === "top") return { x, y: y - pull };
-    return { x, y: y + pull };
-  };
-  const c1 = offset(outSide, ax, ay);
-  const c2 = offset(inSide, bx, by);
-  return `M ${ax} ${ay} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${bx} ${by}`;
-}
 
 function portClass(side: PortSide, connected: boolean, ghost = true) {
   const base =
@@ -254,29 +210,21 @@ function nodeBoxForId(
     return { x: g.x, y: g.y, w: g.w, h: GEN_NODE_H };
   }
   if (isTextId(id) || id.startsWith("text-")) {
-    const tid = isTextId(id) ? id.slice(5) : id;
+    const tid = isTextId(id) ? id.slice(TEXT_ID_PREFIX.length) : id;
     const t = doc.texts.find((n) => n.id === tid);
     if (!t) return null;
-    const h = t.style === "title" ? 40 : t.style === "caption" ? 28 : 72;
-    return { x: t.x, y: t.y, w: t.w, h };
+    return { x: t.x, y: t.y, w: t.w, h: textNodeHeight(t.style) };
   }
   if (isNoteId(id) || id.startsWith("note-")) {
-    const nid = isNoteId(id) ? id.slice(5) : id;
+    const nid = isNoteId(id) ? id.slice(NOTE_ID_PREFIX.length) : id;
     const n = doc.notes.find((x) => x.id === nid);
     if (!n) return null;
-    return { x: n.x, y: n.y, w: n.w, h: Math.max(80, n.w * 0.55) };
+    return { x: n.x, y: n.y, w: n.w, h: noteNodeHeight(n.w) };
   }
   const pa = doc.positions[id];
   if (!pa && !shotMap.has(id)) return null;
-  const pos = pa || ({ x: CANVAS_W / 2, y: CANVAS_H / 2, w: DEFAULT_W } as CanvasPos);
-  return { x: pos.x, y: pos.y, w: pos.w, h: pos.w * 0.62 };
-}
-
-function viewportCenterWorld(view: CanvasDoc["view"], vp: DOMRect) {
-  return {
-    x: (vp.width / 2 - view.x) / view.scale,
-    y: (vp.height / 2 - view.y) / view.scale,
-  };
+  const pos = pa || ({ x: CANVAS_W / 2, y: CANVAS_H / 2, w: DEFAULT_NODE_W } as CanvasPos);
+  return { x: pos.x, y: pos.y, w: pos.w, h: shotNodeHeight(pos.w) };
 }
 
 export function ProjectCanvas({
@@ -362,7 +310,7 @@ export function ProjectCanvas({
   const historyArmedRef = useRef(false);
   const [historyTick, setHistoryTick] = useState(0);
   const [resizing, setResizing] = useState<string | null>(null);
-  const resizeStart = useRef({ w: DEFAULT_W, clientX: 0 });
+  const resizeStart = useRef({ w: DEFAULT_NODE_W, clientX: 0 });
 
   const { data: canvases = [] } = useQuery({
     queryKey: ["collections", "canvas", projectId],
@@ -671,7 +619,7 @@ export function ProjectCanvas({
       let x = first.x;
       const y = first.y;
       for (const id of sorted) {
-        const p = positions[id] || { x: 0, y: 0, w: DEFAULT_W };
+        const p = positions[id] || { x: 0, y: 0, w: DEFAULT_NODE_W };
         positions[id] = { ...p, x, y };
         x += p.w + gap;
       }
@@ -728,9 +676,9 @@ export function ProjectCanvas({
         if (positions[s.id]) continue;
         const i = Object.keys(positions).length + placed;
         positions[s.id] = {
-          x: CANVAS_W / 2 - 800 + (i % 8) * (DEFAULT_W + 40),
+          x: CANVAS_W / 2 - 800 + (i % 8) * (DEFAULT_NODE_W + 40),
           y: CANVAS_H / 2 - 400 + Math.floor(i / 8) * 180,
-          w: DEFAULT_W,
+          w: DEFAULT_NODE_W,
         };
         placed += 1;
       }
@@ -936,7 +884,7 @@ export function ProjectCanvas({
             [freshId!]: {
               x: near.x + near.w + 40,
               y: near.y,
-              w: DEFAULT_W,
+              w: DEFAULT_NODE_W,
             },
           };
           const edges = [...prev.edges];
@@ -1060,7 +1008,7 @@ export function ProjectCanvas({
           ...prev,
           positions: {
             ...prev.positions,
-            [shotId]: { x, y, w: DEFAULT_W },
+            [shotId]: { x, y, w: DEFAULT_NODE_W },
           },
           stacks: prev.stacks.map((st) => ({
             ...st,
@@ -1085,11 +1033,11 @@ export function ProjectCanvas({
     (shotId: string) => {
       const vp = viewportRef.current?.getBoundingClientRect();
       if (!vp) {
-        placeShot(shotId, CANVAS_W / 2 - DEFAULT_W / 2, CANVAS_H / 2 - 80);
+        placeShot(shotId, CANVAS_W / 2 - DEFAULT_NODE_W / 2, CANVAS_H / 2 - 80);
         return;
       }
       const c = viewportCenterWorld(doc.view, vp);
-      placeShot(shotId, c.x - DEFAULT_W / 2, c.y - 80);
+      placeShot(shotId, c.x - DEFAULT_NODE_W / 2, c.y - 80);
     },
     [doc.view, placeShot]
   );
@@ -1449,7 +1397,7 @@ export function ProjectCanvas({
         }));
       } else {
         updateDoc((prev) => {
-          const p = prev.positions[resizing] || { x: 0, y: 0, w: DEFAULT_W };
+          const p = prev.positions[resizing] || { x: 0, y: 0, w: DEFAULT_NODE_W };
           return {
             ...prev,
             positions: { ...prev.positions, [resizing]: { ...p, w: nextW } },
@@ -1604,7 +1552,7 @@ export function ProjectCanvas({
     const nx = world.x - dragOffset.current.x;
     const ny = world.y - dragOffset.current.y;
     updateDoc((prev) => {
-      const cur = prev.positions[dragging] || { x: 0, y: 0, w: DEFAULT_W };
+      const cur = prev.positions[dragging] || { x: 0, y: 0, w: DEFAULT_NODE_W };
       const dx = nx - cur.x;
       const dy = ny - cur.y;
       const moving =
@@ -1620,7 +1568,7 @@ export function ProjectCanvas({
         ) {
           continue;
         }
-        const p = positions[id] || { x: 0, y: 0, w: DEFAULT_W };
+        const p = positions[id] || { x: 0, y: 0, w: DEFAULT_NODE_W };
         positions[id] = {
           ...p,
           x: Math.max(0, Math.min(CANVAS_W - p.w, p.x + dx)),
@@ -1726,7 +1674,7 @@ export function ProjectCanvas({
       setSelectedIds(new Set([shotId]));
       setSelectedEdgeId(null);
     }
-    const pos = doc.positions[shotId] || { x: 0, y: 0, w: DEFAULT_W };
+    const pos = doc.positions[shotId] || { x: 0, y: 0, w: DEFAULT_NODE_W };
     const world = screenToWorld(e.clientX, e.clientY);
     dragOffset.current = { x: world.x - pos.x, y: world.y - pos.y };
     setDragging(shotId);
@@ -1774,7 +1722,7 @@ export function ProjectCanvas({
       id: `stack-${Date.now()}`,
       x,
       y,
-      w: DEFAULT_W,
+      w: DEFAULT_NODE_W,
       label: `Stack ${doc.stacks.length + 1}`,
       shotIds: ids,
       activeIndex: 0,
@@ -1911,7 +1859,7 @@ export function ProjectCanvas({
       const p = doc.positions[s.id] || {
         x: CANVAS_W / 2 + (i % 8) * 260,
         y: CANVAS_H / 2 + Math.floor(i / 8) * 180,
-        w: DEFAULT_W,
+        w: DEFAULT_NODE_W,
       };
       consider(p.x, p.y, p.w, p.w * 0.7);
     });
@@ -1940,7 +1888,7 @@ export function ProjectCanvas({
       e.dataTransfer.getData(CANVAS_SHOT_MIME) || e.dataTransfer.getData("text/plain");
     if (!shotId || !shotId.match(/^[0-9a-f-]{36}$/i)) return;
     const world = screenToWorld(e.clientX, e.clientY);
-    placeShot(shotId, world.x - DEFAULT_W / 2, world.y - 60);
+    placeShot(shotId, world.x - DEFAULT_NODE_W / 2, world.y - 60);
   };
 
   if (!canvas) {
@@ -3906,9 +3854,9 @@ export function ProjectCanvas({
             {canvasShots.map((shot, i) => {
               if (stackedShotIds.has(shot.id)) return null;
               const pos = doc.positions[shot.id] || {
-                x: CANVAS_W / 2 - 800 + (i % 8) * (DEFAULT_W + 40),
+                x: CANVAS_W / 2 - 800 + (i % 8) * (DEFAULT_NODE_W + 40),
                 y: CANVAS_H / 2 - 400 + Math.floor(i / 8) * 180,
-                w: DEFAULT_W,
+                w: DEFAULT_NODE_W,
               };
               const selected = selectedIds.has(shot.id);
               const linking = linkFrom === shot.id;

@@ -71,15 +71,26 @@ if [[ ! -x "$NODEDIR/node" ]]; then
   rm -rf "$tmp"
 fi
 
-# --- ffmpeg (evermeet static build) ---
+# --- ffmpeg (static build) ---
+# evermeet.cx was retired and now answers 410 Gone, so the macOS pack uses the
+# static builds published with the ffmpeg-static project (one binary, no dylib
+# dependencies, so the pack stays relocatable).
 FFDIR="$ENGINE/ffmpeg/bin"
 mkdir -p "$FFDIR"
 if [[ ! -x "$FFDIR/ffmpeg" ]]; then
-  echo "Downloading ffmpeg…"
-  curl -fsSL "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -o "$FFDIR/ffmpeg.zip"
-  unzip -o -q "$FFDIR/ffmpeg.zip" -d "$FFDIR"
+  echo "Downloading ffmpeg (static)…"
+  if [[ "$ARCH" == "arm64" ]]; then
+    FF_BIN="ffmpeg-darwin-arm64"
+  else
+    FF_BIN="ffmpeg-darwin-x64"
+  fi
+  curl -fsSL "https://github.com/eugeneware/ffmpeg-static/releases/latest/download/${FF_BIN}" -o "$FFDIR/ffmpeg"
   chmod +x "$FFDIR/ffmpeg"
-  rm -f "$FFDIR/ffmpeg.zip"
+  # Sanity check: it must be a real Mach-O binary, not an error page.
+  if ! "$FFDIR/ffmpeg" -version >/dev/null 2>&1; then
+    echo "ffmpeg binary did not run on this machine"
+    exit 1
+  fi
 fi
 
 # --- Relocatable Python (NOT a host venv) ---

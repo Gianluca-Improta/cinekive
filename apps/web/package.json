@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test tests/*.test.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",

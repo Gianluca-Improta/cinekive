@@ -126,9 +126,47 @@ export default function SettingsPage() {
   const tunnelCmd =
     data?.share?.options?.find((o) => o.id === "tunnel")?.commands?.[0] ||
     "cloudflared tunnel --url http://localhost:3000";
+  const desktop = desktopBridge();
+  const [lanEnabled, setLanEnabled] = useState(false);
+  const [lanToken, setLanToken] = useState<string | null>(null);
+  const [lanBusy, setLanBusy] = useState(false);
+
+  // The desktop owns the bind host, so the LAN state comes from the shell.
+  useEffect(() => {
+    let cancelled = false;
+    const read = async () => {
+      if (!desktop?.getHealthStatus) return;
+      try {
+        const h = await desktop.getHealthStatus();
+        if (cancelled) return;
+        setLanEnabled(Boolean(h?.lanAccess));
+        setLanToken(h?.apiToken ?? null);
+      } catch {
+        /* not running inside the desktop shell */
+      }
+    };
+    read();
+    return () => {
+      cancelled = true;
+    };
+  }, [desktop]);
+
+  const toggleLan = async (enabled: boolean) => {
+    if (!desktop?.setLanAccess) return;
+    setLanBusy(true);
+    try {
+      const res = await desktop.setLanAccess(enabled);
+      setLanEnabled(Boolean(res?.lanAccess ?? enabled));
+      setLanToken(res?.apiToken ?? null);
+    } catch {
+      setLanEnabled(!enabled);
+    } finally {
+      setLanBusy(false);
+    }
+  };
+
   const phoneUrl = health.data?.lan_web_url || lanUrl;
   const phoneApiUrl = phoneUrl?.replace(":3000", ":8000") ?? null;
-  const desktop = desktopBridge();
   const canBrowseLibrary = Boolean(desktop?.chooseLibraryFolder || desktop?.pickLibraryFolder);
 
   const modules: { id: SettingsTab; label: string }[] = [
@@ -467,6 +505,21 @@ export default function SettingsPage() {
                   <p className="mt-1 text-xs leading-relaxed text-cinema-muted">
                     {t("settings.lanWifiHint")}
                   </p>
+                  <label className="mt-3 flex items-start gap-2 text-[11px] leading-relaxed text-cinema-muted">
+                    <input
+                      type="checkbox"
+                      checked={lanEnabled}
+                      disabled={!desktop?.setLanAccess || lanBusy}
+                      onChange={(e) => toggleLan(e.target.checked)}
+                      className="mt-0.5 h-3.5 w-3.5 accent-cinema-cyan"
+                    />
+                    <span>
+                      Allow a phone or tablet on this WiFi to browse the library.
+                      <span className="mt-0.5 block text-cinema-muted/80">
+                        Off by default. When on, other devices need the access token below.
+                      </span>
+                    </span>
+                  </label>
                   {phoneUrl ? (
                     <div className="mt-4 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
@@ -490,6 +543,26 @@ export default function SettingsPage() {
                       <code className="block break-all rounded bg-cinema-black/50 px-2 py-1.5 font-mono text-[10px] text-cinema-cyan">
                         {phoneUrl}
                       </code>
+                      {lanToken && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] text-cinema-muted">
+                            Access token — other devices ask for this:
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 break-all rounded bg-cinema-black/50 px-2 py-1.5 font-mono text-[10px] text-cinema-cyan">
+                              {lanToken}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() => copy(lanToken, "token")}
+                              className="inline-flex items-center gap-1 rounded border border-white/10 px-2 py-1.5 text-[10px] text-cinema-muted hover:border-cinema-cyan/40 hover:text-cinema-cyan"
+                            >
+                              <Copy className="h-3 w-3" />
+                              {copied === "token" ? "Copied" : "Copy"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {phoneApiUrl && (
                         <p className="text-[10px] text-cinema-muted">
                           API (same WiFi): <code className="text-cinema-cyan/80">{phoneApiUrl}</code>
@@ -497,7 +570,11 @@ export default function SettingsPage() {
                       )}
                     </div>
                   ) : (
-                    <p className="mt-3 text-[11px] text-cinema-muted">{t("settings.lanWifiUnavailable")}</p>
+                    <p className="mt-3 text-[11px] text-cinema-muted">
+                      {lanEnabled
+                        ? t("settings.lanWifiUnavailable")
+                        : "Turn this on to get a WiFi address for your phone."}
+                    </p>
                   )}
                 </div>
                 <div className="rounded-xl bg-cinema-cyan/5 p-5">

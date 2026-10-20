@@ -25,6 +25,7 @@ import { PRO_UPGRADE_URL, useEntitlements } from "@/hooks/useEntitlements";
 import { api } from "@/lib/api-client";
 import { CREATOR_LINKS } from "@/lib/creator-links";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { closeMobileNav, isMobileViewport } from "@/lib/mobile-nav";
 import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +87,10 @@ export function Sidebar() {
   const projectClickTimer = useRef<number | null>(null);
   widthRef.current = width;
 
+  // Below md the sidebar is an overlay drawer instead of a permanent column.
+  const [isMobile, setIsMobile] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   const openProject = (id: string) => {
     if (projectClickTimer.current) window.clearTimeout(projectClickTimer.current);
     projectClickTimer.current = window.setTimeout(() => {
@@ -106,6 +111,39 @@ export function Sidebar() {
   useEffect(() => {
     setWidth(loadSidebarWidth());
   }, []);
+
+  // Track the breakpoint and react to the top-bar drawer toggle.
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => {
+      setIsMobile(mq.matches);
+      if (!mq.matches) setDrawerOpen(false);
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    const onOpen = () => setDrawerOpen(true);
+    const onClose = () => setDrawerOpen(false);
+    const onToggle = () => setDrawerOpen((v) => !v);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDrawerOpen(false);
+    };
+    window.addEventListener("cinekive:nav-open", onOpen);
+    window.addEventListener("cinekive:nav-close", onClose);
+    window.addEventListener("cinekive:nav-toggle", onToggle);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      mq.removeEventListener("change", apply);
+      window.removeEventListener("cinekive:nav-open", onOpen);
+      window.removeEventListener("cinekive:nav-close", onClose);
+      window.removeEventListener("cinekive:nav-toggle", onToggle);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  // Navigating always closes the drawer.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
 
   const slim = width < SIDEBAR_SLIM;
 
@@ -179,7 +217,8 @@ export function Sidebar() {
         title={label}
         className={cn(
           "mb-0.5 flex items-center rounded-lg text-sm transition",
-          slim ? "justify-center px-2 py-2" : "gap-2 px-3 py-2",
+          // Comfortable tap height on touch screens.
+          slim ? "justify-center px-2 py-2 min-h-[2.25rem]" : "gap-2 px-3 py-2 min-h-[2.25rem]",
           active
             ? "bg-cinema-cyan/10 text-cinema-cyan"
             : "text-cinema-muted hover:bg-cinema-panel hover:text-white"
@@ -192,10 +231,28 @@ export function Sidebar() {
   };
 
   return (
-    <aside
-      className="relative flex h-full shrink-0 flex-col border-r border-white/[0.04] bg-cinema-surface"
-      style={{ width }}
-    >
+    <>
+      {/* Mobile backdrop — tapping outside closes the drawer. */}
+      {isMobile && drawerOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          onClick={() => setDrawerOpen(false)}
+          aria-hidden
+        />
+      )}
+      <aside
+        className={cn(
+          "flex h-full flex-col border-r border-white/[0.04] bg-cinema-surface",
+          isMobile
+            ? cn(
+                "fixed inset-y-0 left-0 z-50 w-[min(82vw,19rem)] shadow-2xl transition-transform duration-200",
+                drawerOpen ? "translate-x-0" : "-translate-x-full"
+              )
+            : "relative shrink-0"
+        )}
+        style={isMobile ? undefined : { width }}
+        aria-hidden={isMobile && !drawerOpen}
+      >
       <div
         className={cn(
           "flex items-center border-b border-white/[0.04]",
@@ -364,7 +421,7 @@ export function Sidebar() {
               <div className="mb-1 flex items-center justify-between px-4">
                 <Link
                   href="/archives"
-                  className="text-xs uppercase tracking-widest text-cinema-muted hover:text-cinema-cyan"
+                  className="flex min-h-[2rem] items-center text-xs uppercase tracking-widest text-cinema-muted hover:text-cinema-cyan"
                   title={t("nav.archivesHubHint")}
                 >
                   Archives
@@ -450,14 +507,14 @@ export function Sidebar() {
                       href={upgradeUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-2 text-sm text-cinema-cyan hover:underline"
+                      className="flex min-h-[1.75rem] items-center gap-2 text-sm text-cinema-cyan hover:underline"
                     >
                       <Crown className="h-3.5 w-3.5 shrink-0" />
                       Upgrade to Pro
                     </a>
                     <Link
                       href="/settings?tab=license"
-                      className="mt-1 block text-[11px] text-cinema-muted hover:text-white"
+                      className="mt-1 block min-h-[2rem] py-1 text-[11px] text-cinema-muted hover:text-white"
                     >
                       Have a license key?
                     </Link>
@@ -476,7 +533,7 @@ export function Sidebar() {
                             target="_blank"
                             rel="noreferrer"
                             title={item.blurb}
-                            className="flex items-center justify-between gap-1 rounded px-0.5 py-0.5 text-[11px] text-cinema-muted hover:text-cinema-cyan"
+                            className="flex min-h-[2rem] items-center justify-between gap-1 rounded px-0.5 py-1 text-[11px] text-cinema-muted hover:text-cinema-cyan"
                           >
                             <span className="truncate">{item.label}</span>
                             <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-60" />
@@ -521,22 +578,24 @@ export function Sidebar() {
 
       <CraftChatPanel compact={slim} />
 
-      <button
-        type="button"
-        aria-label="Resize sidebar"
-        title="Drag to resize · double-click to slim/expand"
-        onPointerDown={startDrag}
-        onDoubleClick={() => {
-          const next = slim ? SIDEBAR_DEFAULT : SIDEBAR_MIN;
-          setWidth(next);
-          try {
-            localStorage.setItem(SIDEBAR_W_KEY, String(next));
-          } catch {
-            /* ignore */
-          }
-        }}
-        className="absolute inset-y-0 right-0 z-20 w-1.5 cursor-col-resize border-0 bg-transparent hover:bg-cinema-cyan/25 active:bg-cinema-cyan/40"
-      />
+      {!isMobile && (
+        <button
+          type="button"
+          aria-label="Resize sidebar"
+          title="Drag to resize · double-click to slim/expand"
+          onPointerDown={startDrag}
+          onDoubleClick={() => {
+            const next = slim ? SIDEBAR_DEFAULT : SIDEBAR_MIN;
+            setWidth(next);
+            try {
+              localStorage.setItem(SIDEBAR_W_KEY, String(next));
+            } catch {
+              /* ignore */
+            }
+          }}
+          className="absolute inset-y-0 right-0 z-20 w-1.5 cursor-col-resize border-0 bg-transparent hover:bg-cinema-cyan/25 active:bg-cinema-cyan/40"
+        />
+      )}
 
       <ProjectSetupModal open={createProjectOpen} onClose={() => setCreateProjectOpen(false)} />
       <ArchiveCreateModal open={createArchiveOpen} onClose={() => setCreateArchiveOpen(false)} />
@@ -548,6 +607,7 @@ export function Sidebar() {
           setManagerFocusId(null);
         }}
       />
-    </aside>
+      </aside>
+    </>
   );
 }

@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld("cinekive", {
   chooseLibraryFolder: () => ipcRenderer.invoke("choose-library-folder"),
   completeFirstRun: (opts) => ipcRenderer.invoke("complete-first-run", opts),
   setEngineMode: (mode) => ipcRenderer.invoke("set-engine-mode", mode),
+  setLanAccess: (enabled) => ipcRenderer.invoke("set-lan-access", enabled),
   openEngineLogs: () => ipcRenderer.invoke("open-engine-logs"),
   openExternal: (url) => ipcRenderer.invoke("open-external", url),
   setAppearance: (theme) => ipcRenderer.invoke("set-appearance", theme),

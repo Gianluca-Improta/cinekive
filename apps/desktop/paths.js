@@ -5,16 +5,26 @@
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
-const { app } = require("electron");
+
+/**
+ * Electron is not available in plain Node (unit tests, tooling), so the app
+ * handle is optional. Everything below has a non-Electron fallback.
+ */
+let electronApp = null;
+try {
+  ({ app: electronApp } = require("electron"));
+} catch {
+  electronApp = null;
+}
 
 function isPackaged() {
-  return Boolean(app && app.isPackaged);
+  return Boolean(electronApp && electronApp.isPackaged);
 }
 
 function userDataRoot() {
   if (process.env.CINEKIVE_USER_DATA) return process.env.CINEKIVE_USER_DATA;
   try {
-    return path.join(app.getPath("appData"), "Cinekive");
+    return path.join(electronApp.getPath("appData"), "Cinekive");
   } catch {
     return path.join(process.env.APPDATA || process.env.HOME || ".", "Cinekive");
   }
@@ -43,7 +53,7 @@ function ensureRuntimeSynced() {
   fs.mkdirSync(dest, { recursive: true });
   if (!isPackaged()) return dest;
   const src = bundledStackRoot();
-  const ver = app.getVersion();
+  const ver = electronApp.getVersion();
   const marker = path.join(dest, ".bundle-version");
   const needsCopy =
     !fs.existsSync(path.join(dest, "docker-compose.desktop.yml")) ||
@@ -82,7 +92,7 @@ function readConfigDefaults() {
   let engineMode = "auto";
   try {
     // Packaged Mac/Windows: native engine = no Docker required (one-click install)
-    if (app.isPackaged && (process.platform === "win32" || process.platform === "darwin")) {
+    if (electronApp && electronApp.isPackaged && (process.platform === "win32" || process.platform === "darwin")) {
       engineMode = "native";
     }
   } catch {

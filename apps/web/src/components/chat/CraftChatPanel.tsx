@@ -445,7 +445,7 @@ export function CraftChatPanel({ compact = false }: { compact?: boolean }) {
         title={autoHide ? "Auto-hide on" : "Keep open"}
         onClick={() => setAutoHide((v) => !v)}
         className={cn(
-          "rounded px-1.5 py-1 text-[10px]",
+          "inline-flex min-h-[1.5rem] items-center rounded px-1.5 py-1 text-[10px]",
           autoHide ? "text-cinema-cyan" : "text-cinema-muted hover:text-white"
         )}
       >

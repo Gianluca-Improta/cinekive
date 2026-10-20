@@ -13,7 +13,7 @@ export function ModeSwitcher() {
 
   if (modes.length <= 1) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded border border-white/[0.08] px-2 py-1 text-xs text-cinema-muted">
+      <span className="inline-flex min-h-[2.25rem] items-center gap-1.5 rounded border border-white/[0.08] px-2 py-1 text-xs text-cinema-muted">
         <Layers className="h-3.5 w-3.5" />
         {pack.short_label}
       </span>
@@ -21,7 +21,7 @@ export function ModeSwitcher() {
   }
 
   return (
-    <label className="inline-flex items-center gap-1.5 rounded border border-white/[0.08] px-2 py-1 text-xs text-cinema-muted hover:border-cinema-cyan/40">
+    <label className="inline-flex min-h-[2.25rem] items-center gap-1.5 rounded border border-white/[0.08] px-2 py-1 text-xs text-cinema-muted hover:border-cinema-cyan/40">
       <Layers className="h-3.5 w-3.5" />
       <select
         value={pack.id}

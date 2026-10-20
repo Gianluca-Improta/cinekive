@@ -136,6 +136,8 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           npm ci
+          # The installer ships the web UI, so it has to be built first.
+          npm run build:web
           if [ -n "$CSC_LINK" ]; then
             npx electron-builder --mac dmg zip --x64 --arm64 --publish never \
               -c.mac.hardenedRuntime=true -c.mac.gatekeeperAssess=false

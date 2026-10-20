@@ -36,7 +36,7 @@ The API listens on this machine only (`127.0.0.1`) by default, so nothing else
 on your network can reach the library.
 
 To browse from a phone or tablet on the same WiFi, turn on **LAN access** in
-Settings. When it is on:
+Settings → Share. When it is on:
 
 - the API binds to `0.0.0.0` and **asks every non-local device for an access
   token**;
@@ -50,6 +50,13 @@ Settings. When it is on:
 
 Turning LAN access off binds the API back to localhost and stops the token
 from being accepted.
+
+### Using it on a phone
+
+The web app is responsive down to a 360 px screen. Below the `md` breakpoint
+the sidebar becomes a drawer (the menu button in the top bar opens it), the
+top bar collapses to icons, and touch targets stay large enough to hit with a
+thumb.
 
 ### Engine pack and shell updates
 

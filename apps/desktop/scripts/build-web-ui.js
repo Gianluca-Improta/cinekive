@@ -15,11 +15,25 @@ function run(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, {
     cwd: opts.cwd || webRoot,
     stdio: "inherit",
-    shell: true,
+    shell: false,
     env: { ...process.env, ...(opts.env || {}) },
   });
   if (r.status !== 0) {
     throw new Error(`${cmd} ${args.join(" ")} failed with ${r.status}`);
+  }
+}
+
+/** npm needs a shell on Windows (npm is a .cmd shim). */
+function runNpm(args, opts = {}) {
+  const cmd = process.platform === "win32" ? "npm.cmd" : "npm";
+  const r = spawnSync(cmd, args, {
+    cwd: opts.cwd || webRoot,
+    stdio: "inherit",
+    shell: process.platform === "win32",
+    env: { ...process.env, ...(opts.env || {}) },
+  });
+  if (r.status !== 0) {
+    throw new Error(`npm ${args.join(" ")} failed with ${r.status}`);
   }
 }
 
@@ -30,10 +44,15 @@ function main() {
 
   console.log("Building Cinekive web UI (standalone)…");
   if (!fs.existsSync(path.join(webRoot, "node_modules"))) {
-    run("npm", ["install", "--legacy-peer-deps"]);
+    runNpm(["install", "--legacy-peer-deps"]);
   }
 
-  run("npm", ["run", "build"], {
+  // Call the Next CLI directly — no npm wrapper, no shell.
+  const nextBin = path.join(webRoot, "node_modules", "next", "dist", "bin", "next");
+  if (!fs.existsSync(nextBin)) {
+    throw new Error(`Next CLI not found at ${nextBin} — run npm install in apps/web first.`);
+  }
+  run(process.execPath, [nextBin, "build"], {
     env: { NEXT_PUBLIC_API_URL: "http://localhost:8000" },
   });
 

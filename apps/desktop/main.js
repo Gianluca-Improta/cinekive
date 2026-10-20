@@ -614,6 +614,21 @@ ipcMain.handle("open-engine-logs", async () => {
   return dir;
 });
 
+ipcMain.handle("set-lan-access", async (_event, enabled) => {
+  const on = Boolean(enabled);
+  writeConfig({ lanAccess: on });
+  // The bind host and the CORS list depend on this, so the stack restarts.
+  try {
+    await restartStack({ onStatus: () => {} });
+  } catch (e) {
+    // The setting is saved either way — the next start picks it up.
+    console.error("LAN access restart failed:", e);
+  }
+  const { getLanUrls } = require("./network");
+  const lan = getLanUrls(on);
+  return { ok: true, lanAccess: on, lan, apiToken: readAccessSecrets().apiToken };
+});
+
 ipcMain.handle("get-setup-info", async () => {
   const cfg = readConfig();
   const pack = require("./engine-pack");
