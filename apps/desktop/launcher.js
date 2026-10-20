@@ -142,7 +142,10 @@ function toPosix(p) {
 }
 
 function nativePackPlatform() {
-  return process.platform === "win32" || process.platform === "darwin";
+  if (process.platform === "win32") return true;
+  // Apple Silicon only — PyTorch has no x86_64 macOS wheels any more.
+  if (process.platform === "darwin") return process.arch === "arm64";
+  return false;
 }
 
 function writeEnvFile({ dataDir, libraryPath }) {
@@ -280,7 +283,17 @@ async function resolveEngineMode() {
   const cfg = readConfig();
   const mode = cfg.engineMode || "auto";
 
-  if (mode === "native") return "native";
+  if (mode === "native") {
+    if (!nativePackPlatform()) {
+      throw new Error(
+        process.platform === "darwin"
+          ? "The native engine needs an Apple Silicon Mac (M1 or newer). " +
+              "On Intel Macs, choose Docker mode."
+          : "The native engine is only available on Windows and Apple Silicon Macs."
+      );
+    }
+    return "native";
+  }
 
   let docker = await checkDocker();
   if (!docker.ok && mode === "docker") {
@@ -293,7 +306,7 @@ async function resolveEngineMode() {
     return "docker";
   }
 
-  // auto — prefer native on Windows/Mac (Docker often "installed but slow/broken")
+  // auto — prefer native where a pack exists (Docker often "installed but slow/broken")
   if (nativePackPlatform()) {
     if (docker.ok) {
       // Keep Docker available as an explicit choice; auto uses native for reliability
@@ -302,8 +315,17 @@ async function resolveEngineMode() {
     return "native";
   }
   if (docker.ok) return "docker";
+  if (process.platform === "darwin" && process.arch === "x64") {
+    throw new Error(
+      "Cinekive needs Docker Desktop on Intel Macs.\n\n" +
+        "PyTorch no longer ships x86_64 macOS builds, so there is no native " +
+        "engine pack for Intel. Apple Silicon (M1/M2/M3/M4) runs the native " +
+        "engine with no extra software.\n\n" +
+        `${docker.message}`
+    );
+  }
   throw new Error(
-    `${docker.message}\n\nNative engine packs are available on Windows and Mac. Install Docker Desktop on Linux.`
+    `${docker.message}\n\nNative engine packs are available on Windows and Apple Silicon Macs. Install Docker Desktop on Linux.`
   );
 }
 

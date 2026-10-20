@@ -29,8 +29,17 @@ function packAssetName() {
   return "engine-linux-x64.zip";
 }
 
+/**
+ * True when a native engine pack exists for this machine.
+ *
+ * macOS: Apple Silicon only. PyTorch stopped publishing x86_64 macOS wheels
+ * (the last one is 2.2.x, the engine needs >= 2.5), so an Intel Mac has no
+ * native pack and runs in Docker mode instead.
+ */
 function packSupported() {
-  return process.platform === "win32" || process.platform === "darwin";
+  if (process.platform === "win32") return true;
+  if (process.platform === "darwin") return process.arch === "arm64";
+  return false;
 }
 
 function installedVersion() {
@@ -236,7 +245,13 @@ async function ensureEnginePack({ version, force = false, onStatus, onProgress }
 
   if (!packSupported()) {
     throw new Error(
-      "Native engine pack is not available for this platform yet.\n\nInstall Docker Desktop, or use the browser bootstrap."
+      process.platform === "darwin"
+        ? "The native engine needs an Apple Silicon Mac (M1 or newer).\n\n" +
+          "PyTorch no longer ships x86_64 macOS builds, so Intel Macs run " +
+          "Cinekive in Docker mode — install Docker Desktop and pick Docker " +
+          "in the engine settings."
+        : "Native engine pack is not available for this platform yet.\n\n" +
+          "Install Docker Desktop, or use the browser bootstrap."
     );
   }
 

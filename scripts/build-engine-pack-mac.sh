@@ -18,6 +18,14 @@ PY_VER="3.11.14"
 
 echo "Building engine-mac-${ARCH} pack"
 
+if [[ "$ARCH" == "x64" || "$ARCH" == "x86_64" ]]; then
+  # PyTorch stopped publishing x86_64 macOS wheels (last: 2.2.x, we need
+  # >= 2.5), so there is no native engine for Intel Macs. They use Docker.
+  echo "macOS x86_64 has no PyTorch wheels — the native engine is Apple Silicon only."
+  echo "Intel Macs run Cinekive in Docker mode."
+  exit 2
+fi
+
 rm -rf "$OUT_ROOT"
 mkdir -p "$ENGINE"
 

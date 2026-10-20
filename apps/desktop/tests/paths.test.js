@@ -81,3 +81,30 @@ test("the bind host follows the LAN switch", () => {
   assert.strictEqual(network.getBindHost(true), "0.0.0.0");
   assert.strictEqual(network.getLanUrls(false).ip, null);
 });
+
+test("the native engine pack is Apple Silicon only on macOS", () => {
+  const pack = require("../engine-pack");
+  const realPlatform = process.platform;
+  const realArch = process.arch;
+  const set = (platform, arch) => {
+    Object.defineProperty(process, "platform", { value: platform, configurable: true });
+    Object.defineProperty(process, "arch", { value: arch, configurable: true });
+  };
+  try {
+    set("darwin", "arm64");
+    assert.strictEqual(pack.packSupported(), true, "Apple Silicon has a native pack");
+    set("darwin", "x64");
+    assert.strictEqual(
+      pack.packSupported(),
+      false,
+      "Intel Macs have no PyTorch wheels, so they use Docker"
+    );
+    set("win32", "x64");
+    assert.strictEqual(pack.packSupported(), true, "Windows has a native pack");
+    set("linux", "x64");
+    assert.strictEqual(pack.packSupported(), false, "Linux uses Docker");
+  } finally {
+    Object.defineProperty(process, "platform", { value: realPlatform, configurable: true });
+    Object.defineProperty(process, "arch", { value: realArch, configurable: true });
+  }
+});

@@ -60,22 +60,21 @@ jobs:
           if-no-files-found: error
 
   engine-pack-mac-x64:
+    # PyTorch publishes no x86_64 macOS wheels, so there is no native engine
+    # for Intel Macs — they run Cinekive in Docker mode. The job is kept only
+    # to fail loudly if that ever changes.
     runs-on: macos-15-intel
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Build macOS x64 native engine pack
-        run: chmod +x ./scripts/build-engine-pack-mac.sh && ./scripts/build-engine-pack-mac.sh x64
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cinekive-engine-mac-x64
-          path: dist/engine-mac-x64.zip
+      - name: Confirm x86_64 macOS is unsupported
+        run: |
+          chmod +x ./scripts/build-engine-pack-mac.sh
+          if ./scripts/build-engine-pack-mac.sh x64; then
+            echo "::notice::macOS x86_64 now builds — re-enable the x64 engine pack"
+          else
+            echo "macOS x86_64 is not supported (expected)"
+          fi
           if-no-files-found: error
 
   windows:

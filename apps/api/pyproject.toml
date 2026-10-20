@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cinearchive-api"
-version = "0.5.3"
+version = "0.6.0"
 description = "Cinekive — local cinematic visual library API"
 requires-python = ">=3.11"
 dependencies = [

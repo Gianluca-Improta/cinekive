@@ -58,6 +58,17 @@ the sidebar becomes a drawer (the menu button in the top bar opens it), the
 top bar collapses to icons, and touch targets stay large enough to hit with a
 thumb.
 
+### macOS: Apple Silicon only for the native engine
+
+The macOS DMG installs on both Intel and Apple Silicon Macs, but the **native
+engine pack is Apple Silicon only**. PyTorch stopped publishing x86_64 macOS
+wheels (the last is 2.2.x, the engine needs 2.5+), so an Intel Mac cannot run
+the native engine.
+
+- **Apple Silicon (M1/M2/M3/M4)** — the native engine, no extra software.
+- **Intel Mac** — Cinekive asks for Docker Desktop and runs the engine in
+  Docker mode. The app says so instead of failing on a download.
+
 ### Engine pack and shell updates
 
 The desktop shell and the engine ship separately. A shell update no longer

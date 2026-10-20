@@ -277,15 +277,28 @@ export function LibraryQualityPanel({ archiveId, compact }: Props) {
       )}
 
       {!archiveId && (
-        <label className="flex items-center gap-2 text-[11px] text-cinema-muted">
-          <input
-            type="checkbox"
-            checked={draft.realesrgan_enabled}
-            onChange={(e) => patchGlobal({ realesrgan_enabled: e.target.checked })}
-            className="accent-cinema-cyan"
-          />
-          Enable Real-ESRGAN on export
-        </label>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-[11px] text-cinema-muted">
+            <input
+              type="checkbox"
+              checked={draft.realesrgan_enabled}
+              onChange={(e) => patchGlobal({ realesrgan_enabled: e.target.checked })}
+              className="accent-cinema-cyan"
+            />
+            Enable Real-ESRGAN on export
+          </label>
+          {draft.realesrgan_enabled &&
+            (draft.realesrgan_bin ? (
+              <p className="break-all pl-5 text-[10px] text-cinema-muted">
+                Using <code className="text-cinema-cyan/80">{draft.realesrgan_bin}</code>
+              </p>
+            ) : (
+              <p className="pl-5 text-[10px] text-amber-400/90">
+                No Real-ESRGAN binary found on this machine — exports keep the original size.
+                Install it and set the path here.
+              </p>
+            ))}
+        </div>
       )}
 
       <div className="flex items-center gap-2">
