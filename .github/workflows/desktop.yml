@@ -140,6 +140,9 @@ jobs:
             npx electron-builder --mac dmg zip --x64 --arm64 --publish never \
               -c.mac.hardenedRuntime=true -c.mac.gatekeeperAssess=false
           else
+            # An empty CSC_LINK is not the same as an unset one: electron-builder
+            # treats "" as a certificate path and fails with "not a file".
+            unset CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID
             npx electron-builder --mac dmg zip --x64 --arm64 --publish never
           fi
       - uses: actions/upload-artifact@v4
