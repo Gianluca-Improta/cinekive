@@ -75,7 +75,6 @@ jobs:
           else
             echo "macOS x86_64 is not supported (expected)"
           fi
-          if-no-files-found: error
 
   windows:
     runs-on: windows-latest

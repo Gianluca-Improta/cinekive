@@ -63,7 +63,10 @@ function main() {
 
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
-  fs.cpSync(standalone, outDir, { recursive: true });
+  // Next's standalone output contains symlinks into node_modules. Copying them
+  // as links leaves broken relative paths, and electron-builder then fails with
+  // "not a file" while packaging — so the links are resolved into real files.
+  fs.cpSync(standalone, outDir, { recursive: true, dereference: true });
 
   // Flatten nested server.js to web-ui-dist/server.js (engine-native expects this)
   const nestedServer = [];
